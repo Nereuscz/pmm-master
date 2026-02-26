@@ -4,6 +4,7 @@ import { getQuestionsForPhase } from "@/lib/guide";
 import { generateStructuredOutput } from "@/lib/anthropic";
 import { retrieveTopChunks } from "@/lib/rag";
 import { ensureDb, getOrCreateProjectContext, requireProject } from "@/lib/db";
+import { summarizeForContext } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
 
 const schema = z.object({
@@ -78,9 +79,31 @@ export async function POST(request: NextRequest) {
       throw new Error("Nepodařilo se uložit session z průvodce.");
     }
 
+    // Aktualizuj project_context (stejně jako process route)
+    const existingContext = projectContext.accumulated_context.trim();
+    const contextEntry = summarizeForContext(
+      `Datum: ${new Date().toISOString()}\nFáze: ${input.phase}\nShrnutí: ${generated.content}`
+    );
+    const newContext = summarizeForContext(
+      `${existingContext}\n\n${contextEntry}`.trim(),
+      8000
+    );
+
+    await db
+      .from("project_context")
+      .update({ accumulated_context: newContext, last_updated: new Date().toISOString() })
+      .eq("project_id", input.projectId);
+
+    // Aktualizuj fázi projektu
+    await db
+      .from("projects")
+      .update({ phase: input.phase, updated_at: new Date().toISOString() })
+      .eq("id", input.projectId);
+
     return NextResponse.json({
       done: true,
       sessionId: session.id,
+      projectId: input.projectId,
       output: generated.content
     });
   } catch (e) {

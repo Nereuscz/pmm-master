@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import AiOutput from "@/components/AiOutput";
 
 // ─── Typy ─────────────────────────────────────────────────────────────────────
@@ -13,7 +15,7 @@ type ChatMsg =
   | { id: string; role: "ai"; kind: "question"; q: GuideQ }
   | { id: string; role: "ai"; kind: "thinking"; text: string }
   | { id: string; role: "ai"; kind: "followup"; questions: string[]; answers: Record<number, string>; submitted: boolean }
-  | { id: string; role: "ai"; kind: "output"; content: string }
+  | { id: string; role: "ai"; kind: "output"; content: string; sessionId?: string; projectId?: string }
   | { id: string; role: "ai"; kind: "error"; text: string }
   | { id: string; role: "user"; text: string };
 
@@ -40,9 +42,11 @@ function AiAvatar() {
   );
 }
 
-// ─── Hlavní komponenta ─────────────────────────────────────────────────────────
+// ─── Hlavní komponenta (inner – potřebuje useSearchParams) ────────────────────
 
-export default function GuidePage() {
+function GuideChat() {
+  const searchParams = useSearchParams();
+  const projectIdParam = searchParams.get("projectId");
   // Config
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -69,13 +73,16 @@ export default function GuidePage() {
       .then((json) => {
         const list: Project[] = json.projects ?? [];
         setProjects(list);
-        if (list[0]) {
-          setSelectedProject(list[0]);
-          setPhase(list[0].phase);
-          setFramework(list[0].framework as "Univerzální" | "Produktový");
+        const preselect =
+          list.find((p) => p.id === projectIdParam) ?? list[0] ?? null;
+        if (preselect) {
+          setSelectedProject(preselect);
+          setPhase(preselect.phase);
+          setFramework(preselect.framework as "Univerzální" | "Produktový");
         }
       })
       .catch(() => undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────────
@@ -118,7 +125,14 @@ export default function GuidePage() {
       if (!r.ok) throw new Error(json.error || "Chyba průvodce");
 
       if (json.done) {
-        push({ id: uid(), role: "ai", kind: "output", content: json.output });
+        push({
+          id: uid(),
+          role: "ai",
+          kind: "output",
+          content: json.output,
+          sessionId: json.sessionId,
+          projectId: json.projectId ?? selectedProject?.id
+        });
         setStatus("done");
       } else {
         const q: GuideQ = json.nextQuestion;
@@ -347,10 +361,29 @@ export default function GuidePage() {
         <div key={msg.id} className="flex items-start gap-3">
           <AiAvatar />
           <div className="flex-1 min-w-0">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-green-700">
-              ✅ PM výstup vygenerován
-            </p>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-green-700">
+                ✅ PM výstup vygenerován a uložen do projektu
+              </span>
+              {msg.projectId ? (
+                <Link
+                  href={`/projects/${msg.projectId}`}
+                  className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                >
+                  Zobrazit v projektu →
+                </Link>
+              ) : null}
+            </div>
             <AiOutput content={msg.content} />
+            {msg.projectId ? (
+              <div className="mt-4 rounded-lg border border-brand-100 bg-brand-50 p-3 text-sm text-brand-700">
+                💾 Výstup je uložen v historii projektu. Kdykoli se k němu vrátíš přes{" "}
+                <Link href={`/projects/${msg.projectId}`} className="font-medium underline">
+                  detail projektu
+                </Link>
+                .
+              </div>
+            ) : null}
           </div>
         </div>
       );
@@ -509,5 +542,15 @@ export default function GuidePage() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+// ─── Export wrapper (Suspense kvůli useSearchParams) ──────────────────────────
+
+export default function GuidePage() {
+  return (
+    <Suspense fallback={<p className="px-6 py-10 text-slate-500">Načítám průvodce...</p>}>
+      <GuideChat />
+    </Suspense>
   );
 }
