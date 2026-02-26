@@ -37,9 +37,9 @@ export default function AiOutput({ content }: Props) {
   function flushBullets() {
     if (bulletBuffer.length === 0) return;
     elements.push(
-      <ul key={key++} className="my-1 space-y-1 pl-5">
+      <ul key={key++} className="my-2 space-y-1.5 pl-5">
         {bulletBuffer.map((item, i) => (
-          <li key={i} className="list-disc text-slate-700">
+          <li key={i} className="list-disc text-[14px] text-[#3a3a3a]">
             {parseInline(item)}
           </li>
         ))}
@@ -51,18 +51,15 @@ export default function AiOutput({ content }: Props) {
   for (const raw of lines) {
     const line = raw.trimEnd();
 
-    // Horizontal rule
     if (line === "---" || line === "---\r") {
       flushBullets();
-      elements.push(<hr key={key++} className="my-4 border-slate-200" />);
+      elements.push(<hr key={key++} className="my-5 border-[#f2f2f7]" />);
       continue;
     }
 
-    // H3 section header: ### 🟨 **Title**: hint
     if (line.startsWith("### ")) {
       flushBullets();
       const inner = line.replace(/^###\s*/, "").replace(/🟨\s*/g, "");
-      // Split on first **: **Title**: rest
       const boldMatch = inner.match(/^\*\*(.+?)\*\*:?\s*(.*)/);
       if (boldMatch) {
         elements.push(
@@ -70,9 +67,9 @@ export default function AiOutput({ content }: Props) {
             <div className="flex items-start gap-2">
               <span className="mt-0.5 text-amber-400">🟨</span>
               <div>
-                <span className="font-semibold text-slate-900">{boldMatch[1]}</span>
+                <span className="text-[15px] font-semibold text-[#1d1d1f]">{boldMatch[1]}</span>
                 {boldMatch[2] ? (
-                  <span className="ml-1 font-normal text-slate-500">{boldMatch[2]}</span>
+                  <span className="ml-1 text-[14px] font-normal text-[#6e6e73]">{boldMatch[2]}</span>
                 ) : null}
               </div>
             </div>
@@ -80,7 +77,7 @@ export default function AiOutput({ content }: Props) {
         );
       } else {
         elements.push(
-          <h3 key={key++} className="mt-6 flex items-center gap-2 font-semibold text-slate-900 first:mt-0">
+          <h3 key={key++} className="mt-6 flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f] first:mt-0">
             <span className="text-amber-400">🟨</span>
             {parseInline(inner)}
           </h3>
@@ -89,36 +86,32 @@ export default function AiOutput({ content }: Props) {
       continue;
     }
 
-    // H2
     if (line.startsWith("## ")) {
       flushBullets();
       elements.push(
-        <h2 key={key++} className="mt-6 text-lg font-bold text-slate-900">
+        <h2 key={key++} className="mt-6 text-[17px] font-semibold text-[#1d1d1f]">
           {parseInline(line.replace(/^##\s*/, ""))}
         </h2>
       );
       continue;
     }
 
-    // Bullet points
     if (/^[-•]\s/.test(line)) {
       bulletBuffer.push(line.replace(/^[-•]\s/, ""));
       continue;
     }
 
-    // Empty line
     if (line.trim() === "") {
       flushBullets();
       continue;
     }
 
-    // Normal paragraph line (including italic PM context)
     flushBullets();
     const isItalic = /^\*[^*]/.test(line.trim()) && line.trim().endsWith("*");
     elements.push(
       <p
         key={key++}
-        className={`text-sm leading-relaxed ${isItalic ? "italic text-slate-500" : "text-slate-700"}`}
+        className={`text-[14px] leading-relaxed ${isItalic ? "italic text-[#86868b]" : "text-[#3a3a3a]"}`}
       >
         {parseInline(line)}
       </p>
@@ -127,17 +120,17 @@ export default function AiOutput({ content }: Props) {
   flushBullets();
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-        <span className="text-sm font-medium text-slate-700">Výstup AI</span>
+    <div className="rounded-apple bg-white shadow-apple">
+      <div className="flex items-center justify-between border-b border-[#f2f2f7] px-6 py-3.5">
+        <span className="text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Výstup AI</span>
         <button
           onClick={copy}
-          className="rounded-md px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+          className="rounded-full border border-[#d2d2d7] px-3.5 py-1.5 text-[12px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
         >
           {copied ? "✓ Zkopírováno" : "Kopírovat"}
         </button>
       </div>
-      <div className="space-y-1 p-5">{elements}</div>
+      <div className="space-y-1 p-6">{elements}</div>
     </div>
   );
 }

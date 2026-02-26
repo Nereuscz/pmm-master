@@ -271,7 +271,7 @@ function GuideChat() {
     if (msg.role === "user") {
       return (
         <div key={msg.id} className="flex justify-end">
-          <div className="max-w-[78%] rounded-2xl rounded-tr-sm bg-brand-600 px-4 py-3 text-sm leading-relaxed text-white shadow-sm">
+          <div className="max-w-[78%] rounded-2xl rounded-tr-sm bg-brand-600 px-4 py-3 text-[14px] leading-relaxed text-white shadow-apple-sm">
             {msg.text}
           </div>
         </div>
@@ -282,18 +282,18 @@ function GuideChat() {
       return (
         <div key={msg.id} className="flex items-start gap-3">
           <AiAvatar />
-          <div className="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-3 shadow-apple-sm">
             <div className="flex items-center gap-2">
               <span className="flex gap-1">
                 {[0, 150, 300].map((delay) => (
                   <span
                     key={delay}
-                    className="inline-block h-2 w-2 animate-bounce rounded-full bg-slate-400"
+                    className="inline-block h-2 w-2 animate-bounce rounded-full bg-[#d2d2d7]"
                     style={{ animationDelay: `${delay}ms` }}
                   />
                 ))}
               </span>
-              <span className="text-xs text-slate-500">{msg.text}</span>
+              <span className="text-[12px] text-[#aeaeb2]">{msg.text}</span>
             </div>
           </div>
         </div>
@@ -304,11 +304,11 @@ function GuideChat() {
       return (
         <div key={msg.id} className="flex items-start gap-3">
           <AiAvatar />
-          <div className="max-w-[78%] space-y-1 rounded-2xl rounded-tl-sm border border-brand-200 bg-white px-4 py-3 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+          <div className="max-w-[78%] space-y-1.5 rounded-2xl rounded-tl-sm bg-white px-4 py-3.5 shadow-apple-sm">
+            <p className="text-[13px] font-semibold text-[#1d1d1f]">
               🟨 {msg.q.text}
             </p>
-            <p className="text-sm text-slate-500">{msg.q.hint}</p>
+            <p className="text-[13px] text-[#6e6e73]">{msg.q.hint}</p>
           </div>
         </div>
       );
@@ -318,8 +318,8 @@ function GuideChat() {
       return (
         <div key={msg.id} className="flex items-start gap-3">
           <AiAvatar />
-          <div className="flex-1 space-y-3 rounded-2xl rounded-tl-sm border border-brand-200 bg-brand-50 p-4 shadow-sm">
-            <p className="text-sm font-semibold text-brand-800">
+          <div className="flex-1 space-y-3 rounded-2xl rounded-tl-sm bg-brand-50 p-4 shadow-apple-sm">
+            <p className="text-[13px] font-semibold text-brand-800">
               💬 Doplňující otázky{" "}
               <span className="font-normal text-brand-600">(volitelné – prohloubí výstup)</span>
             </p>
@@ -350,7 +350,7 @@ function GuideChat() {
                         )
                       );
                     }}
-                    className="ml-7 w-[calc(100%-1.75rem)] rounded-lg border border-brand-100 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
+                    className="ml-7 w-[calc(100%-1.75rem)] resize-none rounded-xl border border-brand-100 bg-white px-3 py-2 text-[13px] focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-600/10"
                     placeholder="Volitelná odpověď..."
                   />
                 )}
@@ -362,7 +362,7 @@ function GuideChat() {
             ) : (
               <button
                 onClick={handleFollowUpContinue}
-                className="mt-1 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                className="mt-1 rounded-full bg-brand-600 px-5 py-2 text-[13px] font-medium text-white transition-colors hover:bg-brand-700"
               >
                 Přejít na další otázku →
               </button>
@@ -384,7 +384,7 @@ function GuideChat() {
               {msg.projectId ? (
                 <Link
                   href={`/projects/${msg.projectId}`}
-                  className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                  className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-4 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-brand-700"
                 >
                   Zobrazit v projektu →
                 </Link>
@@ -409,7 +409,7 @@ function GuideChat() {
       return (
         <div key={msg.id} className="flex items-start gap-3">
           <AiAvatar />
-          <div className="rounded-2xl rounded-tl-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+          <div className="rounded-2xl rounded-tl-sm bg-[#fff2f2] px-4 py-3 text-[14px] text-[#c0392b] shadow-apple-sm">
             {msg.text}
           </div>
         </div>
@@ -457,12 +457,12 @@ function GuideChat() {
           rows={3}
           disabled={status !== "awaiting_answer"}
           placeholder="Tvoje odpověď… (Enter = odeslat, Shift+Enter = nový řádek)"
-          className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-brand-600 focus:outline-none disabled:opacity-40"
+          className="flex-1 resize-none rounded-xl border border-[#d2d2d7] bg-white px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 disabled:opacity-40"
         />
         <button
           onClick={handleSend}
           disabled={!canSend}
-          className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40"
+          className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white transition-colors hover:bg-brand-700 disabled:opacity-40"
           title="Odeslat (Enter)"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
@@ -479,20 +479,20 @@ function GuideChat() {
     <main className="mx-auto flex max-w-3xl flex-col px-6 py-10" style={{ height: "100dvh" }}>
       {/* Nadpis */}
       <div className="mb-4 shrink-0">
-        <h1 className="text-2xl font-bold text-slate-900">Průvodce PM otázkami</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Průvodce PM otázkami</h1>
+        <p className="mt-1 text-[15px] text-[#6e6e73]">
           Konverzační průvodce – AI klade otázky, nabídne 3 doplňující a na konci vygeneruje PM dokumentaci.
         </p>
       </div>
 
       {/* Konfigurace – před startem (bez projectId) nebo po dokončení */}
       {(!started && !projectIdParam) || status === "done" ? (
-        <div className="mb-4 shrink-0 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 shrink-0 space-y-4 rounded-apple bg-white p-5 shadow-apple">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Projekt</label>
+              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">Projekt</label>
               <select
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
                 value={selectedProject?.id ?? ""}
                 onChange={(e) => {
                   const p = projects.find((p) => p.id === e.target.value) ?? null;
@@ -511,21 +511,21 @@ function GuideChat() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Fáze</label>
+              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">Fáze</label>
               <select
                 value={phase}
                 onChange={(e) => setPhase(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
               >
                 {PHASES.map((p) => <option key={p}>{p}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Framework</label>
+              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">Framework</label>
               <select
                 value={framework}
                 onChange={(e) => setFramework(e.target.value as "Univerzální" | "Produktový")}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
               >
                 <option>Univerzální</option>
                 <option>Produktový</option>
@@ -535,7 +535,7 @@ function GuideChat() {
           <button
             onClick={handleStart}
             disabled={!selectedProject}
-            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+            className="rounded-full bg-brand-600 px-5 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
           >
             {status === "done" ? "🔄 Spustit znovu" : "💬 Spustit průvodce"}
           </button>
@@ -544,13 +544,13 @@ function GuideChat() {
 
       {/* Loading placeholder – při příchodu z projektu před auto-startem */}
       {!started && projectIdParam ? (
-        <div className="mb-4 shrink-0 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3 text-sm text-slate-500">
+        <div className="mb-4 shrink-0 rounded-apple bg-white p-5 shadow-apple">
+          <div className="flex items-center gap-3 text-[14px] text-[#6e6e73]">
             <span className="flex gap-1">
               {[0, 150, 300].map((delay) => (
                 <span
                   key={delay}
-                  className="inline-block h-2 w-2 animate-bounce rounded-full bg-slate-400"
+                  className="inline-block h-2 w-2 animate-bounce rounded-full bg-[#d2d2d7]"
                   style={{ animationDelay: `${delay}ms` }}
                 />
               ))}
@@ -562,15 +562,15 @@ function GuideChat() {
 
       {/* Chat plocha */}
       {started ? (
-        <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple">
           {/* Zprávy */}
-          <div className="flex-1 space-y-4 overflow-y-auto p-5">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6">
             {messages.map((msg) => renderMsg(msg))}
             <div ref={bottomRef} />
           </div>
 
           {/* Vstupní area – přilepená ke dnu */}
-          <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-5 py-4">
+          <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-4">
             {renderInput()}
           </div>
         </div>
