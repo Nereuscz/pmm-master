@@ -1,4 +1,7 @@
 import mammoth from "mammoth";
+// pdf-parse 1.x exports a plain function (CommonJS)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
 
 export type ParseResult = {
   text: string;
@@ -7,10 +10,6 @@ export type ParseResult = {
 
 export async function parseFileBuffer(buffer: Buffer, mimeType: string): Promise<string> {
   if (mimeType === "application/pdf") {
-    // Dynamic import to avoid Next.js bundling issues with pdf-parse
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfParseMod = await import("pdf-parse") as any;
-    const pdfParse = pdfParseMod.default ?? pdfParseMod;
     const result = await pdfParse(buffer);
     return result.text;
   }
