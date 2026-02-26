@@ -2,21 +2,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+const FRAMEWORK_INFO = {
+  Produktový: "Tvorba nebo redesign konkrétní služby / produktu JIC pro klienty.",
+  Univerzální: "Interní projekty, procesní změny nebo infrastruktura."
+};
 
 export default function NewProjectPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [framework, setFramework] = useState<"Univerzální" | "Produktový">("Univerzální");
 
-  async function onSubmit(formData: FormData) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setLoading(true);
     setError(null);
+    const data = new FormData(e.currentTarget);
     try {
       const payload = {
-        name: String(formData.get("name") || ""),
-        framework: String(formData.get("framework") || ""),
-        phase: String(formData.get("phase") || ""),
-        ownerId: String(formData.get("ownerId") || "") || undefined
+        name: String(data.get("name") || ""),
+        framework: String(data.get("framework") || ""),
+        phase: String(data.get("phase") || "")
       };
       const response = await fetch("/api/projects", {
         method: "POST",
@@ -24,69 +32,84 @@ export default function NewProjectPage() {
         body: JSON.stringify(payload)
       });
       const json = await response.json();
-      if (!response.ok) {
-        throw new Error(json.error || "Uložení projektu selhalo.");
-      }
+      if (!response.ok) throw new Error(json.error || "Uložení projektu selhalo.");
       router.push(`/projects/${json.project.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      setError(e instanceof Error ? e.message : "Chyba při vytváření projektu.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <h1 className="text-2xl font-bold">Nový projekt</h1>
-      <p className="mt-2 text-slate-600">
-        Vytvoření projektu v databázi.
-      </p>
+    <main className="mx-auto max-w-xl px-6 py-10">
+      <div className="mb-6">
+        <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-800">
+          ← Zpět na projekty
+        </Link>
+        <h1 className="mt-3 text-2xl font-bold text-slate-900">Nový projekt</h1>
+      </div>
+
       <form
-        action={onSubmit}
-        className="mt-8 space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        onSubmit={onSubmit}
+        className="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Název projektu</span>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Název projektu</label>
           <input
             name="name"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
+            required
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
             placeholder="Např. Scale-up program 2026"
           />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Framework</span>
-          <select name="framework" className="w-full rounded-lg border border-slate-300 px-3 py-2">
-            <option>Univerzální</option>
-            <option>Produktový</option>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700">Typ frameworku</label>
+          <div className="grid grid-cols-2 gap-3">
+            {(["Univerzální", "Produktový"] as const).map((fw) => (
+              <label
+                key={fw}
+                className={`cursor-pointer rounded-lg border-2 p-3 transition-colors ${
+                  framework === fw ? "border-brand-600 bg-brand-50" : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="framework"
+                  value={fw}
+                  className="sr-only"
+                  checked={framework === fw}
+                  onChange={() => setFramework(fw)}
+                />
+                <p className="text-sm font-semibold text-slate-800">{fw}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{FRAMEWORK_INFO[fw]}</p>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Počáteční fáze</label>
+          <select
+            name="phase"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
+          >
+            {["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"].map((p) => (
+              <option key={p}>{p}</option>
+            ))}
           </select>
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Počáteční fáze</span>
-          <select name="phase" className="w-full rounded-lg border border-slate-300 px-3 py-2">
-            <option>Iniciace</option>
-            <option>Plánování</option>
-            <option>Realizace</option>
-            <option>Closing</option>
-            <option>Gate 1</option>
-            <option>Gate 2</option>
-            <option>Gate 3</option>
-          </select>
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Owner ID (UUID)</span>
-          <input
-            name="ownerId"
-            defaultValue="00000000-0000-0000-0000-000000000001"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
-          />
-        </label>
+        </div>
+
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
         <button
+          type="submit"
           disabled={loading}
-          className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-brand-600 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
         >
-          {loading ? "Ukládám..." : "Uložit projekt"}
+          {loading ? "Vytvářím..." : "Vytvořit projekt"}
         </button>
-        {error ? <p className="text-sm text-red-700">{error}</p> : null}
       </form>
     </main>
   );

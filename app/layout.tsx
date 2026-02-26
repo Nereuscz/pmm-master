@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "PM Assistant",
-  description: "AI PM assistant for transcript processing and Asana export"
+  title: "PM Assistant · JIC",
+  description: "AI asistent pro zpracování PM transkriptů a export do Asany"
 };
 
-export default function RootLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="cs">
-      <body>{children}</body>
+      <body className="min-h-screen bg-slate-50">
+        <Nav />
+        {children}
+      </body>
     </html>
   );
 }
