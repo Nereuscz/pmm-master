@@ -196,8 +196,18 @@ export async function generateStructuredOutput(input: {
 
   parts.push(`**Transkript:**\n${input.transcript}`);
 
+  // Strukturální self-check – AI ho musí vyplnit před 💡 sekcí
+  const selfCheckItems = questions.map((q) => `- ${q.name}`).join("\n");
   parts.push(
-    `Vygeneruj Asana-ready výstup. Pro každou sekci použij přesné formátování:\n### 🟨 **Název sekce**: Návodná otázka\nObsah sekce...`
+    `Vygeneruj Asana-ready výstup. Pro každou sekci použij přesné formátování:\n### 🟨 **Název sekce**: Návodná otázka\nObsah sekce...
+
+POVINNÝ SELF-CHECK: Na konci dokumentu (těsně PŘED blokem 💡 Návrhy) vlož tento blok:
+---
+✔ **Kontrolní seznam sekcí:**
+${selfCheckItems}
+Pro každou oblast uveď: ✅ sekce zahrnuta | ❌ data v transkriptu chybí
+Formát: - **Název**: ✅/❌ [1 větou proč chybí, pokud ❌]
+DŮLEŽITÉ: Pokud máš oblast označenou ✅ ale sekci jsi ve výstupu nevygeneroval, DOPLŇ ji před tímto self-checkem.`
   );
 
   const userPrompt = parts.join("\n\n");
@@ -215,4 +225,91 @@ export async function generateStructuredOutput(input: {
     .join("\n");
 
   return { content: text || "AI nevrátila textový obsah." };
+}
+
+// ─── Doplňující otázky před zpracováním transkriptu ────────────────────────────
+
+export async function generateClarifyingQuestions(input: {
+  phase: string;
+  framework: string;
+  transcript: string;
+  projectContext: string;
+}): Promise<{ questions: string[] }> {
+  if (!anthropic) return { questions: [] };
+
+  const questions = getQuestionsForPhaseAndFramework(input.phase, input.framework);
+  const questionNames = questions.map((q) => q.name).join(", ");
+
+  const response = await anthropic.messages.create({
+    model: "claude-opus-4-5",
+    max_tokens: 512,
+    system: `Jsi PM asistent. Přečti transkript schůzky a identifikuj maximálně 5 klíčových nejasností nebo chybějících informací, které jsou nutné pro kvalitní PM dokumentaci ve zvolené fázi. Vrať POUZE číslovaný seznam stručných otázek (jedna věta každá). Žádný jiný text.`,
+    messages: [
+      {
+        role: "user",
+        content: `Framework: ${input.framework} | Fáze: ${input.phase}
+Sledované oblasti: ${questionNames}
+${input.projectContext ? `Kontext projektu: ${input.projectContext}\n` : ""}
+Transkript:
+${input.transcript}
+
+Polož max. 5 doplňujících otázek k nejasným nebo chybějícím informacím:`
+      }
+    ]
+  });
+
+  const text = response.content
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("\n");
+
+  const lines = text
+    .split("\n")
+    .filter((l) => /^\d+[\.\)]/.test(l.trim()))
+    .map((l) => l.replace(/^\d+[\.\)]\s*/, "").trim())
+    .filter(Boolean);
+
+  return { questions: lines.length > 0 ? lines : [text.trim()].filter(Boolean) };
+}
+
+// ─── Follow-up otázky průvodce ─────────────────────────────────────────────────
+
+export async function generateFollowUpQuestions(input: {
+  questionName: string;
+  questionHint: string;
+  userAnswer: string;
+  framework: string;
+  phase: string;
+}): Promise<{ followUps: string[] }> {
+  if (!anthropic) return { followUps: [] };
+
+  const response = await anthropic.messages.create({
+    model: "claude-opus-4-5",
+    max_tokens: 256,
+    system: `Jsi PM coach. Na základě odpovědi uživatele vygeneruj přesně 3 krátké doplňující otázky, které prohloubí nebo upřesní odpověď pro PM dokumentaci. Vrať POUZE číslovaný seznam 3 otázek (jedna věta každá). Žádný jiný text.`,
+    messages: [
+      {
+        role: "user",
+        content: `Framework: ${input.framework} | Fáze: ${input.phase}
+Otázka: ${input.questionName} – ${input.questionHint}
+Odpověď: ${input.userAnswer}
+
+Vygeneruj 3 doplňující otázky:`
+      }
+    ]
+  });
+
+  const text = response.content
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("\n");
+
+  const lines = text
+    .split("\n")
+    .filter((l) => /^\d+[\.\)]/.test(l.trim()))
+    .map((l) => l.replace(/^\d+[\.\)]\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return { followUps: lines };
 }

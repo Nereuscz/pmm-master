@@ -7,9 +7,15 @@ type Project = { id: string; name: string; framework: string; phase: string };
 type Answer = { questionId: string; question: string; answer: string };
 type GuideQuestion = { id: string; text: string; hint: string };
 
+type FollowUpState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; questions: string[]; answers: Record<number, string> };
+
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
 export default function GuidePage() {
+  // ── State ────────────────────────────────────────────────────────────────────
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [phase, setPhase] = useState("Iniciace");
@@ -18,11 +24,20 @@ export default function GuidePage() {
   const [questions, setQuestions] = useState<GuideQuestion[]>([]);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState("");
+
+  // Odpověď čekající na dokončení follow-up bloku
+  const [pendingMain, setPendingMain] = useState<{
+    question: GuideQuestion;
+    answer: string;
+  } | null>(null);
+  const [followUp, setFollowUp] = useState<FollowUpState>({ status: "idle" });
+
   const [finalOutput, setFinalOutput] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
 
+  // ── Načtení projektů ─────────────────────────────────────────────────────────
   useEffect(() => {
     fetch("/api/projects")
       .then((r) => r.json())
@@ -38,29 +53,36 @@ export default function GuidePage() {
       .catch(() => undefined);
   }, []);
 
-  // Načti otázky když se změní phase/framework
+  // Restart při změně fáze/frameworku
   useEffect(() => {
     if (!started) return;
     setQuestions([]);
     setAnswers([]);
     setCurrentAnswer("");
+    setFollowUp({ status: "idle" });
+    setPendingMain(null);
     setFinalOutput(null);
-    // Získej první otázku
     fetchNextQuestion([]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, framework]);
 
+  // ── Načtení další otázky (nebo finálního výstupu) ────────────────────────────
   async function fetchNextQuestion(currentAnswers: Answer[]) {
     if (!selectedProject) return;
     setLoading(true);
     try {
-      const response = await fetch("/api/guide/next", {
+      const r = await fetch("/api/guide/next", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: selectedProject.id, phase, framework, answers: currentAnswers })
+        body: JSON.stringify({
+          projectId: selectedProject.id,
+          phase,
+          framework,
+          answers: currentAnswers
+        })
       });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error || "Průvodce selhal.");
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || "Průvodce selhal.");
       if (json.done) {
         setFinalOutput(json.output);
       } else {
@@ -76,42 +98,111 @@ export default function GuidePage() {
     }
   }
 
+  // ── Start průvodce ───────────────────────────────────────────────────────────
   function handleStart() {
     if (!selectedProject) return;
     setStarted(true);
     setAnswers([]);
     setQuestions([]);
     setCurrentAnswer("");
+    setFollowUp({ status: "idle" });
+    setPendingMain(null);
     setFinalOutput(null);
     setError(null);
     fetchNextQuestion([]);
   }
 
-  async function submitAnswer() {
+  // ── Odeslání hlavní odpovědi → spustí follow-up otázky ──────────────────────
+  async function submitMainAnswer() {
     const currentQ = questions[answers.length];
     if (!currentQ || !currentAnswer.trim() || !selectedProject) return;
+
+    const mainAnswer = currentAnswer.trim();
+    setCurrentAnswer("");
+    setPendingMain({ question: currentQ, answer: mainAnswer });
+    setFollowUp({ status: "loading" });
+
+    try {
+      const r = await fetch("/api/guide/followup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionName: currentQ.text,
+          questionHint: currentQ.hint,
+          userAnswer: mainAnswer,
+          framework,
+          phase
+        })
+      });
+      const json = await r.json();
+      const followUps: string[] = json.followUps ?? [];
+
+      if (followUps.length > 0) {
+        setFollowUp({ status: "ready", questions: followUps, answers: {} });
+      } else {
+        // Žádné follow-up → přejdi rovnou dál
+        setFollowUp({ status: "idle" });
+        setPendingMain(null);
+        await advanceToNext(currentQ, mainAnswer, {});
+      }
+    } catch {
+      // Chyba follow-up není fatální
+      setFollowUp({ status: "idle" });
+      setPendingMain(null);
+      await advanceToNext(currentQ, mainAnswer, {});
+    }
+  }
+
+  // ── Pokračovat po vyplnění (nebo přeskočení) follow-up otázek ────────────────
+  async function handleContinue() {
+    if (!pendingMain) return;
+    const { question, answer } = pendingMain;
+    const fuAnswers = followUp.status === "ready" ? followUp.answers : {};
+    setFollowUp({ status: "idle" });
+    setPendingMain(null);
+    await advanceToNext(question, answer, fuAnswers);
+  }
+
+  // ── Posun na další otázku (ukládá odpověď včetně follow-up) ─────────────────
+  async function advanceToNext(
+    question: GuideQuestion,
+    mainAnswer: string,
+    fuAnswers: Record<number, string>
+  ) {
+    const fuLines = Object.entries(fuAnswers)
+      .filter(([, v]) => v.trim())
+      .map(([k, v]) => `(Doplněk ${Number(k) + 1}: ${v.trim()})`)
+      .join(" ");
+
+    const combined = fuLines ? `${mainAnswer} ${fuLines}` : mainAnswer;
+
     const nextAnswers: Answer[] = [
       ...answers,
-      { questionId: currentQ.id, question: currentQ.text, answer: currentAnswer.trim() }
+      { questionId: question.id, question: question.text, answer: combined }
     ];
     setAnswers(nextAnswers);
-    setCurrentAnswer("");
     await fetchNextQuestion(nextAnswers);
   }
 
+  // ── Odvozené hodnoty ─────────────────────────────────────────────────────────
   const currentQ = questions[answers.length] ?? null;
-  const progress = questions.length > 0 ? Math.round((answers.length / questions.length) * 100) : 0;
+  const showMainQ = currentQ && !loading && followUp.status === "idle" && !pendingMain;
+  const totalQuestions = questions.length;
+  const answeredCount = answers.length;
+  const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Průvodce PM otázkami</h1>
         <p className="mt-1 text-sm text-slate-500">
-          AI klade otázky dle fáze projektu a na konci vygeneruje strukturovaný výstup.
+          AI klade otázky dle fáze projektu. Po každé odpovědi nabídne 3 doplňující otázky pro
+          hlubší výstup.
         </p>
       </div>
 
-      {/* Konfigurace */}
+      {/* ── Konfigurace (před startem / po dokončení) ──────────────────────────── */}
       {!started || finalOutput ? (
         <div className="mb-6 space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
@@ -123,7 +214,10 @@ export default function GuidePage() {
                 onChange={(e) => {
                   const p = projects.find((p) => p.id === e.target.value) ?? null;
                   setSelectedProject(p);
-                  if (p) { setPhase(p.phase); setFramework(p.framework as "Univerzální" | "Produktový"); }
+                  if (p) {
+                    setPhase(p.phase);
+                    setFramework(p.framework as "Univerzální" | "Produktový");
+                  }
                 }}
               >
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -161,14 +255,14 @@ export default function GuidePage() {
         </div>
       ) : null}
 
-      {/* Průběh */}
+      {/* ── Průběh průvodce ────────────────────────────────────────────────────── */}
       {started && !finalOutput ? (
         <div className="space-y-5">
           {/* Progress bar */}
-          {questions.length > 0 ? (
+          {totalQuestions > 0 ? (
             <div>
               <div className="mb-1 flex justify-between text-xs text-slate-500">
-                <span>Otázka {answers.length + 1} z {questions.length}</span>
+                <span>Otázka {Math.min(answeredCount + 1, totalQuestions)} z {totalQuestions}</span>
                 <span>{progress} %</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -192,8 +286,58 @@ export default function GuidePage() {
             </div>
           ) : null}
 
-          {/* Aktuální otázka */}
-          {currentQ && !loading ? (
+          {/* Follow-up blok – načítání */}
+          {followUp.status === "loading" ? (
+            <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-brand-50 p-4">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+              <span className="text-sm text-brand-700">Generuji doplňující otázky...</span>
+            </div>
+          ) : null}
+
+          {/* Follow-up blok – 3 otázky připraveny */}
+          {followUp.status === "ready" ? (
+            <div className="space-y-4 rounded-xl border border-brand-200 bg-brand-50 p-5">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-brand-800">💬 Doplňující otázky</span>
+                <span className="text-xs text-brand-600">(volitelné – prohloubí výstup)</span>
+              </div>
+              <div className="space-y-3">
+                {followUp.questions.map((q, i) => (
+                  <div key={i} className="rounded-lg border border-brand-100 bg-white p-3">
+                    <p className="mb-1.5 text-sm text-slate-700">
+                      <span className="mr-2 inline-block rounded bg-brand-100 px-1.5 py-0.5 text-xs font-bold text-brand-700">
+                        {i + 1}
+                      </span>
+                      {q}
+                    </p>
+                    <textarea
+                      rows={2}
+                      value={followUp.answers[i] ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFollowUp((prev) =>
+                          prev.status === "ready"
+                            ? { ...prev, answers: { ...prev.answers, [i]: val } }
+                            : prev
+                        );
+                      }}
+                      className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-brand-400 focus:outline-none"
+                      placeholder="Volitelná odpověď..."
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleContinue}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                Přejít na další otázku →
+              </button>
+            </div>
+          ) : null}
+
+          {/* Aktuální hlavní otázka */}
+          {showMainQ ? (
             <div className="rounded-xl border border-brand-200 bg-white p-5 shadow-sm">
               <p className="mb-1 text-xs font-medium uppercase tracking-wide text-brand-600">
                 🟨 {currentQ.text}
@@ -205,24 +349,24 @@ export default function GuidePage() {
                 rows={5}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none"
                 placeholder="Tvoje odpověď..."
-                onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) submitAnswer(); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) submitMainAnswer(); }}
               />
               <div className="mt-3 flex items-center gap-3">
                 <button
-                  onClick={submitAnswer}
+                  onClick={submitMainAnswer}
                   disabled={!currentAnswer.trim() || loading}
                   className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
                 >
-                  Další →
+                  Odpovědět →
                 </button>
                 <span className="text-xs text-slate-400">nebo Cmd+Enter</span>
               </div>
             </div>
-          ) : loading ? (
+          ) : loading && followUp.status === "idle" ? (
             <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-5">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
               <span className="text-sm text-slate-500">
-                {answers.length > 0 && answers.length >= questions.length - 1
+                {answeredCount > 0 && answeredCount >= totalQuestions - 1
                   ? "AI generuje výstup..."
                   : "Načítám další otázku..."}
               </span>
@@ -230,17 +374,17 @@ export default function GuidePage() {
           ) : null}
 
           {error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
           ) : null}
         </div>
       ) : null}
 
-      {/* Finální výstup */}
+      {/* ── Finální výstup ─────────────────────────────────────────────────────── */}
       {finalOutput ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Výstup průvodce</h2>
-          </div>
+          <h2 className="text-lg font-semibold text-slate-900">Výstup průvodce</h2>
           <AiOutput content={finalOutput} />
         </div>
       ) : null}
