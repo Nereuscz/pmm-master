@@ -1,43 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AiOutput from "@/components/AiOutput";
+
+// ─── Typy ─────────────────────────────────────────────────────────────────────
 
 type Project = { id: string; name: string; framework: string; phase: string };
 type Answer = { questionId: string; question: string; answer: string };
-type GuideQuestion = { id: string; text: string; hint: string };
+type GuideQ = { id: string; text: string; hint: string };
 
-type FollowUpState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "ready"; questions: string[]; answers: Record<number, string> };
+type ChatMsg =
+  | { id: string; role: "ai"; kind: "question"; q: GuideQ }
+  | { id: string; role: "ai"; kind: "thinking"; text: string }
+  | { id: string; role: "ai"; kind: "followup"; questions: string[]; answers: Record<number, string>; submitted: boolean }
+  | { id: string; role: "ai"; kind: "output"; content: string }
+  | { id: string; role: "ai"; kind: "error"; text: string }
+  | { id: string; role: "user"; text: string };
+
+type Status =
+  | "idle"
+  | "loading_q"
+  | "awaiting_answer"
+  | "loading_fu"
+  | "awaiting_fu"
+  | "done";
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
+let _id = 0;
+function uid() { return `m${++_id}`; }
+
+// ─── Avatar komponenta ─────────────────────────────────────────────────────────
+
+function AiAvatar() {
+  return (
+    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[11px] font-bold text-white shadow-sm">
+      AI
+    </div>
+  );
+}
+
+// ─── Hlavní komponenta ─────────────────────────────────────────────────────────
+
 export default function GuidePage() {
-  // ── State ────────────────────────────────────────────────────────────────────
+  // Config
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [phase, setPhase] = useState("Iniciace");
   const [framework, setFramework] = useState<"Univerzální" | "Produktový">("Univerzální");
-
-  const [questions, setQuestions] = useState<GuideQuestion[]>([]);
-  const [answers, setAnswers] = useState<Answer[]>([]);
-  const [currentAnswer, setCurrentAnswer] = useState("");
-
-  // Odpověď čekající na dokončení follow-up bloku
-  const [pendingMain, setPendingMain] = useState<{
-    question: GuideQuestion;
-    answer: string;
-  } | null>(null);
-  const [followUp, setFollowUp] = useState<FollowUpState>({ status: "idle" });
-
-  const [finalOutput, setFinalOutput] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
 
-  // ── Načtení projektů ─────────────────────────────────────────────────────────
+  // Chat
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [answers, setAnswers] = useState<Answer[]>([]);
+  const [currentQ, setCurrentQ] = useState<GuideQ | null>(null);
+  const [pendingMain, setPendingMain] = useState<{ q: GuideQ; answer: string } | null>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [status, setStatus] = useState<Status>("idle");
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── Projekty ────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     fetch("/api/projects")
       .then((r) => r.json())
@@ -53,23 +78,29 @@ export default function GuidePage() {
       .catch(() => undefined);
   }, []);
 
-  // Restart při změně fáze/frameworku
-  useEffect(() => {
-    if (!started) return;
-    setQuestions([]);
-    setAnswers([]);
-    setCurrentAnswer("");
-    setFollowUp({ status: "idle" });
-    setPendingMain(null);
-    setFinalOutput(null);
-    fetchNextQuestion([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, framework]);
+  // ── Auto-scroll ─────────────────────────────────────────────────────────────
 
-  // ── Načtení další otázky (nebo finálního výstupu) ────────────────────────────
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  function push(msg: ChatMsg) {
+    setMessages((prev) => [...prev, msg]);
+  }
+
+  function removeThinking() {
+    setMessages((prev) => prev.filter((m) => !(m.role === "ai" && m.kind === "thinking")));
+  }
+
+  // ── Načtení další otázky nebo finálního výstupu ─────────────────────────────
+
   async function fetchNextQuestion(currentAnswers: Answer[]) {
     if (!selectedProject) return;
-    setLoading(true);
+    setStatus("loading_q");
+    push({ id: uid(), role: "ai", kind: "thinking", text: "Načítám další otázku..." });
+
     try {
       const r = await fetch("/api/guide/next", {
         method: "POST",
@@ -82,129 +113,332 @@ export default function GuidePage() {
         })
       });
       const json = await r.json();
-      if (!r.ok) throw new Error(json.error || "Průvodce selhal.");
+      removeThinking();
+
+      if (!r.ok) throw new Error(json.error || "Chyba průvodce");
+
       if (json.done) {
-        setFinalOutput(json.output);
+        push({ id: uid(), role: "ai", kind: "output", content: json.output });
+        setStatus("done");
       } else {
-        setQuestions((prev) => {
-          const exists = prev.find((q) => q.id === json.nextQuestion.id);
-          return exists ? prev : [...prev, json.nextQuestion];
-        });
+        const q: GuideQ = json.nextQuestion;
+        setCurrentQ(q);
+        push({ id: uid(), role: "ai", kind: "question", q });
+        setStatus("awaiting_answer");
+        setTimeout(() => inputRef.current?.focus(), 80);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Chyba");
-    } finally {
-      setLoading(false);
+      removeThinking();
+      push({ id: uid(), role: "ai", kind: "error", text: e instanceof Error ? e.message : "Neznámá chyba" });
+      setStatus("awaiting_answer");
     }
   }
 
-  // ── Start průvodce ───────────────────────────────────────────────────────────
+  // ── Start ───────────────────────────────────────────────────────────────────
+
   function handleStart() {
     if (!selectedProject) return;
     setStarted(true);
+    setMessages([]);
     setAnswers([]);
-    setQuestions([]);
-    setCurrentAnswer("");
-    setFollowUp({ status: "idle" });
+    setCurrentQ(null);
     setPendingMain(null);
-    setFinalOutput(null);
-    setError(null);
+    setInputValue("");
+    setStatus("idle");
     fetchNextQuestion([]);
   }
 
-  // ── Odeslání hlavní odpovědi → spustí follow-up otázky ──────────────────────
-  async function submitMainAnswer() {
-    const currentQ = questions[answers.length];
-    if (!currentQ || !currentAnswer.trim() || !selectedProject) return;
+  // ── Odeslání odpovědi → fetch follow-up ────────────────────────────────────
 
-    const mainAnswer = currentAnswer.trim();
-    setCurrentAnswer("");
-    setPendingMain({ question: currentQ, answer: mainAnswer });
-    setFollowUp({ status: "loading" });
+  async function handleSend() {
+    if (!inputValue.trim() || !currentQ || status !== "awaiting_answer") return;
+
+    const answer = inputValue.trim();
+    setInputValue("");
+
+    push({ id: uid(), role: "user", text: answer });
+
+    const pending = { q: currentQ, answer };
+    setPendingMain(pending);
+    setCurrentQ(null);
+    setStatus("loading_fu");
+    push({ id: uid(), role: "ai", kind: "thinking", text: "Generuji doplňující otázky..." });
 
     try {
       const r = await fetch("/api/guide/followup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          questionName: currentQ.text,
-          questionHint: currentQ.hint,
-          userAnswer: mainAnswer,
+          questionName: pending.q.text,
+          questionHint: pending.q.hint,
+          userAnswer: answer,
           framework,
           phase
         })
       });
       const json = await r.json();
-      const followUps: string[] = json.followUps ?? [];
+      removeThinking();
+      const fus: string[] = json.followUps ?? [];
 
-      if (followUps.length > 0) {
-        setFollowUp({ status: "ready", questions: followUps, answers: {} });
+      if (fus.length > 0) {
+        push({ id: uid(), role: "ai", kind: "followup", questions: fus, answers: {}, submitted: false });
+        setStatus("awaiting_fu");
       } else {
-        // Žádné follow-up → přejdi rovnou dál
-        setFollowUp({ status: "idle" });
         setPendingMain(null);
-        await advanceToNext(currentQ, mainAnswer, {});
+        await advanceToNext(pending.q, answer, {});
       }
     } catch {
-      // Chyba follow-up není fatální
-      setFollowUp({ status: "idle" });
+      removeThinking();
       setPendingMain(null);
-      await advanceToNext(currentQ, mainAnswer, {});
+      await advanceToNext(pending.q, answer, {});
     }
   }
 
-  // ── Pokračovat po vyplnění (nebo přeskočení) follow-up otázek ────────────────
-  async function handleContinue() {
+  // ── Pokračovat po follow-up ─────────────────────────────────────────────────
+
+  async function handleFollowUpContinue() {
     if (!pendingMain) return;
-    const { question, answer } = pendingMain;
-    const fuAnswers = followUp.status === "ready" ? followUp.answers : {};
-    setFollowUp({ status: "idle" });
+
+    // Přečti odpovědi ze state (closure je aktuální v okamžiku kliknutí)
+    let fuAnswers: Record<number, string> = {};
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role === "ai" && m.kind === "followup" && !m.submitted) {
+        fuAnswers = m.answers;
+        break;
+      }
+    }
+
+    // Označ followup jako odeslaný
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.role === "ai" && m.kind === "followup" && !m.submitted ? { ...m, submitted: true } : m
+      )
+    );
+
+    const { q, answer } = pendingMain;
     setPendingMain(null);
-    await advanceToNext(question, answer, fuAnswers);
+    await advanceToNext(q, answer, fuAnswers);
   }
 
-  // ── Posun na další otázku (ukládá odpověď včetně follow-up) ─────────────────
-  async function advanceToNext(
-    question: GuideQuestion,
-    mainAnswer: string,
-    fuAnswers: Record<number, string>
-  ) {
+  // ── Posun na další otázku ───────────────────────────────────────────────────
+
+  async function advanceToNext(q: GuideQ, mainAnswer: string, fuAnswers: Record<number, string>) {
     const fuLines = Object.entries(fuAnswers)
       .filter(([, v]) => v.trim())
       .map(([k, v]) => `(Doplněk ${Number(k) + 1}: ${v.trim()})`)
       .join(" ");
 
     const combined = fuLines ? `${mainAnswer} ${fuLines}` : mainAnswer;
-
-    const nextAnswers: Answer[] = [
-      ...answers,
-      { questionId: question.id, question: question.text, answer: combined }
-    ];
-    setAnswers(nextAnswers);
-    await fetchNextQuestion(nextAnswers);
+    const next: Answer[] = [...answers, { questionId: q.id, question: q.text, answer: combined }];
+    setAnswers(next);
+    await fetchNextQuestion(next);
   }
 
-  // ── Odvozené hodnoty ─────────────────────────────────────────────────────────
-  const currentQ = questions[answers.length] ?? null;
-  const showMainQ = currentQ && !loading && followUp.status === "idle" && !pendingMain;
-  const totalQuestions = questions.length;
-  const answeredCount = answers.length;
-  const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  // ── Render zprávy ───────────────────────────────────────────────────────────
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  function renderMsg(msg: ChatMsg) {
+    if (msg.role === "user") {
+      return (
+        <div key={msg.id} className="flex justify-end">
+          <div className="max-w-[78%] rounded-2xl rounded-tr-sm bg-brand-600 px-4 py-3 text-sm leading-relaxed text-white shadow-sm">
+            {msg.text}
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.kind === "thinking") {
+      return (
+        <div key={msg.id} className="flex items-start gap-3">
+          <AiAvatar />
+          <div className="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="flex gap-1">
+                {[0, 150, 300].map((delay) => (
+                  <span
+                    key={delay}
+                    className="inline-block h-2 w-2 animate-bounce rounded-full bg-slate-400"
+                    style={{ animationDelay: `${delay}ms` }}
+                  />
+                ))}
+              </span>
+              <span className="text-xs text-slate-500">{msg.text}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.kind === "question") {
+      return (
+        <div key={msg.id} className="flex items-start gap-3">
+          <AiAvatar />
+          <div className="max-w-[78%] space-y-1 rounded-2xl rounded-tl-sm border border-brand-200 bg-white px-4 py-3 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+              🟨 {msg.q.text}
+            </p>
+            <p className="text-sm text-slate-500">{msg.q.hint}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.kind === "followup") {
+      return (
+        <div key={msg.id} className="flex items-start gap-3">
+          <AiAvatar />
+          <div className="flex-1 space-y-3 rounded-2xl rounded-tl-sm border border-brand-200 bg-brand-50 p-4 shadow-sm">
+            <p className="text-sm font-semibold text-brand-800">
+              💬 Doplňující otázky{" "}
+              <span className="font-normal text-brand-600">(volitelné – prohloubí výstup)</span>
+            </p>
+
+            {msg.questions.map((q, i) => (
+              <div key={i} className="space-y-1.5">
+                <p className="text-sm text-slate-700">
+                  <span className="mr-2 inline-block rounded bg-brand-100 px-1.5 py-0.5 text-xs font-bold text-brand-700">
+                    {i + 1}
+                  </span>
+                  {q}
+                </p>
+                {msg.submitted ? (
+                  msg.answers[i] ? (
+                    <p className="pl-7 text-sm text-slate-500">{msg.answers[i]}</p>
+                  ) : null
+                ) : (
+                  <textarea
+                    rows={2}
+                    value={msg.answers[i] ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMessages((prev) =>
+                        prev.map((m) =>
+                          m.id === msg.id && m.role === "ai" && m.kind === "followup"
+                            ? { ...m, answers: { ...m.answers, [i]: val } }
+                            : m
+                        )
+                      );
+                    }}
+                    className="ml-7 w-[calc(100%-1.75rem)] rounded-lg border border-brand-100 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
+                    placeholder="Volitelná odpověď..."
+                  />
+                )}
+              </div>
+            ))}
+
+            {msg.submitted ? (
+              <p className="text-xs text-brand-600">✓ Odpovědi uloženy</p>
+            ) : (
+              <button
+                onClick={handleFollowUpContinue}
+                className="mt-1 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                Přejít na další otázku →
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.kind === "output") {
+      return (
+        <div key={msg.id} className="flex items-start gap-3">
+          <AiAvatar />
+          <div className="flex-1 min-w-0">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-green-700">
+              ✅ PM výstup vygenerován
+            </p>
+            <AiOutput content={msg.content} />
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.kind === "error") {
+      return (
+        <div key={msg.id} className="flex items-start gap-3">
+          <AiAvatar />
+          <div className="rounded-2xl rounded-tl-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+            {msg.text}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  }
+
+  // ── Vstupní area ────────────────────────────────────────────────────────────
+
+  const canSend = status === "awaiting_answer" && inputValue.trim().length > 0;
+
+  function renderInput() {
+    if (status === "done") {
+      return (
+        <p className="py-3 text-center text-sm text-slate-500">
+          ✅ Průvodce dokončen. Klikni &ldquo;Spustit znovu&rdquo; výše.
+        </p>
+      );
+    }
+    if (status === "awaiting_fu") {
+      return (
+        <p className="py-3 text-center text-sm text-slate-400">
+          Odpověz na doplňující otázky výše a klikni &ldquo;Přejít na další →&rdquo;
+        </p>
+      );
+    }
+    if (status === "loading_q" || status === "loading_fu") {
+      return <p className="py-3 text-center text-sm text-slate-400">AI přemýšlí...</p>;
+    }
+
+    return (
+      <div className="flex items-end gap-3">
+        <textarea
+          ref={inputRef}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          rows={3}
+          disabled={status !== "awaiting_answer"}
+          placeholder="Tvoje odpověď… (Enter = odeslat, Shift+Enter = nový řádek)"
+          className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-brand-600 focus:outline-none disabled:opacity-40"
+        />
+        <button
+          onClick={handleSend}
+          disabled={!canSend}
+          className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40"
+          title="Odeslat (Enter)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+            <path d="M3.105 2.289a.75.75 0 00-.826.95l1.414 4.925A1.5 1.5 0 005.135 9.25h6.115a.75.75 0 010 1.5H5.135a1.5 1.5 0 00-1.442 1.086l-1.414 4.926a.75.75 0 00.826.95 28.896 28.896 0 0015.293-7.154.75.75 0 000-1.115A28.897 28.897 0 003.105 2.289z" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
+  // ── Render stránky ──────────────────────────────────────────────────────────
+
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <div className="mb-8">
+    <main className="mx-auto flex max-w-3xl flex-col px-6 py-10" style={{ height: "100dvh" }}>
+      {/* Nadpis */}
+      <div className="mb-4 shrink-0">
         <h1 className="text-2xl font-bold text-slate-900">Průvodce PM otázkami</h1>
         <p className="mt-1 text-sm text-slate-500">
-          AI klade otázky dle fáze projektu. Po každé odpovědi nabídne 3 doplňující otázky pro
-          hlubší výstup.
+          Konverzační průvodce – AI klade otázky, nabídne 3 doplňující a na konci vygeneruje PM dokumentaci.
         </p>
       </div>
 
-      {/* ── Konfigurace (před startem / po dokončení) ──────────────────────────── */}
-      {!started || finalOutput ? (
-        <div className="mb-6 space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      {/* Konfigurace – před startem nebo po dokončení */}
+      {!started || status === "done" ? (
+        <div className="mb-4 shrink-0 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">Projekt</label>
@@ -220,7 +454,11 @@ export default function GuidePage() {
                   }
                 }}
               >
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {projects.length === 0 ? (
+                  <option value="">– žádné projekty –</option>
+                ) : (
+                  projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)
+                )}
               </select>
             </div>
             <div>
@@ -250,142 +488,24 @@ export default function GuidePage() {
             disabled={!selectedProject}
             className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
           >
-            {finalOutput ? "Spustit znovu" : "Spustit průvodce"}
+            {status === "done" ? "🔄 Spustit znovu" : "💬 Spustit průvodce"}
           </button>
         </div>
       ) : null}
 
-      {/* ── Průběh průvodce ────────────────────────────────────────────────────── */}
-      {started && !finalOutput ? (
-        <div className="space-y-5">
-          {/* Progress bar */}
-          {totalQuestions > 0 ? (
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-slate-500">
-                <span>Otázka {Math.min(answeredCount + 1, totalQuestions)} z {totalQuestions}</span>
-                <span>{progress} %</span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                <div
-                  className="h-full rounded-full bg-brand-600 transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          ) : null}
+      {/* Chat plocha */}
+      {started ? (
+        <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+          {/* Zprávy */}
+          <div className="flex-1 space-y-4 overflow-y-auto p-5">
+            {messages.map((msg) => renderMsg(msg))}
+            <div ref={bottomRef} />
+          </div>
 
-          {/* Zodpovězené otázky */}
-          {answers.length > 0 ? (
-            <div className="space-y-2">
-              {answers.map((a, i) => (
-                <div key={i} className="rounded-lg bg-slate-50 px-4 py-3 text-sm">
-                  <p className="font-medium text-slate-700">{a.question}</p>
-                  <p className="mt-1 text-slate-500">{a.answer}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {/* Follow-up blok – načítání */}
-          {followUp.status === "loading" ? (
-            <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-brand-50 p-4">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-              <span className="text-sm text-brand-700">Generuji doplňující otázky...</span>
-            </div>
-          ) : null}
-
-          {/* Follow-up blok – 3 otázky připraveny */}
-          {followUp.status === "ready" ? (
-            <div className="space-y-4 rounded-xl border border-brand-200 bg-brand-50 p-5">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-brand-800">💬 Doplňující otázky</span>
-                <span className="text-xs text-brand-600">(volitelné – prohloubí výstup)</span>
-              </div>
-              <div className="space-y-3">
-                {followUp.questions.map((q, i) => (
-                  <div key={i} className="rounded-lg border border-brand-100 bg-white p-3">
-                    <p className="mb-1.5 text-sm text-slate-700">
-                      <span className="mr-2 inline-block rounded bg-brand-100 px-1.5 py-0.5 text-xs font-bold text-brand-700">
-                        {i + 1}
-                      </span>
-                      {q}
-                    </p>
-                    <textarea
-                      rows={2}
-                      value={followUp.answers[i] ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFollowUp((prev) =>
-                          prev.status === "ready"
-                            ? { ...prev, answers: { ...prev.answers, [i]: val } }
-                            : prev
-                        );
-                      }}
-                      className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-brand-400 focus:outline-none"
-                      placeholder="Volitelná odpověď..."
-                    />
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={handleContinue}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-              >
-                Přejít na další otázku →
-              </button>
-            </div>
-          ) : null}
-
-          {/* Aktuální hlavní otázka */}
-          {showMainQ ? (
-            <div className="rounded-xl border border-brand-200 bg-white p-5 shadow-sm">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-brand-600">
-                🟨 {currentQ.text}
-              </p>
-              <p className="mb-3 text-sm text-slate-500">{currentQ.hint}</p>
-              <textarea
-                value={currentAnswer}
-                onChange={(e) => setCurrentAnswer(e.target.value)}
-                rows={5}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none"
-                placeholder="Tvoje odpověď..."
-                onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) submitMainAnswer(); }}
-              />
-              <div className="mt-3 flex items-center gap-3">
-                <button
-                  onClick={submitMainAnswer}
-                  disabled={!currentAnswer.trim() || loading}
-                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-                >
-                  Odpovědět →
-                </button>
-                <span className="text-xs text-slate-400">nebo Cmd+Enter</span>
-              </div>
-            </div>
-          ) : loading && followUp.status === "idle" ? (
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-5">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-              <span className="text-sm text-slate-500">
-                {answeredCount > 0 && answeredCount >= totalQuestions - 1
-                  ? "AI generuje výstup..."
-                  : "Načítám další otázku..."}
-              </span>
-            </div>
-          ) : null}
-
-          {error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {/* ── Finální výstup ─────────────────────────────────────────────────────── */}
-      {finalOutput ? (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Výstup průvodce</h2>
-          <AiOutput content={finalOutput} />
+          {/* Vstupní area – přilepená ke dnu */}
+          <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-5 py-4">
+            {renderInput()}
+          </div>
         </div>
       ) : null}
     </main>
