@@ -485,8 +485,8 @@ function GuideChat() {
         </p>
       </div>
 
-      {/* Konfigurace – před startem nebo po dokončení */}
-      {!started || status === "done" ? (
+      {/* Konfigurace – před startem (bez projectId) nebo po dokončení */}
+      {(!started && !projectIdParam) || status === "done" ? (
         <div className="mb-4 shrink-0 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
@@ -539,6 +539,24 @@ function GuideChat() {
           >
             {status === "done" ? "🔄 Spustit znovu" : "💬 Spustit průvodce"}
           </button>
+        </div>
+      ) : null}
+
+      {/* Loading placeholder – při příchodu z projektu před auto-startem */}
+      {!started && projectIdParam ? (
+        <div className="mb-4 shrink-0 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <span className="flex gap-1">
+              {[0, 150, 300].map((delay) => (
+                <span
+                  key={delay}
+                  className="inline-block h-2 w-2 animate-bounce rounded-full bg-slate-400"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
+            </span>
+            Spouštím průvodce…
+          </div>
         </div>
       ) : null}
 
