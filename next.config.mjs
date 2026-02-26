@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  // pdf-parse a mammoth jsou CJS balíčky – musí zůstat jako Node.js externals,
-  // Next.js 14.1+ používá serverExternalPackages (nahradilo experimental.serverComponentsExternalPackages)
-  serverExternalPackages: ["pdf-parse", "mammoth"],
   experimental: {
-    typedRoutes: true
+    // pdf-parse a mammoth jsou CJS balíčky – Next.js 14.x je musí načítat
+    // nativně přes Node.js require(), ne přes webpack bundle.
+    // (V Next.js 15+ se tento klíč přejmenoval na serverExternalPackages)
+    serverComponentsExternalPackages: ["pdf-parse", "mammoth"]
   }
 };
 
