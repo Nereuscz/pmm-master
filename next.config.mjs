@@ -2,7 +2,8 @@
 const nextConfig = {
   output: "standalone",
   experimental: {
-    typedRoutes: true
+    typedRoutes: true,
+    serverComponentsExternalPackages: ["pdf-parse", "mammoth"]
   }
 };
 

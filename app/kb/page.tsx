@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type DocumentRow = {
   id: string;
@@ -18,11 +18,16 @@ type SyncLog = {
   synced_at: string;
 };
 
+type UploadMode = "text" | "file";
+
 export default function KnowledgeBasePage() {
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [logs, setLogs] = useState<SyncLog[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadMode, setUploadMode] = useState<UploadMode>("file");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function reload() {
     const [docsRes, logsRes] = await Promise.all([fetch("/api/kb/documents"), fetch("/api/kb/sync/logs")]);
@@ -38,26 +43,51 @@ export default function KnowledgeBasePage() {
     reload().catch((e) => setError(e instanceof Error ? e.message : "Unknown error"));
   }, []);
 
-  async function createDocument(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
+
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
     try {
-      const payload = {
-        title: String(formData.get("title") || ""),
-        category: String(formData.get("category") || ""),
-        source: "upload",
-        visibility: "global",
-        content: String(formData.get("content") || "")
-      };
-      const response = await fetch("/api/kb/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const json = await response.json();
-      if (!response.ok) {
-        throw new Error(json.error || "Uložení dokumentu selhalo.");
+      if (uploadMode === "file") {
+        const fileField = data.get("file");
+        if (!(fileField instanceof File) || fileField.size === 0) {
+          throw new Error("Vyberte soubor.");
+        }
+        const fd = new FormData();
+        fd.append("file", fileField);
+        fd.append("title", String(data.get("title") || fileField.name));
+        fd.append("category", String(data.get("category") || ""));
+        fd.append("visibility", "global");
+
+        const response = await fetch("/api/kb/upload", { method: "POST", body: fd });
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error || "Nahrání selhalo.");
+        setSuccess(`Soubor nahrán (${json.chunksCount} chunků, ${json.extractedLength} znaků).`);
+      } else {
+        const payload = {
+          title: String(data.get("title") || ""),
+          category: String(data.get("category") || ""),
+          source: "upload",
+          visibility: "global",
+          content: String(data.get("content") || "")
+        };
+        const response = await fetch("/api/kb/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error || "Uložení dokumentu selhalo.");
+        setSuccess(`Dokument uložen (${json.chunksCount} chunků).`);
       }
+
+      form.reset();
+      if (fileInputRef.current) fileInputRef.current.value = "";
       await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
@@ -69,6 +99,7 @@ export default function KnowledgeBasePage() {
   async function runSimulatedSharepointSync() {
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
       const payload = {
         sourcePath: "/sites/jic/shared/pm-docs",
@@ -88,9 +119,8 @@ export default function KnowledgeBasePage() {
         body: JSON.stringify(payload)
       });
       const json = await response.json();
-      if (!response.ok) {
-        throw new Error(json.error || "Sync selhal.");
-      }
+      if (!response.ok) throw new Error(json.error || "Sync selhal.");
+      setSuccess("SharePoint sync dokončen.");
       await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
@@ -107,39 +137,82 @@ export default function KnowledgeBasePage() {
       </p>
 
       {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+      {success ? <p className="mt-4 text-sm text-green-700">{success}</p> : null}
 
       <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Nahrát dokument</h2>
-        <form action={createDocument} className="mt-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Nahrát dokument</h2>
+          <div className="flex rounded-lg border border-slate-200 p-1 text-sm">
+            <button
+              type="button"
+              onClick={() => setUploadMode("file")}
+              className={`rounded-md px-3 py-1 transition-colors ${
+                uploadMode === "file"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              Soubor
+            </button>
+            <button
+              type="button"
+              onClick={() => setUploadMode("text")}
+              className={`rounded-md px-3 py-1 transition-colors ${
+                uploadMode === "text"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              Text
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <input
             name="title"
-            placeholder="Název dokumentu"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
+            placeholder={uploadMode === "file" ? "Název dokumentu (volitelné – bere se z názvu souboru)" : "Název dokumentu"}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
           <input
             name="category"
             placeholder="Kategorie (např. Strategie)"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
-          <textarea
-            name="content"
-            rows={6}
-            placeholder="Obsah dokumentu..."
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
-          />
+
+          {uploadMode === "file" ? (
+            <div className="rounded-lg border-2 border-dashed border-slate-300 px-4 py-6 text-center">
+              <p className="text-sm text-slate-500">PDF, DOCX, DOC, TXT, MD — max 20 MB</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                name="file"
+                accept=".pdf,.docx,.doc,.txt,.md"
+                className="mt-2 text-sm"
+              />
+            </div>
+          ) : (
+            <textarea
+              name="content"
+              rows={6}
+              placeholder="Obsah dokumentu..."
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          )}
+
           <div className="flex gap-3">
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+              className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
             >
-              Uložit dokument
+              {loading ? "Ukládám…" : "Uložit dokument"}
             </button>
             <button
               type="button"
               disabled={loading}
               onClick={runSimulatedSharepointSync}
-              className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-800 hover:bg-slate-100 disabled:opacity-50"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:opacity-50"
             >
               Spustit simulated SharePoint sync
             </button>
@@ -149,7 +222,7 @@ export default function KnowledgeBasePage() {
 
       <section className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Dokumenty</h2>
+          <h2 className="text-lg font-semibold">Dokumenty ({documents.length})</h2>
           <div className="mt-4 space-y-3">
             {documents.map((doc) => (
               <article key={doc.id} className="rounded-lg border border-slate-200 p-3 text-sm">

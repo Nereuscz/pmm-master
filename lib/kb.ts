@@ -11,6 +11,9 @@ export async function upsertDocumentWithChunks(input: {
   sharepointId?: string;
   uploadedBy?: string;
   visibility: "global" | "team";
+  filePath?: string;
+  fileSize?: number;
+  mimeType?: string;
 }) {
   const db = ensureDb();
   const now = new Date().toISOString();
@@ -27,6 +30,9 @@ export async function upsertDocumentWithChunks(input: {
         uploaded_by: input.uploadedBy ?? null,
         source_text: input.content,
         visibility: input.visibility,
+        file_path: input.filePath ?? null,
+        file_size: input.fileSize ?? null,
+        mime_type: input.mimeType ?? null,
         created_at: now
       })
       .select("id")
