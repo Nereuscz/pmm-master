@@ -64,6 +64,7 @@ function GuideChat() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const autoStartedRef = useRef(false);
 
   // ── Projekty ────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,21 @@ function GuideChat() {
       .catch(() => undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Auto-start při příchodu z projektu ─────────────────────────────────────
+
+  useEffect(() => {
+    if (
+      projectIdParam &&
+      selectedProject?.id === projectIdParam &&
+      !started &&
+      !autoStartedRef.current
+    ) {
+      autoStartedRef.current = true;
+      handleStart();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject]);
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────────
 
