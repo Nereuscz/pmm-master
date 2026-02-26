@@ -6,6 +6,7 @@ import { retrieveTopChunks } from "@/lib/rag";
 import { ensureDb, getOrCreateProjectContext, requireProject } from "@/lib/db";
 import { summarizeForContext } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { searchMarket, buildQueryFromAnswers } from "@/lib/tavily";
 
 const schema = z.object({
   projectId: z.string().uuid(),
@@ -49,19 +50,27 @@ export async function POST(request: NextRequest) {
       .map((item) => `Otázka: ${item.question}\nOdpověď: ${item.answer}`)
       .join("\n\n");
 
-    const projectContext = await getOrCreateProjectContext(input.projectId);
-    const kbChunks = await retrieveTopChunks({
-      projectId: input.projectId,
-      queryText: transcriptFromAnswers,
-      limit: 6
-    });
+    const marketQuery = buildQueryFromAnswers(
+      input.answers.map((a) => ({ question: a.question, answer: a.answer }))
+    );
+
+    const [projectContext, kbChunks, marketInsight] = await Promise.all([
+      getOrCreateProjectContext(input.projectId),
+      retrieveTopChunks({
+        projectId: input.projectId,
+        queryText: transcriptFromAnswers,
+        limit: 6
+      }),
+      searchMarket(marketQuery)
+    ]);
 
     const generated = await generateStructuredOutput({
       phase: input.phase,
       framework: input.framework,
       transcript: transcriptFromAnswers,
       projectContext: projectContext.accumulated_context,
-      ragContext: kbChunks.map((item) => item.content)
+      ragContext: kbChunks.map((item) => item.content),
+      marketInsight: marketInsight || undefined
     });
 
     const { data: session, error } = await db

@@ -5,6 +5,7 @@ import { processTranscriptSchema } from "@/lib/schemas";
 import { ensureDb, getLastSession, getOrCreateProjectContext, requireProject } from "@/lib/db";
 import { detectChangeSignals, summarizeForContext } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { searchMarket, buildQueryFromTranscript } from "@/lib/tavily";
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser();
@@ -43,11 +44,15 @@ export async function POST(request: NextRequest) {
     }
     jobId = job.id;
 
-    const chunks = await retrieveTopChunks({
-      projectId: input.projectId,
-      queryText: input.transcript,
-      limit: 8
-    });
+    const marketQuery = buildQueryFromTranscript(input.transcript);
+    const [chunks, marketInsight] = await Promise.all([
+      retrieveTopChunks({
+        projectId: input.projectId,
+        queryText: input.transcript,
+        limit: 8
+      }),
+      searchMarket(marketQuery)
+    ]);
 
     const ragContext = chunks.map((chunk) => chunk.content);
     const lowKbConfidence = ragContext.length === 0;
@@ -60,7 +65,8 @@ export async function POST(request: NextRequest) {
       framework: input.framework,
       transcript: input.transcript,
       projectContext: projectContextRow.accumulated_context,
-      ragContext: [...changeSignals, ...ragContext]
+      ragContext: [...changeSignals, ...ragContext],
+      marketInsight: marketInsight || undefined
     });
 
     const { data: insertedSession, error: sessionError } = await db
@@ -118,7 +124,8 @@ Shrnutí: ${aiResult.content}`
       meta: {
         lowKbConfidence,
         kbChunksUsed: chunks.length,
-        changeSignals
+        changeSignals,
+        marketInsightUsed: !!marketInsight
       }
     });
   } catch (error) {

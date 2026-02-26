@@ -5,7 +5,8 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().min(1).optional(),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-  ASANA_BASE_URL: z.string().url().default("https://app.asana.com/api/1.0")
+  ASANA_BASE_URL: z.string().url().default("https://app.asana.com/api/1.0"),
+  TAVILY_API_KEY: z.string().min(1).optional()
 });
 
 export const env = envSchema.parse({
@@ -13,5 +14,6 @@ export const env = envSchema.parse({
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   SUPABASE_URL: process.env.SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  ASANA_BASE_URL: process.env.ASANA_BASE_URL
+  ASANA_BASE_URL: process.env.ASANA_BASE_URL,
+  TAVILY_API_KEY: process.env.TAVILY_API_KEY
 });

@@ -146,6 +146,16 @@ FORMÁTOVÁNÍ (Asana-ready)
 - Žádné prázdné sekce, žádné opakování nadpisů bez obsahu.
 
 ═══════════════════════════════
+PRAVIDLO 4 – MARKET INSIGHT (sekce 🌐)
+═══════════════════════════════
+Pokud jsou k dispozici data "Market Intelligence (Tavily)" v kontextu:
+- Přidej sekci ### 🌐 **Market Insight**: Co říká trh?
+- Porovnej popisovaný produkt/projekt s nalezenými podobnými řešeními.
+- Zdůrazni unikátní hodnotu nebo bílá místa na trhu.
+- Uveď max. 3–5 odrážek, stručně a analyticky.
+- Pokud data nejsou k dispozici, sekci VYNECH úplně.
+
+═══════════════════════════════
 NA KONCI výstupu vždy přidej:
 ═══════════════════════════════
 ---
@@ -162,6 +172,7 @@ export async function generateStructuredOutput(input: {
   transcript: string;
   projectContext: string;
   ragContext: string[];
+  marketInsight?: string;
 }) {
   if (!anthropic) {
     return {
@@ -187,6 +198,12 @@ export async function generateStructuredOutput(input: {
   if (input.ragContext.length > 0) {
     parts.push(
       `**Relevantní znalostní báze:**\n${input.ragContext.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
+    );
+  }
+
+  if (input.marketInsight?.trim()) {
+    parts.push(
+      `**Market Intelligence (Tavily web search – použij pro sekci 🌐 Market Insight):**\n${input.marketInsight}`
     );
   }
 
