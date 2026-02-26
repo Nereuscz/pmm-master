@@ -1,7 +1,4 @@
 import mammoth from "mammoth";
-// pdf-parse 1.x exports a plain function (CommonJS)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
 
 export type ParseResult = {
   text: string;
@@ -10,6 +7,10 @@ export type ParseResult = {
 
 export async function parseFileBuffer(buffer: Buffer, mimeType: string): Promise<string> {
   if (mimeType === "application/pdf") {
+    // Lazy require inside the function – prevents Next.js from bundling pdf-parse
+    // into the edge/browser bundle. Must stay here, not at module level.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pdfParse = require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
     const result = await pdfParse(buffer);
     return result.text;
   }
