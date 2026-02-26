@@ -25,6 +25,8 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/projects")
@@ -36,6 +38,23 @@ export default function DashboardPage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Chyba načítání"))
       .finally(() => setLoading(false));
   }, []);
+
+  async function deleteProject(id: string) {
+    setDeletingId(id);
+    setConfirmId(null);
+    try {
+      const r = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+      if (!r.ok) {
+        const json = await r.json();
+        throw new Error(json.error || "Smazání selhalo");
+      }
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Smazání selhalo");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
@@ -53,7 +72,7 @@ export default function DashboardPage() {
       </div>
 
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error}
         </div>
       ) : null}
@@ -81,22 +100,23 @@ export default function DashboardPage() {
               key={project.id}
               className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
             >
-              <div className="flex items-center gap-4">
-                <div>
-                  <Link
-                    href={`/projects/${project.id}`}
-                    className="font-semibold text-slate-900 hover:text-brand-700"
-                  >
-                    {project.name}
-                  </Link>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                    <span>{project.framework}</span>
-                    <span>·</span>
-                    <span>{new Date(project.created_at).toLocaleDateString("cs-CZ")}</span>
-                  </div>
+              {/* Levá část – název + meta */}
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="font-semibold text-slate-900 hover:text-brand-700"
+                >
+                  {project.name}
+                </Link>
+                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                  <span>{project.framework}</span>
+                  <span>·</span>
+                  <span>{new Date(project.created_at).toLocaleDateString("cs-CZ")}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+
+              {/* Pravá část – badge + akce */}
+              <div className="ml-4 flex shrink-0 items-center gap-2">
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
                     PHASE_COLORS[project.phase] ?? "bg-slate-100 text-slate-700"
@@ -104,12 +124,46 @@ export default function DashboardPage() {
                 >
                   {project.phase}
                 </span>
+
                 <Link
                   href={`/process?projectId=${project.id}`}
                   className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Zpracovat →
                 </Link>
+
+                {/* Mazání – inline potvrzení */}
+                {deletingId === project.id ? (
+                  <div className="flex h-7 w-7 items-center justify-center">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
+                  </div>
+                ) : confirmId === project.id ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-slate-500">Smazat?</span>
+                    <button
+                      onClick={() => deleteProject(project.id)}
+                      className="rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
+                    >
+                      Ano
+                    </button>
+                    <button
+                      onClick={() => setConfirmId(null)}
+                      className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                      Ne
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmId(project.id)}
+                    title="Smazat projekt"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                      <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </article>
           ))}
