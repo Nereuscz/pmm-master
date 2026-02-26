@@ -98,13 +98,13 @@ export default function DashboardPage() {
           {projects.map((project) => (
             <article
               key={project.id}
-              className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+              className="relative flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:border-brand-300 hover:shadow-md"
             >
-              {/* Levá část – název + meta */}
+              {/* Levá část – název + meta (celá karta je klikatelná přes stretched link) */}
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/projects/${project.id}`}
-                  className="font-semibold text-slate-900 hover:text-brand-700"
+                  className="font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-brand-700"
                 >
                   {project.name}
                 </Link>
@@ -115,8 +115,8 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Pravá část – badge + akce */}
-              <div className="ml-4 flex shrink-0 items-center gap-2">
+              {/* Pravá část – badge + akce (z-10 aby překryly stretched link) */}
+              <div className="relative z-10 ml-4 flex shrink-0 items-center gap-2">
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
                     PHASE_COLORS[project.phase] ?? "bg-slate-100 text-slate-700"
