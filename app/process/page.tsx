@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 type ProcessResponse = {
@@ -19,7 +18,8 @@ type Project = {
   name: string;
 };
 
-export default function ProcessPage() {
+// Vnitřní komponenta – používá useSearchParams(), musí být uvnitř <Suspense>
+function ProcessForm() {
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("projectId");
   const [loading, setLoading] = useState(false);
@@ -67,23 +67,14 @@ export default function ProcessPage() {
   }
 
   async function onTranscriptFileChange(file: File | null) {
-    if (!file) {
-      return;
-    }
+    if (!file) return;
     const text = await file.text();
     const textarea = document.querySelector<HTMLTextAreaElement>("textarea[name='transcript']");
-    if (textarea) {
-      textarea.value = text;
-    }
+    if (textarea) textarea.value = text;
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
-      <h1 className="text-2xl font-bold">Zpracování transkriptu</h1>
-      <p className="mt-2 text-slate-600">
-        První funkční UI napojení na AI processing endpoint.
-      </p>
-
+    <>
       <form
         action={onSubmit}
         className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
@@ -94,7 +85,7 @@ export default function ProcessPage() {
           </p>
         ) : null}
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">Project ID</span>
+          <span className="mb-1 block text-sm font-medium">Projekt</span>
           <select
             name="projectId"
             defaultValue={projectIdParam ?? undefined}
@@ -116,17 +107,11 @@ export default function ProcessPage() {
               defaultValue="Plánování"
               className="w-full rounded-lg border border-slate-300 px-3 py-2"
             >
-              {[
-                "Iniciace",
-                "Plánování",
-                "Realizace",
-                "Closing",
-                "Gate 1",
-                "Gate 2",
-                "Gate 3"
-              ].map((phase) => (
-                <option key={phase}>{phase}</option>
-              ))}
+              {["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"].map(
+                (phase) => (
+                  <option key={phase}>{phase}</option>
+                )
+              )}
             </select>
           </label>
           <label className="block">
@@ -161,7 +146,7 @@ export default function ProcessPage() {
         <button
           type="submit"
           disabled={loading || projects.length === 0}
-          className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="rounded-lg bg-slate-800 px-4 py-2 font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {loading ? "Zpracovávám..." : "Zpracovat"}
         </button>
@@ -176,8 +161,7 @@ export default function ProcessPage() {
       {result ? (
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-3 text-sm text-slate-600">
-            Session ID: {result.sessionId} |{" "}
-            KB chunks used: {result.meta.kbChunksUsed} | lowKBConfidence:{" "}
+            Session ID: {result.sessionId} | KB chunks: {result.meta.kbChunksUsed} | lowKBConfidence:{" "}
             {String(result.meta.lowKbConfidence)}
           </div>
           {result.meta.changeSignals.length > 0 ? (
@@ -190,6 +174,21 @@ export default function ProcessPage() {
           <pre className="whitespace-pre-wrap text-sm">{result.output}</pre>
         </section>
       ) : null}
+    </>
+  );
+}
+
+// Wrapper stránka – obaluje ProcessForm do <Suspense> kvůli useSearchParams()
+export default function ProcessPage() {
+  return (
+    <main className="mx-auto max-w-5xl px-6 py-10">
+      <h1 className="text-2xl font-bold">Zpracování transkriptu</h1>
+      <p className="mt-2 text-slate-600">
+        Nahraj nebo vlož transkript schůzky a nech AI extrahovat úkoly a doporučení.
+      </p>
+      <Suspense fallback={<p className="mt-6 text-slate-500">Načítám...</p>}>
+        <ProcessForm />
+      </Suspense>
     </main>
   );
 }
