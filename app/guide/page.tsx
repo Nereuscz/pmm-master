@@ -14,6 +14,7 @@ type GuideQ = { id: string; text: string; hint: string };
 type ChatMsg =
   | { id: string; role: "ai"; kind: "question"; q: GuideQ }
   | { id: string; role: "ai"; kind: "thinking"; text: string }
+  | { id: string; role: "ai"; kind: "clarification"; text: string }
   | { id: string; role: "ai"; kind: "followup"; questions: string[]; answers: Record<number, string>; submitted: boolean }
   | { id: string; role: "ai"; kind: "output"; content: string; sessionId?: string; projectId?: string }
   | { id: string; role: "ai"; kind: "error"; text: string }
@@ -23,6 +24,7 @@ type Status =
   | "idle"
   | "loading_q"
   | "awaiting_answer"
+  | "loading_clarify"
   | "loading_fu"
   | "awaiting_fu"
   | "done";
@@ -178,7 +180,7 @@ function GuideChat() {
     fetchNextQuestion([]);
   }
 
-  // ── Odeslání odpovědi → fetch follow-up ────────────────────────────────────
+  // ── Odeslání odpovědi → detekce vysvětlení → follow-up ────────────────────
 
   async function handleSend() {
     if (!inputValue.trim() || !currentQ || status !== "awaiting_answer") return;
@@ -188,6 +190,38 @@ function GuideChat() {
 
     push({ id: uid(), role: "user", text: answer });
 
+    // ── 1. Zkontroluj, zda uživatel nežádá o vysvětlení otázky ───────────────
+    setStatus("loading_clarify");
+    push({ id: uid(), role: "ai", kind: "thinking", text: "Rozumím otázce..." });
+
+    try {
+      const clarifyRes = await fetch("/api/guide/clarify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionName: currentQ.text,
+          questionHint: currentQ.hint,
+          userText: answer,
+          framework,
+          phase
+        })
+      });
+      const clarifyJson = await clarifyRes.json();
+      removeThinking();
+
+      if (clarifyJson.isClarification && clarifyJson.explanation) {
+        // Zobraz vysvětlení a znovu nech uživatele odpovědět (currentQ zůstává)
+        push({ id: uid(), role: "ai", kind: "clarification", text: clarifyJson.explanation });
+        setStatus("awaiting_answer");
+        setTimeout(() => inputRef.current?.focus(), 80);
+        return;
+      }
+    } catch {
+      removeThinking();
+      // Při chybě detekce pokračuj normálně
+    }
+
+    // ── 2. Skutečná odpověď → fetch follow-up ────────────────────────────────
     const pending = { q: currentQ, answer };
     setPendingMain(pending);
     setCurrentQ(null);
@@ -309,6 +343,21 @@ function GuideChat() {
               🟨 {msg.q.text}
             </p>
             <p className="text-[13px] text-[#6e6e73]">{msg.q.hint}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.kind === "clarification") {
+      return (
+        <div key={msg.id} className="flex items-start gap-3">
+          <AiAvatar />
+          <div className="max-w-[78%] space-y-2 rounded-2xl rounded-tl-sm bg-[#f5f0ff] px-4 py-3.5 shadow-apple-sm">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-[#7c3aed]">
+              💡 Vysvětlení
+            </p>
+            <p className="text-[14px] leading-relaxed text-[#3b0764]">{msg.text}</p>
+            <p className="text-[12px] text-[#7c3aed]">↩ Zkus teď odpovědět znovu.</p>
           </div>
         </div>
       );
@@ -438,7 +487,7 @@ function GuideChat() {
         </p>
       );
     }
-    if (status === "loading_q" || status === "loading_fu") {
+    if (status === "loading_q" || status === "loading_fu" || status === "loading_clarify") {
       return <p className="py-3 text-center text-sm text-slate-400">AI přemýšlí...</p>;
     }
 

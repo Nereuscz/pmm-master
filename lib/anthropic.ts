@@ -330,3 +330,52 @@ Vygeneruj 3 doplňující otázky:`
 
   return { followUps: lines };
 }
+
+// ─── Detekce žádosti o vysvětlení otázky ──────────────────────────────────────
+
+export async function generateClarification(input: {
+  questionName: string;
+  questionHint: string;
+  userText: string;
+  framework: string;
+  phase: string;
+}): Promise<{ isClarification: boolean; explanation?: string }> {
+  if (!anthropic) return { isClarification: false };
+
+  const response = await anthropic.messages.create({
+    model: "claude-opus-4-5",
+    max_tokens: 400,
+    system: `Jsi PM coach v konverzačním průvodci. Uživatel odpovídá na PM otázky.
+Tvůj úkol: Rozhodni, zda uživatelův text je ŽÁDOST O VYSVĚTLENÍ otázky (nerozumí, ptá se co to znamená, říká "nevím" apod.), nebo SKUTEČNÁ ODPOVĚĎ na otázku.
+
+Pokud jde o ŽÁDOST O VYSVĚTLENÍ:
+- Vrať JSON: {"isClarification": true, "explanation": "..."}
+- V explanation vysvětli otázku přátelsky a stručně (2–4 věty) v kontextu PM, pak uveď příklad.
+
+Pokud jde o SKUTEČNOU ODPOVĚĎ (i neúplnou, i stručnou):
+- Vrať JSON: {"isClarification": false}
+
+Odpovídej POUZE validním JSON bez dalšího textu.`,
+    messages: [
+      {
+        role: "user",
+        content: `Framework: ${input.framework} | Fáze: ${input.phase}
+Otázka: ${input.questionName} – ${input.questionHint}
+Uživatelův text: "${input.userText}"`
+      }
+    ]
+  });
+
+  const raw = response.content
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("")
+    .trim();
+
+  try {
+    const parsed = JSON.parse(raw) as { isClarification: boolean; explanation?: string };
+    return parsed;
+  } catch {
+    return { isClarification: false };
+  }
+}
