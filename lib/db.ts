@@ -7,6 +7,11 @@ function ensureDb() {
   return supabaseAdmin;
 }
 
+/** Vrátí Supabase klienta nebo null (bez vyhození chyby) – vhodné pro optional DB operace */
+function tryGetDb() {
+  return supabaseAdmin;
+}
+
 export async function requireProject(projectId: string) {
   const db = ensureDb();
   const { data, error } = await db
@@ -114,4 +119,4 @@ export async function getLastSession(projectId: string) {
   return data ?? null;
 }
 
-export { ensureDb };
+export { ensureDb, tryGetDb };

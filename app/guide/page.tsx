@@ -16,7 +16,7 @@ type ChatMsg =
   | { id: string; role: "ai"; kind: "thinking"; text: string }
   | { id: string; role: "ai"; kind: "clarification"; text: string }
   | { id: string; role: "ai"; kind: "followup"; questions: string[]; answers: Record<number, string>; submitted: boolean }
-  | { id: string; role: "ai"; kind: "output"; content: string; sessionId?: string; projectId?: string }
+  | { id: string; role: "ai"; kind: "output"; content: string; sessionId?: string; projectId?: string; saved?: boolean }
   | { id: string; role: "ai"; kind: "error"; text: string }
   | { id: string; role: "user"; text: string };
 
@@ -149,7 +149,8 @@ function GuideChat() {
           kind: "output",
           content: json.output,
           sessionId: json.sessionId,
-          projectId: json.projectId ?? selectedProject?.id
+          projectId: json.projectId ?? selectedProject?.id,
+          saved: json.saved !== false
         });
         setStatus("done");
       } else {
@@ -422,15 +423,22 @@ function GuideChat() {
     }
 
     if (msg.kind === "output") {
+      const isSaved = msg.saved !== false;
       return (
         <div key={msg.id} className="flex items-start gap-3">
           <AiAvatar />
           <div className="flex-1 min-w-0">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-green-700">
-                ✅ PM výstup vygenerován a uložen do projektu
-              </span>
-              {msg.projectId ? (
+              {isSaved ? (
+                <span className="text-xs font-semibold uppercase tracking-wide text-green-700">
+                  ✅ PM výstup vygenerován a uložen do projektu
+                </span>
+              ) : (
+                <span className="text-xs font-semibold uppercase tracking-wide text-amber-600">
+                  ⚠️ PM výstup vygenerován (DB není dostupná – výstup nebyl uložen)
+                </span>
+              )}
+              {isSaved && msg.projectId ? (
                 <Link
                   href={`/projects/${msg.projectId}`}
                   className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-4 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-brand-700"
@@ -440,7 +448,7 @@ function GuideChat() {
               ) : null}
             </div>
             <AiOutput content={msg.content} />
-            {msg.projectId ? (
+            {isSaved && msg.projectId ? (
               <div className="mt-4 rounded-lg border border-brand-100 bg-brand-50 p-3 text-sm text-brand-700">
                 💾 Výstup je uložen v historii projektu. Kdykoli se k němu vrátíš přes{" "}
                 <Link href={`/projects/${msg.projectId}`} className="font-medium underline">
