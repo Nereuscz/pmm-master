@@ -25,6 +25,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [context, setContext] = useState<ContextData | null>(null);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [contextExpanded, setContextExpanded] = useState(false);
+  const [memorySummary, setMemorySummary] = useState<string | null>(null);
+  const [memorySummaryLoading, setMemorySummaryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -112,7 +114,19 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       {context?.accumulated_context ? (
         <section className="mb-6 overflow-hidden rounded-apple bg-white shadow-apple">
           <button
-            onClick={() => setContextExpanded((v) => !v)}
+            onClick={() => {
+              const next = !contextExpanded;
+              setContextExpanded(next);
+              // Lazy-load AI shrnutí při prvním rozbalení
+              if (next && memorySummary === null && !memorySummaryLoading) {
+                setMemorySummaryLoading(true);
+                fetch(`/api/projects/${params.id}/context/summary`)
+                  .then((r) => r.json())
+                  .then((json) => setMemorySummary(json.summary ?? null))
+                  .catch(() => setMemorySummary(null))
+                  .finally(() => setMemorySummaryLoading(false));
+              }
+            }}
             className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-[#fafafa]"
           >
             <div className="flex items-center gap-2.5">
@@ -135,7 +149,24 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </button>
           {contextExpanded ? (
             <div className="border-t border-[#f2f2f7] px-6 py-5">
-              <MarkdownContent content={context.accumulated_context} />
+              {memorySummaryLoading ? (
+                <div className="flex items-center gap-2 text-[13px] text-[#aeaeb2]">
+                  <span className="flex gap-1">
+                    {[0, 150, 300].map((delay) => (
+                      <span
+                        key={delay}
+                        className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-[#d2d2d7]"
+                        style={{ animationDelay: `${delay}ms` }}
+                      />
+                    ))}
+                  </span>
+                  AI generuje shrnutí…
+                </div>
+              ) : memorySummary ? (
+                <p className="text-[14px] leading-relaxed text-[#3a3a3a]">{memorySummary}</p>
+              ) : (
+                <MarkdownContent content={context.accumulated_context} />
+              )}
             </div>
           ) : null}
         </section>

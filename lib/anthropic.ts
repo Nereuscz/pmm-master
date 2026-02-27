@@ -379,3 +379,38 @@ Uživatelův text: "${input.userText}"`
     return { isClarification: false };
   }
 }
+
+// ─── AI shrnutí paměti projektu ───────────────────────────────────────────────
+
+export async function generateProjectMemorySummary(input: {
+  projectName: string;
+  framework: string;
+  accumulatedContext: string;
+}): Promise<{ summary: string }> {
+  if (!anthropic) {
+    return { summary: input.accumulatedContext.slice(0, 600) };
+  }
+
+  const response = await anthropic.messages.create({
+    model: "claude-opus-4-5",
+    max_tokens: 512,
+    system: `Jsi PM asistent. Dostaneš akumulovaný kontext projektu – záznamy z různých schůzek a fází.
+Vytvoř z toho JEDEN srozumitelný, souvislý odstavec (max. 4–6 vět) v češtině.
+Zaměř se na: co je cílem projektu, kde projekt stojí, klíčové závěry a rozhodnutí.
+Piš přirozeně, jako byste to vysvětloval kolegovi. Žádné odrážky, žádný markdown, jen čistý text.`,
+    messages: [
+      {
+        role: "user",
+        content: `Projekt: ${input.projectName} (${input.framework} framework)\n\nKontext:\n${input.accumulatedContext}`
+      }
+    ]
+  });
+
+  const text = response.content
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("")
+    .trim();
+
+  return { summary: text || input.accumulatedContext.slice(0, 600) };
+}
