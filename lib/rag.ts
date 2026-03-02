@@ -49,7 +49,7 @@ export async function retrieveTopChunks(input: {
     .from("kb_chunks")
     .select("id,content,document_id,kb_documents!inner(deleted_at)")
     .is("kb_documents.deleted_at", null)
-    .limit(800);
+    .limit(200);
 
   if (error || !data) {
     return [];

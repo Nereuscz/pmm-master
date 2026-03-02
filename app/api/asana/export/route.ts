@@ -3,6 +3,8 @@ import { asanaExportSchema } from "@/lib/schemas";
 import { ensureDb } from "@/lib/db";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();

@@ -3,6 +3,8 @@ import { createProjectSchema } from "@/lib/schemas";
 import { ensureDb, ensureUser } from "@/lib/db";
 import { getAuthUser, unauthorized, canProcess } from "@/lib/auth-guard";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const user = await getAuthUser();
   if (!user) return unauthorized();

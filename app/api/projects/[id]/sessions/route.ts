@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensureDb } from "@/lib/db";
 import { getAuthUser, unauthorized, forbidden, isAdmin } from "@/lib/auth-guard";
 
+export const dynamic = "force-dynamic";
+
 type Params = { params: { id: string } };
 
 export async function GET(_: NextRequest, { params }: Params) {

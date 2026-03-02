@@ -5,12 +5,20 @@ import { processTranscriptSchema } from "@/lib/schemas";
 import { ensureDb, getLastSession, getOrCreateProjectContext, requireProject } from "@/lib/db";
 import { detectChangeSignals, summarizeForContext } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { logApiError } from "@/lib/api-logger";
+import { checkAiRateLimit } from "@/lib/rate-limit";
 import { searchMarket, buildQueryFromTranscript } from "@/lib/tavily";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
   if (!canProcess(user)) return forbidden();
+
+  const rateLimit = await checkAiRateLimit(`ai:${user.id}`);
+  if (!rateLimit.success) return rateLimit.response;
+
   let jobId: string | null = null;
   let projectId: string | null = null;
 
@@ -129,6 +137,7 @@ Shrnutí: ${aiResult.content}`
       }
     });
   } catch (error) {
+    logApiError("/api/process", error);
     const message = error instanceof Error ? error.message : "Unknown processing error";
     if (jobId && projectId) {
       try {

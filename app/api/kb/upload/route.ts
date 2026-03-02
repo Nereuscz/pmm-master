@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { upsertDocumentWithChunks } from "@/lib/kb";
 import { parseFileBuffer, detectMimeType, ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from "@/lib/parser";
 import { getAuthUser, unauthorized, canManageKb, forbidden } from "@/lib/auth-guard";
+import { logApiError } from "@/lib/api-logger";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     .upload(storagePath, buffer, { contentType: mimeType, upsert: false });
 
   if (uploadError) {
-    console.error("Storage upload error:", uploadError);
+    logApiError("/api/kb/upload", uploadError);
     // Non-fatal: continue without storage path
   }
 
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
+    logApiError("/api/kb/upload", err);
     const msg = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

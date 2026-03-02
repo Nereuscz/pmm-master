@@ -85,10 +85,12 @@ function GuideChat() {
         }
       })
       .catch(() => undefined);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [projectIdParam]);
 
   // ── Auto-start při příchodu z projektu ─────────────────────────────────────
+
+  const handleStartRef = useRef<() => void>(() => {});
+  handleStartRef.current = handleStart;
 
   useEffect(() => {
     if (
@@ -98,10 +100,9 @@ function GuideChat() {
       !autoStartedRef.current
     ) {
       autoStartedRef.current = true;
-      handleStart();
+      handleStartRef.current();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProject]);
+  }, [projectIdParam, selectedProject?.id, started]);
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────────
 

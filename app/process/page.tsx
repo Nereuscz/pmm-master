@@ -29,6 +29,8 @@ function ProcessForm() {
 
   const [clarifyingQuestions, setClarifyingQuestions] = useState<string[]>([]);
   const [clarifyingAnswers, setClarifyingAnswers] = useState("");
+  const [fileUploadState, setFileUploadState] = useState<"idle" | "loading" | "error">("idle");
+  const [fileUploadError, setFileUploadError] = useState<string | null>(null);
 
   const pendingPayloadRef = useRef<{
     projectId: string;
@@ -114,16 +116,39 @@ function ProcessForm() {
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    if (isPdf) {
+
+    const ext = file.name.toLowerCase().split(".").pop() ?? "";
+    const needsServerParse = ["pdf", "docx", "doc"].includes(ext);
+
+    if (needsServerParse) {
+      setFileUploadState("loading");
+      setFileUploadError(null);
       const fd = new FormData();
       fd.append("file", file);
       fetch("/api/kb/upload-parse", { method: "POST", body: fd })
         .then((r) => r.json())
-        .then((json) => { if (json.text) setTranscript(json.text); })
-        .catch(() => undefined);
+        .then((json) => {
+          if (json.error) {
+            setFileUploadState("error");
+            setFileUploadError(json.error);
+          } else if (json.text != null) {
+            setTranscript(json.text);
+            setFileUploadState("idle");
+            setFileUploadError(null);
+          } else {
+            setFileUploadState("idle");
+          }
+        })
+        .catch(() => {
+          setFileUploadState("error");
+          setFileUploadError("Nepodařilo se načíst soubor.");
+        });
     } else {
-      file.text().then(setTranscript).catch(() => undefined);
+      setFileUploadState("idle");
+      setFileUploadError(null);
+      file.text().then(setTranscript).catch(() => {
+        setFileUploadError("Nepodařilo se načíst soubor.");
+      });
     }
   }
 
@@ -197,7 +222,15 @@ function ProcessForm() {
                 className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
                 placeholder="Vlož nebo nahraj transkript ze schůzky (min. 50 znaků)..."
               />
-              <p className="mt-1 text-right text-[12px] text-[#aeaeb2]">{transcript.length} znaků</p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <span className="text-[12px] text-[#aeaeb2]">
+                  {fileUploadState === "loading" && "Načítám soubor…"}
+                  {fileUploadState === "error" && fileUploadError && (
+                    <span className="text-red-600">{fileUploadError}</span>
+                  )}
+                </span>
+                <span className="text-[12px] text-[#aeaeb2]">{transcript.length} znaků</span>
+              </div>
             </div>
 
             <button

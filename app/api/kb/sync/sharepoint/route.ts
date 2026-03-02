@@ -4,6 +4,8 @@ import { sharepointSyncSchema } from "@/lib/schemas";
 import { upsertDocumentWithChunks } from "@/lib/kb";
 import { getAuthUser, unauthorized, canManageKb, forbidden } from "@/lib/auth-guard";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { generateClarifyingQuestions } from "@/lib/anthropic";
 import { getOrCreateProjectContext, requireProject } from "@/lib/db";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { logApiError } from "@/lib/api-logger";
+import { checkAiRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   projectId: z.string().uuid(),
@@ -11,10 +13,15 @@ const schema = z.object({
   transcript: z.string().min(50)
 });
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
   if (!canProcess(user)) return forbidden();
+
+  const rateLimit = await checkAiRateLimit(`ai:${user.id}`);
+  if (!rateLimit.success) return rateLimit.response;
 
   try {
     const parsed = schema.safeParse(await request.json());
@@ -39,6 +46,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (e) {
+    logApiError("/api/process/clarify", e);
     const message = e instanceof Error ? e.message : "Chyba při analýze";
     return NextResponse.json({ error: message, questions: [] }, { status: 500 });
   }

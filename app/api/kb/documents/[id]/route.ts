@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureDb } from "@/lib/db";
 import { kbDocumentUpdateSchema } from "@/lib/schemas";
+
+export const dynamic = "force-dynamic";
 import { upsertDocumentWithChunks } from "@/lib/kb";
 import { getAuthUser, unauthorized, canManageKb, forbidden } from "@/lib/auth-guard";
 

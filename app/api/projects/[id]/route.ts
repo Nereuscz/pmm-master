@@ -3,6 +3,8 @@ import { ensureDb } from "@/lib/db";
 import { updateProjectSchema } from "@/lib/schemas";
 import { getAuthUser, unauthorized, forbidden, isAdmin } from "@/lib/auth-guard";
 
+export const dynamic = "force-dynamic";
+
 type Params = { params: { id: string } };
 
 async function resolveProject(projectId: string) {

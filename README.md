@@ -17,6 +17,7 @@ První implementační iterace projektu PM Assistant podle technického zadání
   - `GET/POST /api/kb/documents`
   - `PATCH/DELETE /api/kb/documents/:id`
   - `POST /api/kb/documents/:id/reindex`
+  - `POST /api/kb/upload-parse` (extrakce textu z PDF/DOCX pro stránku Zpracovat)
   - `POST /api/kb/search`
   - `POST /api/kb/sync/sharepoint` (simulovaný sync batch)
   - `GET /api/kb/sync/logs`
@@ -24,6 +25,11 @@ První implementační iterace projektu PM Assistant podle technického zadání
 - Vstupní validace přes `zod`
 - UI stránky:
   - `/dashboard`, `/projects/new`, `/projects/[id]`, `/process`, `/kb`
+
+## Testy
+
+- `npm run test` – spustí Vitest (lib/text, lib/parser, lib/schemas)
+- `npm run test:watch` – watch mód
 
 ## Lokální spuštění
 
@@ -38,6 +44,7 @@ První implementační iterace projektu PM Assistant podle technického zadání
 
 ## Poznámky
 
-- `lib/rag.ts` používá lexikální relevance fallback. Další krok může být pgvector similarity RPC.
+- `lib/rag.ts` používá lexikální relevance fallback (limit 200 chunků). Při dostupných embeddings se používá pgvector.
+- Rate limiting na AI endpointy: 20 req/min na uživatele (vyžaduje UPSTASH_REDIS_REST_URL a UPSTASH_REDIS_REST_TOKEN).
 - Asana endpoint je záměrně simulovaný (bez napojení), ale job/idempotence se ukládá.
 - Microsoft autorizace je zatím pouze skeleton bez produkční konfigurace.

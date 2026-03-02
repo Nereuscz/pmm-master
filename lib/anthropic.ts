@@ -230,7 +230,7 @@ DŮLEŽITÉ: Pokud máš oblast označenou ✅ ale sekci jsi ve výstupu nevygen
   const userPrompt = parts.join("\n\n");
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-5",
+    model: env.ANTHROPIC_MODEL,
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }]
@@ -258,7 +258,7 @@ export async function generateClarifyingQuestions(input: {
   const questionNames = questions.map((q) => q.name).join(", ");
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-5",
+    model: env.ANTHROPIC_MODEL,
     max_tokens: 512,
     system: `Jsi PM asistent. Přečti transkript schůzky a identifikuj maximálně 5 klíčových nejasností nebo chybějících informací, které jsou nutné pro kvalitní PM dokumentaci ve zvolené fázi. Vrať POUZE číslovaný seznam stručných otázek (jedna věta každá). Žádný jiný text.`,
     messages: [
@@ -301,7 +301,7 @@ export async function generateFollowUpQuestions(input: {
   if (!anthropic) return { followUps: [] };
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-5",
+    model: env.ANTHROPIC_MODEL,
     max_tokens: 256,
     system: `Jsi PM coach. Na základě odpovědi uživatele vygeneruj přesně 3 krátké doplňující otázky, které prohloubí nebo upřesní odpověď pro PM dokumentaci. Vrať POUZE číslovaný seznam 3 otázek (jedna věta každá). Žádný jiný text.`,
     messages: [
@@ -343,7 +343,7 @@ export async function generateClarification(input: {
   if (!anthropic) return { isClarification: false };
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-5",
+    model: env.ANTHROPIC_MODEL,
     max_tokens: 400,
     system: `Jsi PM coach v konverzačním průvodci. Uživatel odpovídá na PM otázky.
 Tvůj úkol: Rozhodni, zda uživatelův text je ŽÁDOST O VYSVĚTLENÍ otázky (nerozumí, ptá se co to znamená, říká "nevím" apod.), nebo SKUTEČNÁ ODPOVĚĎ na otázku.
@@ -392,7 +392,7 @@ export async function generateProjectMemorySummary(input: {
   }
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-5",
+    model: env.ANTHROPIC_MODEL,
     max_tokens: 512,
     system: `Jsi PM asistent. Dostaneš akumulovaný kontext projektu – záznamy z různých schůzek a fází.
 Vytvoř z toho JEDEN srozumitelný, souvislý odstavec (max. 4–6 vět) v češtině.

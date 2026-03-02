@@ -6,6 +6,8 @@ import { retrieveTopChunks } from "@/lib/rag";
 import { tryGetDb, requireProject, getOrCreateProjectContext } from "@/lib/db";
 import { summarizeForContext } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { logApiError } from "@/lib/api-logger";
+import { checkAiRateLimit } from "@/lib/rate-limit";
 import { searchMarket, buildQueryFromAnswers } from "@/lib/tavily";
 
 const schema = z.object({
@@ -21,10 +23,15 @@ const schema = z.object({
   )
 });
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
   if (!canProcess(user)) return forbidden();
+
+  const rateLimit = await checkAiRateLimit(`ai:${user.id}`);
+  if (!rateLimit.success) return rateLimit.response;
 
   try {
     const payload = await request.json();
@@ -135,6 +142,7 @@ export async function POST(request: NextRequest) {
       saved: true
     });
   } catch (e) {
+    logApiError("/api/guide/next", e);
     const message = e instanceof Error ? e.message : "Unknown guide error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
