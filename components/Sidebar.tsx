@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { signOut } from "next-auth/react";
 
 type UserRole = "Admin" | "PM" | "Viewer" | null;
 
@@ -79,19 +80,27 @@ const links: Array<{
   },
 ];
 
+type UserInfo = { role: UserRole | null; name?: string | null; email?: string | null };
+
 export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarProps) {
   const pathname = usePathname();
-  const [role, setRole] = useState<UserRole>(null);
+  const [user, setUser] = useState<UserInfo>({ role: null });
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((json) => setRole(json.role ?? null))
-      .catch(() => setRole(null));
+      .then((json) =>
+        setUser({
+          role: json.role ?? null,
+          name: json.name ?? null,
+          email: json.email ?? null
+        })
+      )
+      .catch(() => setUser({ role: null }));
   }, []);
 
   const visibleLinks = links.filter(
-    (link) => !link.roles || !role || link.roles.includes(role)
+    (link) => !link.roles || !user.role || link.roles.includes(user.role)
   );
 
   const navContent = (
@@ -140,10 +149,30 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-5 pb-6">
+      {/* Uživatel + odhlášení */}
+      <div className="mt-auto px-5 pb-6">
         <div className="border-t border-[#f2f2f7] pt-4">
-          <p className="text-[11px] text-[#aeaeb2]">PM Assistant v1.2</p>
+          {(user.name || user.email) && (
+            <div className="mb-3">
+              <p className="truncate text-[13px] font-medium text-[#1d1d1f]">
+                {user.name || user.email}
+              </p>
+              {user.email && user.name && (
+                <p className="truncate text-[11px] text-[#86868b]">{user.email}</p>
+              )}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              onDrawerClose?.();
+              signOut({ callbackUrl: "/signin" });
+            }}
+            className="w-full rounded-lg px-3 py-2 text-left text-[13px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+          >
+            Odhlásit se
+          </button>
+          <p className="mt-3 text-[11px] text-[#aeaeb2]">PM Assistant v1.2</p>
         </div>
       </div>
     </>

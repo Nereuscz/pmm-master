@@ -8,13 +8,15 @@ export type AuthUser = {
   id: string;
   role: UserRole;
   email: string;
+  name?: string | null;
 };
 
 // Dev fallback: stejné ID jako FALLBACK_OWNER_ID v projects/route.ts
 const DEV_FALLBACK: AuthUser = {
   id: "00000000-0000-0000-0000-000000000001",
   role: "Admin",
-  email: "dev@pm-assistant.local"
+  email: "dev@pm-assistant.local",
+  name: "Dev uživatel"
 };
 
 const isDevMode = !process.env.ASANA_CLIENT_ID;
@@ -34,7 +36,8 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   return {
     id: session.user.id,
     role: (session.user.role as UserRole) ?? "PM",
-    email: session.user.email ?? ""
+    email: session.user.email ?? "",
+    name: session.user.name ?? null
   };
 }
 
