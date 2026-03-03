@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 const links = [
   { href: "/dashboard", label: "Projekty" },
@@ -44,6 +45,26 @@ export default function Nav() {
             );
           })}
         </nav>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Link
+            href="/settings"
+            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              pathname === "/settings"
+                ? "bg-brand-50 text-brand-700"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            }`}
+          >
+            Nastavení
+          </Link>
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/signin" })}
+            className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          >
+            Odhlásit se
+          </button>
+        </div>
       </div>
     </header>
   );
