@@ -30,9 +30,14 @@ export default function AsanaProvider(
     userinfo: {
       url: "https://app.asana.com/api/1.0/users/me",
       async request({ tokens }) {
-        const res = await fetch("https://app.asana.com/api/1.0/users/me", {
+        const url =
+          "https://app.asana.com/api/1.0/users/me?opt_fields=name,email,photo";
+        const res = await fetch(url, {
           headers: { Authorization: `Bearer ${tokens.access_token}` },
         });
+        if (!res.ok) {
+          throw new Error(`Asana userinfo failed: ${res.status}`);
+        }
         const json = (await res.json()) as { data?: AsanaProfile };
         return json.data ?? {};
       },

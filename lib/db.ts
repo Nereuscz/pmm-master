@@ -91,6 +91,8 @@ export async function upsertUserFromAsana(input: {
   name?: string;
 }): Promise<{ id: string; role: "Admin" | "PM" | "Viewer" }> {
   const db = ensureDb();
+  const email =
+    input.email?.trim() || `${input.asanaGid}@asana.pm-assistant.local`;
 
   const { data: existing } = await db
     .from("users")
@@ -99,7 +101,7 @@ export async function upsertUserFromAsana(input: {
     .maybeSingle();
 
   if (existing) {
-    await db.from("users").update({ email: input.email }).eq("id", existing.id);
+    await db.from("users").update({ email }).eq("id", existing.id);
     return { id: existing.id, role: existing.role as "Admin" | "PM" | "Viewer" };
   }
 
@@ -107,7 +109,7 @@ export async function upsertUserFromAsana(input: {
     .from("users")
     .insert({
       asana_user_id: input.asanaGid,
-      email: input.email,
+      email,
       role: "PM",
     })
     .select("id,role")

@@ -1,8 +1,12 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 export default function SignInPage() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f5f5f7] px-6">
       <div className="w-full max-w-sm rounded-apple bg-white p-10 shadow-apple-lg">
@@ -20,9 +24,15 @@ export default function SignInPage() {
           Přihlaste se přes Asana účet.
         </p>
 
+        {error && (
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-2 text-center text-[13px] text-red-600">
+            Přihlášení se nepovedlo. Zkuste to znovu.
+          </p>
+        )}
+
         <button
           type="button"
-          onClick={() => signIn("asana")}
+          onClick={() => signIn("asana", { callbackUrl: "/dashboard" })}
           className="mt-8 flex w-full items-center justify-center gap-2.5 rounded-full bg-[#f06a6a] py-3 text-[15px] font-medium text-white transition-colors hover:bg-[#e55a5a]"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
