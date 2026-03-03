@@ -50,7 +50,11 @@ export async function POST(request: NextRequest) {
     const questions = getQuestionsForPhase(input.phase, input.framework);
     const next = questions[input.answers.length] ?? null;
     if (next) {
-      return NextResponse.json({ done: false, nextQuestion: next });
+      return NextResponse.json({
+        done: false,
+        nextQuestion: next,
+        totalCount: questions.length
+      });
     }
 
     // ── 2. Všechny otázky zodpovězeny – vygeneruj výstup ─────────────────────
@@ -92,7 +96,8 @@ export async function POST(request: NextRequest) {
         sessionId: null,
         projectId: input.projectId,
         output: generated.content,
-        saved: false
+        saved: false,
+        totalCount: questions.length
       });
     }
 
@@ -147,7 +152,8 @@ export async function POST(request: NextRequest) {
       sessionId: session.id,
       projectId: input.projectId,
       output: generated.content,
-      saved: true
+      saved: true,
+      totalCount: questions.length
     });
   } catch (e) {
     logApiError("/api/guide/next", e);

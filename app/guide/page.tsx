@@ -64,6 +64,7 @@ function GuideChat() {
   const [pendingMain, setPendingMain] = useState<{ q: GuideQ; answer: string } | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -144,6 +145,8 @@ function GuideChat() {
 
       if (!r.ok) throw new Error(json.error || "Chyba průvodce");
 
+      if (json.totalCount != null) setTotalCount(json.totalCount);
+
       if (json.done) {
         push({
           id: uid(),
@@ -179,6 +182,7 @@ function GuideChat() {
     setCurrentQ(null);
     setPendingMain(null);
     setInputValue("");
+    setTotalCount(null);
     setStatus("idle");
     fetchNextQuestion([]);
   }
@@ -543,6 +547,18 @@ function GuideChat() {
         <p className="mt-1 text-[15px] text-[#6e6e73]">
           Konverzační průvodce – AI klade otázky, nabídne 3 doplňující a na konci vygeneruje PM dokumentaci.
         </p>
+        {started && totalCount != null ? (
+          <p className="mt-2 text-[13px] font-medium text-[#6e6e73]">
+            {answers.length} z {totalCount} otázek
+            {status === "awaiting_fu" ? (() => {
+              const lastFu = [...messages].reverse().find((m) => m.role === "ai" && m.kind === "followup" && !m.submitted);
+              const fuFilled = lastFu && lastFu.kind === "followup"
+                ? Object.values(lastFu.answers).filter((v) => v?.trim()).length
+                : 0;
+              return ` · doplňující: ${fuFilled}/3`;
+            })() : null}
+          </p>
+        ) : null}
       </div>
 
       {/* Konfigurace – před startem (bez projectId) nebo po dokončení */}
