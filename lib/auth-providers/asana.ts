@@ -1,7 +1,7 @@
 import type { OAuthConfig } from "next-auth/providers/oauth";
 
 const ASANA_SCOPE =
-  "users:read default projects:read tasks:read tasks:write tasks:delete";
+  "users:read projects:read tasks:read tasks:write tasks:delete";
 
 export interface AsanaProfile {
   gid: string;
