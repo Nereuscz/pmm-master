@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import AiOutput from "@/components/AiOutput";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { parsePmOutputIntoSections } from "@/lib/pm-output-parser";
 
 type ProcessResponse = {
   sessionId: string;
@@ -177,6 +178,7 @@ function ProcessForm() {
     if (!result || !selectedProject?.asana_project_id) return;
     setExporting(true);
     try {
+      const sections = parsePmOutputIntoSections(result.output);
       const r = await fetch("/api/asana/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -185,7 +187,7 @@ function ProcessForm() {
           asanaProjectId: selectedProject.asana_project_id,
           idempotencyKey: `export-${result.sessionId}`,
           title: `${selectedProject.name} – ${selectedPhase}`,
-          sections: [{ question: "PM dokumentace", answer: result.output }],
+          sections,
         }),
       });
       const json = await r.json();
