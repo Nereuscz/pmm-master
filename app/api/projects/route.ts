@@ -16,10 +16,8 @@ export async function GET() {
     .select("id,name,framework,phase,owner_id,asana_project_id,created_at,updated_at")
     .order("created_at", { ascending: false });
 
-  // Admin vidí všechny projekty; PM/Viewer jen vlastní
-  if (user.role !== "Admin") {
-    query = query.eq("owner_id", user.id);
-  }
+  // Každý uživatel vidí jen projekty, které vytvořil
+  query = query.eq("owner_id", user.id);
 
   const { data, error } = await query;
   if (error) {

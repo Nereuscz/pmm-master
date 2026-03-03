@@ -6,6 +6,7 @@ create table if not exists users (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
   ms_id text unique,
+  asana_user_id text unique,
   role text not null default 'PM',
   asana_token_encrypted text,
   asana_refresh_token text,

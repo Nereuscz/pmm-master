@@ -17,11 +17,11 @@ const DEV_FALLBACK: AuthUser = {
   email: "dev@pm-assistant.local"
 };
 
-const isDevMode = !process.env.AZURE_AD_CLIENT_ID;
+const isDevMode = !process.env.ASANA_CLIENT_ID;
 
 /**
  * Vrátí přihlášeného uživatele nebo null.
- * V dev módu (chybí AZURE_AD_CLIENT_ID) vrací fallback Admin uživatele.
+ * V dev módu (chybí ASANA_CLIENT_ID) vrací fallback Admin uživatele.
  */
 export async function getAuthUser(): Promise<AuthUser | null> {
   if (isDevMode) {

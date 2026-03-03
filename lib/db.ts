@@ -80,6 +80,47 @@ export async function upsertUserFromAzure(input: {
   return { id: data.id, role: data.role as "Admin" | "PM" | "Viewer" };
 }
 
+/**
+ * Upsert uživatele přihlášeného přes Asana.
+ * Pokud uživatel existuje (dle asana_user_id), aktualizuje email.
+ * Pokud neexistuje, vytvoří nového s rolí PM.
+ */
+export async function upsertUserFromAsana(input: {
+  asanaGid: string;
+  email: string;
+  name?: string;
+}): Promise<{ id: string; role: "Admin" | "PM" | "Viewer" }> {
+  const db = ensureDb();
+
+  const { data: existing } = await db
+    .from("users")
+    .select("id,role")
+    .eq("asana_user_id", input.asanaGid)
+    .maybeSingle();
+
+  if (existing) {
+    await db.from("users").update({ email: input.email }).eq("id", existing.id);
+    return { id: existing.id, role: existing.role as "Admin" | "PM" | "Viewer" };
+  }
+
+  const { data, error } = await db
+    .from("users")
+    .insert({
+      asana_user_id: input.asanaGid,
+      email: input.email,
+      role: "PM",
+    })
+    .select("id,role")
+    .single();
+
+  if (error || !data) {
+    throw new Error(
+      `Nepodařilo se vytvořit uživatele z Asany. ${error?.message ?? ""}`.trim()
+    );
+  }
+  return { id: data.id, role: data.role as "Admin" | "PM" | "Viewer" };
+}
+
 export async function getOrCreateProjectContext(projectId: string) {
   const db = ensureDb();
   const { data } = await db

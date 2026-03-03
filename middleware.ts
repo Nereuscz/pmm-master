@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
 
-// Pokud chybí AZURE_AD_CLIENT_ID nebo NEXTAUTH_SECRET, jedeme v dev/bypass módu –
+// Pokud chybí ASANA_CLIENT_ID nebo NEXTAUTH_SECRET, jedeme v dev/bypass módu –
 // middleware prostě propustí všechny requesty a auth řeší auth-guard.ts uvnitř API.
 const isAuthEnabled =
-  !!process.env.AZURE_AD_CLIENT_ID && !!process.env.NEXTAUTH_SECRET;
+  !!process.env.ASANA_CLIENT_ID && !!process.env.NEXTAUTH_SECRET;
 
 // Stránky, které vyžadují přihlášení
 const PROTECTED_PATHS = ["/dashboard", "/projects", "/process", "/guide", "/kb", "/settings", "/admin"];

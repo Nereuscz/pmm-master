@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import AiOutput from "@/components/AiOutput";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import MarkdownContent from "@/components/MarkdownContent";
 import { PHASE_COLORS } from "@/lib/constants";
 import ErrorMessage from "@/components/ErrorMessage";
 
-type Project = { id: string; name: string; framework: string; phase: string; created_at: string };
+type Project = { id: string; name: string; framework: string; phase: string; created_at: string; asana_project_id?: string | null };
 type Session = { id: string; phase: string; ai_output: string; created_at: string };
 type ContextData = { accumulated_context: string; last_updated: string | null };
 
@@ -22,6 +23,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [memorySummaryLoading, setMemorySummaryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [asanaProjectIdInput, setAsanaProjectIdInput] = useState("");
+  const [asanaLinkSaving, setAsanaLinkSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -97,6 +100,89 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </div>
         </div>
       </div>
+
+      {/* Propojení s Asanou */}
+      <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">
+        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">
+          Propojení s Asanou
+        </h2>
+        <p className="mt-2 text-[14px] text-[#6e6e73]">
+          Pro export úkolů do Asany propoj tento projekt s projektem v Asaně. Asana project ID (GID) najdeš v URL projektu v Asaně – např.{" "}
+          <code className="rounded bg-[#f2f2f7] px-1.5 py-0.5 text-[12px]">app.asana.com/0/0/<strong>123456789</strong></code>
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {project.asana_project_id ? (
+            <>
+              <span className="text-[14px] font-medium text-[#34c759]">
+                Propojeno: {project.asana_project_id}
+              </span>
+              <button
+                type="button"
+                disabled={asanaLinkSaving}
+                onClick={async () => {
+                  setAsanaLinkSaving(true);
+                  try {
+                    const r = await fetch(`/api/projects/${params.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ asana_project_id: null }),
+                    });
+                    const json = await r.json();
+                    if (!r.ok) throw new Error(json.error || "Odpojení selhalo.");
+                    setProject((p) => p ? { ...p, asana_project_id: null } : null);
+                    toast.success("Projekt odpojen od Asany.");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Chyba");
+                  } finally {
+                    setAsanaLinkSaving(false);
+                  }
+                }}
+                className="rounded-full border border-[#d2d2d7] px-4 py-2 text-[14px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7] disabled:opacity-50"
+              >
+                Odpojit
+              </button>
+            </>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={asanaProjectIdInput}
+                onChange={(e) => setAsanaProjectIdInput(e.target.value)}
+                placeholder="1234567890123456"
+                className="w-64 rounded-xl border border-[#d2d2d7] px-4 py-2 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+              />
+              <button
+                type="button"
+                disabled={asanaLinkSaving || !asanaProjectIdInput.trim()}
+                onClick={async () => {
+                  const gid = asanaProjectIdInput.trim();
+                  if (!gid) return;
+                  setAsanaLinkSaving(true);
+                  try {
+                    const r = await fetch(`/api/projects/${params.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ asana_project_id: gid }),
+                    });
+                    const json = await r.json();
+                    if (!r.ok) throw new Error(json.error || "Propojení selhalo.");
+                    setProject((p) => p ? { ...p, asana_project_id: gid } : null);
+                    setAsanaProjectIdInput("");
+                    toast.success("Projekt propojen s Asanou.");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Chyba");
+                  } finally {
+                    setAsanaLinkSaving(false);
+                  }
+                }}
+                className="rounded-full bg-brand-600 px-5 py-2 text-[14px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+              >
+                {asanaLinkSaving ? "Ukládám…" : "Propojit"}
+              </button>
+            </>
+          )}
+        </div>
+      </section>
 
       {/* Paměť projektu */}
       {context?.accumulated_context ? (

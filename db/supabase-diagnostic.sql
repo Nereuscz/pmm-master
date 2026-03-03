@@ -34,7 +34,19 @@ LEFT JOIN information_schema.columns c ON c.table_schema='public' AND c.table_na
 ORDER BY e.col;
 
 -- ═══════════════════════════════════════════════════════════════════
--- 4. INDEX + FUNKCE (migrace 002)
+-- 4. SLOUPCE users (migrace 005 – Asana OAuth)
+-- ═══════════════════════════════════════════════════════════════════
+WITH expected(col) AS (
+  SELECT unnest(ARRAY['asana_refresh_token','asana_token_expires_at','asana_user_id'])
+)
+SELECT e.col AS polozka,
+  CASE WHEN c.column_name IS NOT NULL THEN '✓ OK' ELSE '✗ CHYBÍ' END AS stav
+FROM expected e
+LEFT JOIN information_schema.columns c ON c.table_schema='public' AND c.table_name='users' AND c.column_name=e.col
+ORDER BY e.col;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 5. INDEX + FUNKCE (migrace 002)
 -- ═══════════════════════════════════════════════════════════════════
 SELECT 'kb_chunks_embedding_idx' AS polozka,
   CASE WHEN EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public' AND indexname='kb_chunks_embedding_idx') THEN '✓ OK' ELSE '✗ CHYBÍ' END AS stav
@@ -43,7 +55,7 @@ SELECT 'match_kb_chunks',
   CASE WHEN EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='public' AND p.proname='match_kb_chunks') THEN '✓ OK' ELSE '✗ CHYBÍ' END;
 
 -- ═══════════════════════════════════════════════════════════════════
--- 5. SOUHRN – jen to co CHYBÍ
+-- 6. SOUHRN – jen to co CHYBÍ
 -- ═══════════════════════════════════════════════════════════════════
 SELECT 'Chybějící' AS kategorie, polozka FROM (
   SELECT 'extension: vector' AS polozka WHERE NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname='vector')
@@ -52,6 +64,8 @@ SELECT 'Chybějící' AS kategorie, polozka FROM (
     WHERE NOT EXISTS (SELECT 1 FROM information_schema.tables t WHERE t.table_schema='public' AND t.table_name=e.tbl)
   UNION ALL SELECT 'sloupec kb_documents: ' || x.c FROM (SELECT unnest(ARRAY['file_path','file_size','mime_type']) AS c) x
     WHERE NOT EXISTS (SELECT 1 FROM information_schema.columns col WHERE col.table_schema='public' AND col.table_name='kb_documents' AND col.column_name=x.c)
+  UNION ALL SELECT 'sloupec users: ' || x.c FROM (SELECT unnest(ARRAY['asana_refresh_token','asana_token_expires_at','asana_user_id']) AS c) x
+    WHERE NOT EXISTS (SELECT 1 FROM information_schema.columns col WHERE col.table_schema='public' AND col.table_name='users' AND col.column_name=x.c)
   UNION ALL SELECT 'index: kb_chunks_embedding_idx' WHERE NOT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public' AND indexname='kb_chunks_embedding_idx')
   UNION ALL SELECT 'funkce: match_kb_chunks' WHERE NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='public' AND p.proname='match_kb_chunks')
 ) t

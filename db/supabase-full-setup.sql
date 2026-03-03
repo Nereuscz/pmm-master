@@ -12,6 +12,7 @@ create table if not exists users (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
   ms_id text unique,
+  asana_user_id text unique,
   role text not null default 'PM',
   asana_token_encrypted text,
   asana_refresh_token text,
@@ -180,7 +181,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS asana_refresh_token text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS asana_token_expires_at timestamptz;
 
 -- ═══════════════════════════════════════════════════════════════════
--- 7. DEV FALLBACK USER (pro lokální vývoj bez Azure AD)
+-- 7. MIGRACE 006 (Asana přihlášení)
+-- ═══════════════════════════════════════════════════════════════════
+ALTER TABLE users ADD COLUMN IF NOT EXISTS asana_user_id text UNIQUE;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 8. DEV FALLBACK USER (pro lokální vývoj bez Asana)
 -- ═══════════════════════════════════════════════════════════════════
 insert into users (id, email, role)
 values ('00000000-0000-0000-0000-000000000001', 'dev@pm-assistant.local', 'Admin')

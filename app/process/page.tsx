@@ -435,6 +435,13 @@ function ProcessForm() {
                 >
                   {exporting ? "Exportuji…" : "Exportovat do Asany"}
                 </button>
+              ) : hasAsanaToken && selectedProject ? (
+                <a
+                  href={`/projects/${selectedProject.id}`}
+                  className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
+                >
+                  Propojit projekt s Asanou →
+                </a>
               ) : null}
             </div>
           </div>

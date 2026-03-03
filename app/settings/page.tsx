@@ -21,20 +21,12 @@ function SettingsContent() {
 
   useEffect(() => {
     const asana = searchParams.get("asana");
-    if (asana === "connected") {
-      toast.success("Asana úspěšně připojena.");
-      setHasToken(true);
-      window.history.replaceState({}, "", "/settings");
-    } else if (asana === "error") {
+    if (asana === "error") {
       const msg = searchParams.get("msg");
       const text =
         msg === "config"
           ? "Asana OAuth není nakonfigurován. Nastav ASANA_CLIENT_ID a ASANA_CLIENT_SECRET."
-          : msg === "token"
-            ? "Nepodařilo se získat token z Asany."
-            : msg === "save"
-              ? "Nepodařilo se uložit token."
-              : "Připojení k Asaně selhalo.";
+          : "Přihlášení přes Asanu selhalo.";
       toast.error(text);
       setError(text);
       window.history.replaceState({}, "", "/settings");
@@ -82,29 +74,25 @@ function SettingsContent() {
           Asana integrace
         </h2>
         <p className="mt-2 text-[14px] text-[#6e6e73]">
-          Pro export do Asany se připoj přes OAuth. Klikni na „Připojit Asana“ a autorizuj aplikaci
-          ve svém Asana účtu.
+          Jste přihlášeni přes Asana. Tokeny pro export úkolů se ukládají automaticky při přihlášení.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {hasToken ? (
             <>
-              <span className="text-[14px] font-medium text-[#34c759]">Připojeno</span>
+              <span className="text-[14px] font-medium text-[#34c759]">Připojeno přes přihlášení</span>
               <button
                 type="button"
                 disabled={loading}
                 onClick={handleDisconnect}
                 className="rounded-full border border-[#d2d2d7] px-5 py-2 text-[14px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7] disabled:opacity-50"
               >
-                {loading ? "Odpojuji…" : "Odpojit"}
+                {loading ? "Odpojuji…" : "Odpojit tokeny"}
               </button>
             </>
           ) : (
-            <a
-              href="/api/auth/asana"
-              className="rounded-full bg-brand-600 px-5 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-700"
-            >
-              Připojit Asana
-            </a>
+            <p className="text-[14px] text-[#6e6e73]">
+              Pro export se znovu přihlaste přes Asana na stránce přihlášení.
+            </p>
           )}
         </div>
       </section>

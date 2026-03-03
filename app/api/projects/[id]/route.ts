@@ -48,11 +48,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const db = ensureDb();
+  const updateData = { ...parsed.data, updated_at: new Date().toISOString() };
   const { data, error } = await db
     .from("projects")
-    .update({ ...parsed.data, updated_at: new Date().toISOString() })
+    .update(updateData)
     .eq("id", params.id)
-    .select("id,name,framework,phase,owner_id,created_at,updated_at")
+    .select("id,name,framework,phase,owner_id,asana_project_id,created_at,updated_at")
     .single();
 
   if (error || !data) {

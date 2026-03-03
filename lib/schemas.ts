@@ -43,10 +43,12 @@ export const createProjectSchema = z.object({
   ownerId: z.string().uuid().optional()
 });
 
-export const updateProjectSchema = createProjectSchema.partial().refine(
-  (value) => Object.keys(value).length > 0,
-  "Musíš poslat alespoň jedno pole k úpravě."
-);
+export const updateProjectSchema = createProjectSchema
+  .partial()
+  .extend({
+    asana_project_id: z.string().min(1).nullable().optional()
+  })
+  .refine((value) => Object.keys(value).length > 0, "Musíš poslat alespoň jedno pole k úpravě.");
 
 export const kbDocumentCreateSchema = z.object({
   title: z.string().min(3).max(200),

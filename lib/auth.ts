@@ -1,37 +1,44 @@
 import type { NextAuthOptions } from "next-auth";
-import AzureADProvider from "next-auth/providers/azure-ad";
-import { upsertUserFromAzure } from "./db";
+import AsanaProvider from "./auth-providers/asana";
+import { upsertUserFromAsana } from "./db";
+import { saveAsanaTokens } from "./asana-auth";
 
 export const authOptions: NextAuthOptions = {
-  providers: [
-    AzureADProvider({
-      clientId: process.env.AZURE_AD_CLIENT_ID || "",
-      clientSecret: process.env.AZURE_AD_CLIENT_SECRET || "",
-      tenantId: process.env.AZURE_AD_TENANT_ID || ""
-    })
-  ],
+  providers: [AsanaProvider({})],
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/signin"
+    signIn: "/signin",
   },
   callbacks: {
     async jwt({ token, account, profile }) {
-      // Runs only on first sign-in when account + profile are present
       if (account && profile) {
-        const msId =
-          (profile as { oid?: string }).oid ??
-          (profile as { sub?: string }).sub ??
-          token.sub ??
-          "";
-        const email =
-          (profile as { email?: string }).email ?? (token.email as string | undefined) ?? "";
+        const asanaProfile = profile as { gid?: string; email?: string; name?: string };
+        const asanaGid = asanaProfile.gid ?? token.sub ?? "";
+        const email = asanaProfile.email ?? (token.email as string | undefined) ?? "";
 
         try {
-          const user = await upsertUserFromAzure({ msId, email });
+          const user = await upsertUserFromAsana({
+            asanaGid,
+            email,
+            name: asanaProfile.name,
+          });
           token.userId = user.id;
           token.userRole = user.role;
+
+          if (account.access_token && account.refresh_token) {
+            const expiresIn =
+              typeof account.expires_at === "number"
+                ? Math.max(0, account.expires_at - Math.floor(Date.now() / 1000))
+                : 3600;
+            await saveAsanaTokens(
+              user.id,
+              account.access_token,
+              account.refresh_token,
+              expiresIn
+            );
+          }
         } catch {
-          // DB not available – proceed without persisted role
+          // DB not available – proceed without persisted role/tokens
         }
       }
       return token;
@@ -43,6 +50,6 @@ export const authOptions: NextAuthOptions = {
         session.user.role = (token.userRole as "Admin" | "PM" | "Viewer") ?? "PM";
       }
       return session;
-    }
-  }
+    },
+  },
 };
