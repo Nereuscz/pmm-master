@@ -22,7 +22,7 @@ type SyncLog = {
   synced_at: string;
 };
 
-type UploadMode = "text" | "file";
+type UploadMode = "text" | "file" | "url";
 
 export default function KnowledgeBasePage() {
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
@@ -75,6 +75,21 @@ export default function KnowledgeBasePage() {
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || "Nahrání selhalo.");
         toast.success(`Soubor nahrán (${json.chunksCount} chunků, ${json.extractedLength} znaků).`);
+      } else if (uploadMode === "url") {
+        const url = String(data.get("url") || "").trim();
+        if (!url) throw new Error("Zadejte URL adresu.");
+        const response = await fetch("/api/kb/url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url,
+            title: String(data.get("title") || "").trim() || undefined,
+            category: String(data.get("category") || "").trim() || undefined
+          })
+        });
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error || "Přidání URL selhalo.");
+        toast.success(`URL přidána (${json.chunksCount} chunků, ${json.extractedLength} znaků).`);
       } else {
         const payload = {
           title: String(data.get("title") || ""),
@@ -171,7 +186,7 @@ export default function KnowledgeBasePage() {
           <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">Nahrát dokument</p>
           {/* Tab přepínač */}
           <div className="flex rounded-full border border-[#e8e8ed] bg-[#f5f5f7] p-1 text-[13px]">
-            {(["file", "text"] as const).map((mode) => (
+            {(["file", "url", "text"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
@@ -182,7 +197,7 @@ export default function KnowledgeBasePage() {
                     : "text-[#6e6e73] hover:text-[#1d1d1f]"
                 }`}
               >
-                {mode === "file" ? "Soubor" : "Text"}
+                {mode === "file" ? "Soubor" : mode === "url" ? "URL" : "Text"}
               </button>
             ))}
           </div>
@@ -221,6 +236,19 @@ export default function KnowledgeBasePage() {
                 accept=".pdf,.docx,.doc,.txt,.md"
                 className="mt-3 text-[13px] text-[#6e6e73]"
               />
+            </div>
+          ) : uploadMode === "url" ? (
+            <div>
+              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">URL adresa</label>
+              <input
+                name="url"
+                type="url"
+                placeholder="https://example.com/clanek"
+                className="w-full rounded-xl border border-[#d2d2d7] px-4 py-2.5 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+              />
+              <p className="mt-1.5 text-[12px] text-[#86868b]">
+                Systém stáhne obsah stránky, extrahuje text a přidá ho do znalostní báze.
+              </p>
             </div>
           ) : (
             <textarea

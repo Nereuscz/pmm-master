@@ -51,8 +51,9 @@ create table if not exists kb_documents (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   category text not null,
-  source text not null check (source in ('upload', 'sharepoint')),
+  source text not null check (source in ('upload', 'sharepoint', 'url')),
   sharepoint_id text,
+  source_url text,
   uploaded_by uuid references users(id),
   source_text text not null default '',
   visibility text not null default 'global' check (visibility in ('global', 'team')),
@@ -186,7 +187,15 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS asana_token_expires_at timestamptz;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS asana_user_id text UNIQUE;
 
 -- ═══════════════════════════════════════════════════════════════════
--- 8. DEV FALLBACK USER (pro lokální vývoj bez Asana)
+-- 8. MIGRACE 007 (KB URL zdroj)
+-- ═══════════════════════════════════════════════════════════════════
+ALTER TABLE kb_documents ADD COLUMN IF NOT EXISTS source_url text;
+ALTER TABLE kb_documents DROP CONSTRAINT IF EXISTS kb_documents_source_check;
+ALTER TABLE kb_documents ADD CONSTRAINT kb_documents_source_check
+  CHECK (source IN ('upload', 'sharepoint', 'url'));
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 9. DEV FALLBACK USER (pro lokální vývoj bez Asana)
 -- ═══════════════════════════════════════════════════════════════════
 insert into users (id, email, role)
 values ('00000000-0000-0000-0000-000000000001', 'dev@pm-assistant.local', 'Admin')

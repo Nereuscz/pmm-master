@@ -8,6 +8,7 @@ export type AuditAction =
   | "guide_complete"
   | "asana_export"
   | "kb_upload"
+  | "kb_url_add"
   | "kb_delete";
 
 export async function logAudit(input: {

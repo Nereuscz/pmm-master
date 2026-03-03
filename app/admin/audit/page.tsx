@@ -21,6 +21,7 @@ const ACTION_LABELS: Record<string, string> = {
   guide_complete: "Dokončení průvodce",
   asana_export: "Export do Asany",
   kb_upload: "Nahrání do KB",
+  kb_url_add: "Přidání URL do KB",
   kb_delete: "Smazání z KB",
 };
 
