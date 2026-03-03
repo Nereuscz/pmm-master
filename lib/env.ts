@@ -8,6 +8,8 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   TAVILY_API_KEY: z.string().min(1).optional(),
   ASANA_BASE_URL: z.string().url().default("https://app.asana.com/api/1.0"),
+  ASANA_CLIENT_ID: z.string().min(1).optional(),
+  ASANA_CLIENT_SECRET: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 });
@@ -20,6 +22,8 @@ export const env = envSchema.parse({
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
   ASANA_BASE_URL: process.env.ASANA_BASE_URL,
+  ASANA_CLIENT_ID: process.env.ASANA_CLIENT_ID,
+  ASANA_CLIENT_SECRET: process.env.ASANA_CLIENT_SECRET,
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
 });

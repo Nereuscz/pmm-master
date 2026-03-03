@@ -1,6 +1,6 @@
 -- PM Assistant – kompletní SQL pro Supabase
 -- Spusť v Supabase Dashboard → SQL Editor → New query
--- Pořadí: 1) schema, 2) migrace 001, 3) migrace 002, 4) migrace 003, 5) migrace 004
+-- Pořadí: 1) schema, 2) migrace 001–005
 
 -- ═══════════════════════════════════════════════════════════════════
 -- 1. ZÁKLADNÍ SCHEMA (db/schema.sql)
@@ -14,6 +14,8 @@ create table if not exists users (
   ms_id text unique,
   role text not null default 'PM',
   asana_token_encrypted text,
+  asana_refresh_token text,
+  asana_token_expires_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -172,7 +174,13 @@ create index if not exists idx_audit_log_user_id on audit_log(user_id);
 create index if not exists idx_audit_log_created_at on audit_log(created_at desc);
 
 -- ═══════════════════════════════════════════════════════════════════
--- 6. DEV FALLBACK USER (pro lokální vývoj bez Azure AD)
+-- 6. MIGRACE 005 (Asana OAuth)
+-- ═══════════════════════════════════════════════════════════════════
+ALTER TABLE users ADD COLUMN IF NOT EXISTS asana_refresh_token text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS asana_token_expires_at timestamptz;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 7. DEV FALLBACK USER (pro lokální vývoj bez Azure AD)
 -- ═══════════════════════════════════════════════════════════════════
 insert into users (id, email, role)
 values ('00000000-0000-0000-0000-000000000001', 'dev@pm-assistant.local', 'Admin')

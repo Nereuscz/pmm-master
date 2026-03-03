@@ -6,7 +6,7 @@ import { z } from "zod";
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  token: z.string().nullable(),
+  token: z.null(),
 });
 
 export async function GET() {
@@ -35,23 +35,22 @@ export async function POST(request: NextRequest) {
 
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Neplatný vstup." }, { status: 400 });
+    return NextResponse.json({ error: "Neplatný vstup. Pro odpojení pošli { token: null }." }, { status: 400 });
   }
-
-  const token = parsed.data.token?.trim() || null;
-  const encrypted = token
-    ? Buffer.from(token, "utf-8").toString("base64")
-    : null;
 
   try {
     const db = ensureDb();
     const { error } = await db
       .from("users")
-      .update({ asana_token_encrypted: encrypted })
+      .update({
+        asana_token_encrypted: null,
+        asana_refresh_token: null,
+        asana_token_expires_at: null,
+      })
       .eq("id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: "Nepodařilo se uložit token." }, { status: 500 });
+      return NextResponse.json({ error: "Nepodařilo se odpojit Asanu." }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
   } catch {

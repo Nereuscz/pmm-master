@@ -8,6 +8,8 @@ create table if not exists users (
   ms_id text unique,
   role text not null default 'PM',
   asana_token_encrypted text,
+  asana_refresh_token text,
+  asana_token_expires_at timestamptz,
   created_at timestamptz not null default now()
 );
 
