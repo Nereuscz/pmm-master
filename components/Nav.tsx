@@ -8,6 +8,7 @@ const links = [
   { href: "/dashboard", label: "Projekty" },
   { href: "/process", label: "Zpracovat" },
   { href: "/guide", label: "Průvodce" },
+  { href: "/guide/canvas", label: "Canvas" },
   { href: "/kb", label: "Znalostní báze" }
 ];
 

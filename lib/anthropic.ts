@@ -69,7 +69,7 @@ const PRODUKTOVY: Record<string, Question[]> = {
     { name: "Problém/Potřeba", hint: "Jaký konkrétní problém či potřebu produkt řeší? Máme ji potvrzenou od cílové skupiny?" },
     { name: "Hodnota produktu (Value Proposition)", hint: "Jakou konkrétní hodnotu produkt vytváří pro klienta?" },
     { name: "Cílovka", hint: "Pro koho je produkt primárně určen a jaké jsou vstupní předpoklady?" },
-    { name: "Product Stakeholders", hint: "Kdo všechno má zájem na produktu a z jakého důvodu? S kým je potřeba konzultovat klíčová rozhodnutí (C)? Které stačí průběžně informovat (I)?" },
+    { name: "Product Stakeholders", hint: "Kdo všechno má zájem na produktu a z jakého důvodu (strategické zadání, rozpočet, odbornost, supportní služby, koordinace s jinými produkty aj.)? S kým z nich je potřeba předem konzultovat klíčová rozhodnutí? (C - Consulted) Které z nich stačí průběžně informovat? (I - Informed)" },
     { name: "Positioning (Market Fit)", hint: "Jakou hodnotu přináší produkt na trh a v čem se liší?" },
     { name: "Cíle JIC", hint: "Jak produkt přispívá k dlouhodobé strategii JIC a které KPIs naplňuje?" },
     { name: "Customer Journey (Portfolio)", hint: "Jak produkt zapadá mezi naše stávající produkty a služby?" },
@@ -409,6 +409,135 @@ Uživatelův text: "${input.userText}"`
   } catch {
     return { isClarification: false };
   }
+}
+
+// ─── Parsování textového promptu pro rozšířenou sadu otázek ───────────────────
+
+export async function parsePromptForExtendedCanvas(input: {
+  userText: string;
+}): Promise<{ wantsCanvas: boolean; framework?: "Univerzální" | "Produktový"; phase?: string }> {
+  if (!anthropic) {
+    const t = input.userText.toLowerCase();
+    const wantsCanvas =
+      t.includes("rozšířen") ||
+      t.includes("rozsirena") ||
+      t.includes("canvas") ||
+      t.includes("všechny otázky") ||
+      t.includes("vsechny otazky");
+    const framework: "Univerzální" | "Produktový" = t.includes("produktový") || t.includes("produktovy")
+      ? "Produktový"
+      : "Univerzální";
+    return { wantsCanvas, framework };
+  }
+
+  const response = await withRetry(() =>
+    anthropic.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 256,
+      system: `Rozpoznej z uživatelova textu, zda žádá o "rozšířenou sadu PM otázek" (canvas se všemi otázkami a 3 doplňujícími u každé).
+Pokud ano, extrahuj framework (Univerzální nebo Produktový) a volitelně fázi (Iniciace, Plánování, Realizace, Closing, Gate 1/2/3).
+Vrať POUZE validní JSON: {"wantsCanvas": true|false, "framework": "Univerzální"|"Produktový", "phase": "Iniciace"|...}
+Pokud framework není zmíněn, použij Produktový. Pokud fáze není zmíněna, použij Iniciace.`,
+      messages: [
+        {
+          role: "user",
+          content: `Uživatel napsal: "${input.userText}"`
+        }
+      ]
+    })
+  );
+
+  const raw = response.content
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("")
+    .trim();
+
+  try {
+    const parsed = JSON.parse(raw) as {
+      wantsCanvas: boolean;
+      framework?: "Univerzální" | "Produktový";
+      phase?: string;
+    };
+    return {
+      wantsCanvas: parsed.wantsCanvas ?? false,
+      framework: parsed.framework ?? "Produktový",
+      phase: parsed.phase ?? "Iniciace"
+    };
+  } catch {
+    const t = input.userText.toLowerCase();
+    const wantsCanvas =
+      t.includes("rozšířen") ||
+      t.includes("rozsirena") ||
+      t.includes("canvas") ||
+      t.includes("všechny otázky");
+    const framework: "Univerzální" | "Produktový" =
+      t.includes("produktový") || t.includes("produktovy") ? "Produktový" : "Univerzální";
+    return { wantsCanvas, framework };
+  }
+}
+
+// ─── Generování 3 doplňujících otázek pro každou základní (pro Canvas) ─────────
+
+export async function generateFollowUpsForCanvas(input: {
+  questions: { name: string; hint: string }[];
+  framework: string;
+  phase: string;
+}): Promise<{ questionName: string; followUps: string[] }[]> {
+  if (!anthropic) {
+    return input.questions.map((q) => ({
+      questionName: q.name,
+      followUps: [
+        `Jak to konkrétně ovlivní projekt?`,
+        `Kdo je za to odpovědný?`,
+        `Jak to budeme měřit?`
+      ]
+    }));
+  }
+
+  const results: { questionName: string; followUps: string[] }[] = [];
+
+  for (const q of input.questions) {
+    const response = await withRetry(() =>
+      anthropic.messages.create({
+        model: env.ANTHROPIC_MODEL,
+        max_tokens: 256,
+        system: `Jsi PM coach. Pro danou základní PM otázku vygeneruj přesně 3 relevantní otevřené otázky, které mohou být kladeny pro upřesnění nebo vylepšení odpovědí dle kontextu projektu. Vrať POUZE číslovaný seznam 3 otázek (jedna věta každá). Žádný jiný text.`,
+        messages: [
+          {
+            role: "user",
+            content: `Framework: ${input.framework} | Fáze: ${input.phase}
+Základní otázka: ${q.name} – ${q.hint}
+
+Vygeneruj 3 doplňující otázky pro upřesnění odpovědi:`
+          }
+        ]
+      })
+    );
+
+    const text = response.content
+      .filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("\n");
+
+    const lines = text
+      .split("\n")
+      .filter((l) => /^\d+[\.\)]/.test(l.trim()))
+      .map((l) => l.replace(/^\d+[\.\)]\s*/, "").trim())
+      .filter(Boolean)
+      .slice(0, 3);
+
+    results.push({
+      questionName: q.name,
+      followUps: lines.length >= 3 ? lines : [
+        "Jak to konkrétně ovlivní projekt?",
+        "Kdo je za to odpovědný?",
+        "Jak to budeme měřit?"
+      ]
+    });
+  }
+
+  return results;
 }
 
 // ─── AI shrnutí paměti projektu ───────────────────────────────────────────────

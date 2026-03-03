@@ -15,7 +15,7 @@ type ProcessResponse = {
 };
 type Project = { id: string; name: string; framework: string; phase: string; asana_project_id?: string | null };
 
-type Step = "idle" | "clarifying" | "answering" | "processing" | "done";
+type Step = "confirm_context" | "idle" | "clarifying" | "answering" | "processing" | "done";
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
@@ -23,7 +23,7 @@ function ProcessForm() {
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("projectId");
 
-  const [step, setStep] = useState<Step>("idle");
+  const [step, setStep] = useState<Step>("confirm_context");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProcessResponse | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -166,12 +166,17 @@ function ProcessForm() {
   }
 
   function resetForm() {
-    setStep("idle");
+    setStep("confirm_context");
     setResult(null);
     setError(null);
     setClarifyingQuestions([]);
     setClarifyingAnswers("");
     pendingPayloadRef.current = null;
+  }
+
+  function onConfirmContext() {
+    if (!selectedProject) return;
+    setStep("idle");
   }
 
   async function handleExportToAsana() {
@@ -201,12 +206,18 @@ function ProcessForm() {
   }
 
   const steps = [
+    { label: "Ověření kontextu", key: "confirm_context" as const },
     { label: "Transkript", key: "idle" as const },
     { label: "Doplňující otázky", key: "answering" as const },
     { label: "Zpracování", key: "processing" as const },
     { label: "Hotovo", key: "done" as const },
   ];
-  const stepIndex = step === "idle" ? 0 : step === "clarifying" ? 1 : step === "answering" ? 1 : step === "processing" ? 2 : 3;
+  const stepIndex =
+    step === "confirm_context" ? 0
+    : step === "idle" ? 1
+    : step === "clarifying" || step === "answering" ? 2
+    : step === "processing" ? 3
+    : 4;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
@@ -240,6 +251,76 @@ function ProcessForm() {
             </div>
           ))}
         </div>
+
+        {/* Krok 0: Kontextové ověření */}
+        {step === "confirm_context" ? (
+          <div className="space-y-5 rounded-apple bg-white p-6 shadow-apple">
+            <div className="rounded-xl border border-brand-100 bg-brand-50 p-4">
+              <p className="text-[13px] font-semibold uppercase tracking-wider text-brand-700">
+                Před zpracováním potřebuji potvrdit
+              </p>
+              <p className="mt-2 text-[14px] text-[#1d1d1f]">
+                1) V jaké fázi PM se projekt nachází?<br />
+                2) Jaký typ frameworku použijeme? (Univerzální vs. Produktový)
+              </p>
+              <p className="mt-3 text-[13px] text-[#6e6e73]">
+                Nevytvářím dokument, dokud nepotvrdíte.
+              </p>
+            </div>
+            {projects.length === 0 ? (
+              <div className="rounded-xl bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+                Nejdřív vytvoř projekt v sekci Projekty.
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Projekt</label>
+                  <select
+                    className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                    value={selectedProject?.id ?? ""}
+                    onChange={(e) => {
+                      const p = projects.find((p) => p.id === e.target.value) ?? null;
+                      setSelectedProject(p);
+                      if (p) setSelectedPhase(p.phase ?? PHASES[0]);
+                    }}
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Fáze PM</label>
+                    <select
+                      value={selectedPhase}
+                      onChange={(e) => setSelectedPhase(e.target.value)}
+                      className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                    >
+                      {PHASES.map((p) => (
+                        <option key={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Framework</label>
+                    <p className="rounded-xl border border-[#e8e8ed] bg-[#fafafa] px-4 py-2.5 text-[14px] text-[#6e6e73]">
+                      {selectedProject?.framework ?? "–"}
+                    </p>
+                    <p className="mt-1 text-[12px] text-[#aeaeb2]">Framework se mění v nastavení projektu</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onConfirmContext}
+                  className="w-full rounded-full bg-brand-600 py-3 text-[15px] font-medium text-white transition-colors hover:bg-brand-700"
+                >
+                  Potvrdit a pokračovat →
+                </button>
+              </>
+            )}
+          </div>
+        ) : null}
 
         {/* Krok 1: Formulář */}
         {step === "idle" ? (

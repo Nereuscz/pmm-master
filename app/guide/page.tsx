@@ -545,14 +545,17 @@ function GuideChat() {
         <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Průvodce" }]} />
         <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Průvodce PM otázkami</h1>
         <p className="mt-1 text-[15px] text-[#6e6e73]">
-          Konverzační průvodce – AI klade otázky, nabídne 3 doplňující a na konci vygeneruje PM dokumentaci.
+          Konverzační průvodce – AI klade otázky, nabídne 3 doplňující a na konci vygeneruje PM dokumentaci.{" "}
+          <Link href="/guide/canvas" className="text-brand-600 hover:text-brand-700 underline">
+            Rozšířená sada (Canvas)
+          </Link>
         </p>
         {started && totalCount != null ? (
           <p className="mt-2 text-[13px] font-medium text-[#6e6e73]">
             {answers.length} z {totalCount} otázek
             {status === "awaiting_fu" ? (() => {
               const lastFu = [...messages].reverse().find((m) => m.role === "ai" && m.kind === "followup" && !m.submitted);
-              const fuFilled = lastFu && lastFu.kind === "followup"
+              const fuFilled = lastFu && "answers" in lastFu
                 ? Object.values(lastFu.answers).filter((v) => v?.trim()).length
                 : 0;
               return ` · doplňující: ${fuFilled}/3`;
@@ -564,6 +567,18 @@ function GuideChat() {
       {/* Konfigurace – před startem (bez projectId) nebo po dokončení */}
       {(!started && !projectIdParam) || status === "done" ? (
         <div className="mb-4 shrink-0 space-y-4 rounded-apple bg-white p-5 shadow-apple">
+          <div className="rounded-xl border border-brand-100 bg-brand-50 p-4">
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-brand-700">
+              Před zpracováním potřebuji potvrdit
+            </p>
+            <p className="mt-2 text-[14px] text-[#1d1d1f]">
+              1) V jaké fázi PM se projekt nachází?<br />
+              2) Jaký typ frameworku použijeme? (Univerzální vs. Produktový)
+            </p>
+            <p className="mt-2 text-[13px] text-[#6e6e73]">
+              Nevytvářím dokument, dokud nepotvrdíte výběrem níže.
+            </p>
+          </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">Projekt</label>
@@ -618,7 +633,7 @@ function GuideChat() {
             disabled={!selectedProject}
             className="rounded-full bg-brand-600 px-5 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
           >
-            {status === "done" ? "🔄 Spustit znovu" : "💬 Spustit průvodce"}
+            {status === "done" ? "🔄 Spustit znovu" : "Potvrdit a spustit průvodce"}
           </button>
         </div>
       ) : null}
