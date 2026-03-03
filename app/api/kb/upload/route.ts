@@ -4,6 +4,7 @@ import { upsertDocumentWithChunks } from "@/lib/kb";
 import { parseFileBuffer, detectMimeType, ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from "@/lib/parser";
 import { getAuthUser, unauthorized, canManageKb, forbidden } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,13 @@ export async function POST(request: NextRequest) {
       filePath: uploadError ? undefined : storagePath,
       fileSize: file.size,
       mimeType
+    });
+
+    await logAudit({
+      userId: user.id,
+      action: "kb_upload",
+      resourceType: "kb_document",
+      resourceId: result.documentId,
     });
 
     return NextResponse.json(

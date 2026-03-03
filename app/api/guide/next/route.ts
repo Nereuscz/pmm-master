@@ -7,6 +7,7 @@ import { tryGetDb, requireProject, getOrCreateProjectContext } from "@/lib/db";
 import { summarizeForContext } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
+import { logAudit } from "@/lib/audit";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { searchMarket, buildQueryFromAnswers } from "@/lib/tavily";
 
@@ -133,6 +134,13 @@ export async function POST(request: NextRequest) {
       .from("projects")
       .update({ phase: input.phase, updated_at: new Date().toISOString() })
       .eq("id", input.projectId);
+
+    await logAudit({
+      userId: user.id,
+      action: "guide_complete",
+      resourceType: "session",
+      resourceId: session.id,
+    });
 
     return NextResponse.json({
       done: true,

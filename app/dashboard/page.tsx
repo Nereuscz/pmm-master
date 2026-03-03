@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { PHASE_COLORS } from "@/lib/constants";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import ErrorMessage from "@/components/ErrorMessage";
 
 type Project = {
   id: string;
@@ -11,22 +15,23 @@ type Project = {
   created_at: string;
 };
 
-const PHASE_COLORS: Record<string, string> = {
-  Iniciace:  "bg-blue-100 text-blue-700",
-  Plánování: "bg-violet-100 text-violet-700",
-  Realizace: "bg-amber-100 text-amber-700",
-  Closing:   "bg-[#d1f5d3] text-[#1a7f37]",
-  "Gate 1":  "bg-[#f2f2f7] text-[#6e6e73]",
-  "Gate 2":  "bg-[#f2f2f7] text-[#6e6e73]",
-  "Gate 3":  "bg-[#f2f2f7] text-[#6e6e73]",
-};
-
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const filteredProjects = projects.filter((p) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      p.name.toLowerCase().includes(q) ||
+      p.phase.toLowerCase().includes(q) ||
+      p.framework.toLowerCase().includes(q)
+    );
+  });
 
   useEffect(() => {
     fetch("/api/projects")
@@ -49,8 +54,11 @@ export default function DashboardPage() {
         throw new Error(json.error || "Smazání selhalo");
       }
       setProjects((prev) => prev.filter((p) => p.id !== id));
+      toast.success("Projekt smazán.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Smazání selhalo");
+      const msg = e instanceof Error ? e.message : "Smazání selhalo";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setDeletingId(null);
     }
@@ -72,10 +80,23 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {/* Vyhledávání */}
+      {!loading && projects.length > 0 ? (
+        <div className="mb-4">
+          <input
+            type="search"
+            placeholder="Hledat projekty (název, fáze, framework)…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full max-w-md rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+          />
+        </div>
+      ) : null}
+
       {/* Chyba */}
       {error ? (
-        <div className="mb-6 rounded-apple bg-[#fff2f2] p-4 text-sm text-[#c0392b]">
-          {error}
+        <div className="mb-6">
+          <ErrorMessage message={error} />
         </div>
       ) : null}
 
@@ -106,7 +127,7 @@ export default function DashboardPage() {
       ) : (
         /* Projekt grid */
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <article
               key={project.id}
               className="group relative flex flex-col rounded-apple bg-white p-6 shadow-apple transition-all hover:-translate-y-0.5 hover:shadow-apple-lg"
@@ -144,44 +165,40 @@ export default function DashboardPage() {
                     Zpracovat →
                   </Link>
 
-                  {/* Mazání – inline potvrzení */}
-                  {deletingId === project.id ? (
-                    <div className="flex h-7 w-7 items-center justify-center">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#ff3b30] border-t-transparent" />
-                    </div>
-                  ) : confirmId === project.id ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[12px] text-[#6e6e73]">Smazat?</span>
-                      <button
-                        onClick={() => deleteProject(project.id)}
-                        className="rounded-full bg-[#ff3b30] px-3 py-1 text-[11px] font-medium text-white hover:bg-[#e03029]"
-                      >
-                        Ano
-                      </button>
-                      <button
-                        onClick={() => setConfirmId(null)}
-                        className="rounded-full border border-[#d2d2d7] px-3 py-1 text-[11px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
-                      >
-                        Ne
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmId(project.id)}
-                      title="Smazat projekt"
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-red-50 hover:text-[#ff3b30]"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                        <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setConfirmId(project.id)}
+                    title="Smazat projekt"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-red-50 hover:text-[#ff3b30]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                      <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </article>
           ))}
+          {filteredProjects.length === 0 && projects.length > 0 ? (
+            <p className="col-span-2 py-8 text-center text-[14px] text-[#6e6e73]">
+              Žádný projekt neodpovídá hledanému výrazu.
+            </p>
+          ) : null}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Smazat projekt?"
+        message={
+          confirmId
+            ? `Projekt „${projects.find((p) => p.id === confirmId)?.name ?? ""}“ bude trvale smazán včetně všech transkriptů a kontextu.`
+            : ""
+        }
+        confirmLabel="Smazat"
+        onConfirm={() => confirmId && deleteProject(confirmId)}
+        onCancel={() => setConfirmId(null)}
+        loading={deletingId !== null}
+      />
     </main>
   );
 }

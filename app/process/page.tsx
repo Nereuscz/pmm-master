@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import AiOutput from "@/components/AiOutput";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 type ProcessResponse = {
   sessionId: string;
   output: string;
   meta: { lowKbConfidence: boolean; kbChunksUsed: number; changeSignals: string[] };
 };
-type Project = { id: string; name: string; framework: string; phase: string };
+type Project = { id: string; name: string; framework: string; phase: string; asana_project_id?: string | null };
 
 type Step = "idle" | "clarifying" | "answering" | "processing" | "done";
 
@@ -31,6 +33,8 @@ function ProcessForm() {
   const [clarifyingAnswers, setClarifyingAnswers] = useState("");
   const [fileUploadState, setFileUploadState] = useState<"idle" | "loading" | "error">("idle");
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
+  const [hasAsanaToken, setHasAsanaToken] = useState<boolean | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const pendingPayloadRef = useRef<{
     projectId: string;
@@ -51,6 +55,13 @@ function ProcessForm() {
       })
       .catch(() => undefined);
   }, [projectIdParam]);
+
+  useEffect(() => {
+    fetch("/api/settings/asana-token")
+      .then((r) => r.json())
+      .then((json) => setHasAsanaToken(json.hasToken === true))
+      .catch(() => setHasAsanaToken(false));
+  }, []);
 
   async function onAnalyze(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -161,10 +172,71 @@ function ProcessForm() {
     pendingPayloadRef.current = null;
   }
 
+  async function handleExportToAsana() {
+    if (!result || !selectedProject?.asana_project_id) return;
+    setExporting(true);
+    try {
+      const r = await fetch("/api/asana/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: result.sessionId,
+          asanaProjectId: selectedProject.asana_project_id,
+          idempotencyKey: `export-${result.sessionId}`,
+          title: `${selectedProject.name} – ${selectedPhase}`,
+          sections: [{ question: "PM dokumentace", answer: result.output }],
+        }),
+      });
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || "Export selhal.");
+      toast.success("Export do Asany odeslán.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export selhal.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  const steps = [
+    { label: "Transkript", key: "idle" as const },
+    { label: "Doplňující otázky", key: "answering" as const },
+    { label: "Zpracování", key: "processing" as const },
+    { label: "Hotovo", key: "done" as const },
+  ];
+  const stepIndex = step === "idle" ? 0 : step === "clarifying" ? 1 : step === "answering" ? 1 : step === "processing" ? 2 : 3;
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
       {/* ── Levý panel ── */}
       <div className="space-y-4">
+        {/* Step indikátor */}
+        <div className="flex items-center gap-2 rounded-apple bg-white px-4 py-3 shadow-apple-sm">
+          {steps.map((s, i) => (
+            <div key={s.key} className="flex items-center gap-2">
+              <span
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
+                  i < stepIndex
+                    ? "bg-brand-600 text-white"
+                    : i === stepIndex
+                      ? "bg-brand-100 text-brand-700 ring-2 ring-brand-600/30"
+                      : "bg-[#f2f2f7] text-[#aeaeb2]"
+                }`}
+              >
+                {i < stepIndex ? "✓" : i + 1}
+              </span>
+              <span
+                className={`hidden text-[12px] font-medium sm:inline ${
+                  i <= stepIndex ? "text-[#1d1d1f]" : "text-[#aeaeb2]"
+                }`}
+              >
+                {s.label}
+              </span>
+              {i < steps.length - 1 ? (
+                <span className="mx-1 hidden h-px w-4 bg-[#e8e8ed] sm:block" aria-hidden />
+              ) : null}
+            </div>
+          ))}
+        </div>
 
         {/* Krok 1: Formulář */}
         {step === "idle" ? (
@@ -220,7 +292,7 @@ function ProcessForm() {
                 value={transcript}
                 onChange={(e) => setTranscript(e.target.value)}
                 className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
-                placeholder="Vlož nebo nahraj transkript ze schůzky (min. 50 znaků)..."
+                placeholder="Vlož nebo nahraj transkript ze schůzky (min. 300, max. 50 000 znaků)..."
               />
               <div className="mt-1 flex items-center justify-between gap-2">
                 <span className="text-[12px] text-[#aeaeb2]">
@@ -229,13 +301,20 @@ function ProcessForm() {
                     <span className="text-red-600">{fileUploadError}</span>
                   )}
                 </span>
-                <span className="text-[12px] text-[#aeaeb2]">{transcript.length} znaků</span>
+                <span className="text-[12px] text-[#aeaeb2]">
+                {transcript.length} znaků
+                {transcript.length > 0 && (transcript.length < 300 || transcript.length > 50000) ? (
+                  <span className="ml-2 text-amber-600">
+                    (min. 300, max. 50 000)
+                  </span>
+                ) : null}
+              </span>
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={projects.length === 0 || transcript.length < 50}
+              disabled={projects.length === 0 || transcript.length < 300 || transcript.length > 50000}
               className="w-full rounded-full bg-brand-600 py-3 text-[15px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
             >
               Analyzovat transkript →
@@ -293,7 +372,16 @@ function ProcessForm() {
             </div>
 
             {error ? (
-              <div className="rounded-xl bg-[#fff2f2] px-4 py-3 text-[14px] text-[#c0392b]">{error}</div>
+              <div className="space-y-2 rounded-xl bg-[#fff2f2] px-4 py-3">
+                <p className="text-[14px] text-[#c0392b]">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => onProcess(false)}
+                  className="rounded-full border border-[#c0392b] bg-white px-4 py-2 text-[13px] font-medium text-[#c0392b] hover:bg-[#fff2f2]"
+                >
+                  Zkus znovu
+                </button>
+              </div>
             ) : null}
 
             <div className="flex gap-3">
@@ -332,12 +420,23 @@ function ProcessForm() {
         {step === "done" ? (
           <div className="rounded-apple bg-[#f0fdf4] p-5 shadow-apple-sm">
             <p className="mb-3 text-[14px] font-medium text-[#1a7f37]">✅ Dokumentace vygenerována a uložena do projektu.</p>
-            <button
-              onClick={resetForm}
-              className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
-            >
-              Zpracovat další transkript
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={resetForm}
+                className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
+              >
+                Zpracovat další transkript
+              </button>
+              {hasAsanaToken && selectedProject?.asana_project_id ? (
+                <button
+                  onClick={handleExportToAsana}
+                  disabled={exporting}
+                  className="rounded-full bg-[#1a7f37] px-5 py-2 text-[14px] font-medium text-white hover:bg-[#15803d] disabled:opacity-50"
+                >
+                  {exporting ? "Exportuji…" : "Exportovat do Asany"}
+                </button>
+              ) : null}
+            </div>
           </div>
         ) : null}
       </div>
@@ -358,7 +457,7 @@ function ProcessForm() {
                 KB chunků: {result.meta.kbChunksUsed}
               </span>
               {result.meta.lowKbConfidence ? (
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-[12px] text-amber-700">Nízká jistota KB</span>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-[12px] text-amber-700">Nenalezen dostatečný interní kontext</span>
               ) : null}
               {result.meta.changeSignals.length > 0 ? (
                 <span className="rounded-full bg-orange-100 px-3 py-1 text-[12px] text-orange-700">Změny v rozsahu</span>
@@ -380,7 +479,8 @@ export default function ProcessPage() {
   return (
     <main className="mx-auto max-w-6xl px-8 py-10">
       <div className="mb-8">
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Zpracovat transkript</h1>
+        <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Zpracovat" }]} />
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Zpracovat transkript</h1>
         <p className="mt-1 text-[15px] text-[#6e6e73]">
           AI nejprve ověří nejasnosti, pak extrahuje strukturované PM výstupy dle zvoleného frameworku.
         </p>

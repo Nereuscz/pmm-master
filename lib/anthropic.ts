@@ -1,6 +1,29 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "./env";
 
+/** Retry Anthropic API calls on 429/timeout. Spec §10.1: max 2 retries, exponential backoff. */
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      const status = e && typeof e === "object" && "status" in e ? (e as { status?: number }).status : undefined;
+      const msg = e instanceof Error ? e.message : "";
+      const isRetryable =
+        status === 429 ||
+        msg.includes("timeout") ||
+        msg.includes("ECONNRESET") ||
+        msg.includes("ETIMEDOUT");
+      if (!isRetryable || attempt === maxRetries) throw e;
+      const delayMs = Math.pow(2, attempt) * 1000;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastError;
+}
+
 export const anthropic = env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: env.ANTHROPIC_API_KEY })
   : null;
@@ -229,12 +252,14 @@ DŮLEŽITÉ: Pokud máš oblast označenou ✅ ale sekci jsi ve výstupu nevygen
 
   const userPrompt = parts.join("\n\n");
 
-  const response = await anthropic.messages.create({
-    model: env.ANTHROPIC_MODEL,
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }]
-  });
+  const response = await withRetry(() =>
+    anthropic.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userPrompt }]
+    })
+  );
 
   const text = response.content
     .filter((part) => part.type === "text")
@@ -257,23 +282,25 @@ export async function generateClarifyingQuestions(input: {
   const questions = getQuestionsForPhaseAndFramework(input.phase, input.framework);
   const questionNames = questions.map((q) => q.name).join(", ");
 
-  const response = await anthropic.messages.create({
-    model: env.ANTHROPIC_MODEL,
-    max_tokens: 512,
-    system: `Jsi PM asistent. Přečti transkript schůzky a identifikuj maximálně 5 klíčových nejasností nebo chybějících informací, které jsou nutné pro kvalitní PM dokumentaci ve zvolené fázi. Vrať POUZE číslovaný seznam stručných otázek (jedna věta každá). Žádný jiný text.`,
-    messages: [
-      {
-        role: "user",
-        content: `Framework: ${input.framework} | Fáze: ${input.phase}
+  const response = await withRetry(() =>
+    anthropic.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 512,
+      system: `Jsi PM asistent. Přečti transkript schůzky a identifikuj maximálně 5 klíčových nejasností nebo chybějících informací, které jsou nutné pro kvalitní PM dokumentaci ve zvolené fázi. Vrať POUZE číslovaný seznam stručných otázek (jedna věta každá). Žádný jiný text.`,
+      messages: [
+        {
+          role: "user",
+          content: `Framework: ${input.framework} | Fáze: ${input.phase}
 Sledované oblasti: ${questionNames}
 ${input.projectContext ? `Kontext projektu: ${input.projectContext}\n` : ""}
 Transkript:
 ${input.transcript}
 
 Polož max. 5 doplňujících otázek k nejasným nebo chybějícím informacím:`
-      }
-    ]
-  });
+        }
+      ]
+    })
+  );
 
   const text = response.content
     .filter((p) => p.type === "text")
@@ -300,21 +327,23 @@ export async function generateFollowUpQuestions(input: {
 }): Promise<{ followUps: string[] }> {
   if (!anthropic) return { followUps: [] };
 
-  const response = await anthropic.messages.create({
-    model: env.ANTHROPIC_MODEL,
-    max_tokens: 256,
-    system: `Jsi PM coach. Na základě odpovědi uživatele vygeneruj přesně 3 krátké doplňující otázky, které prohloubí nebo upřesní odpověď pro PM dokumentaci. Vrať POUZE číslovaný seznam 3 otázek (jedna věta každá). Žádný jiný text.`,
-    messages: [
-      {
-        role: "user",
-        content: `Framework: ${input.framework} | Fáze: ${input.phase}
+  const response = await withRetry(() =>
+    anthropic.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 256,
+      system: `Jsi PM coach. Na základě odpovědi uživatele vygeneruj přesně 3 krátké doplňující otázky, které prohloubí nebo upřesní odpověď pro PM dokumentaci. Vrať POUZE číslovaný seznam 3 otázek (jedna věta každá). Žádný jiný text.`,
+      messages: [
+        {
+          role: "user",
+          content: `Framework: ${input.framework} | Fáze: ${input.phase}
 Otázka: ${input.questionName} – ${input.questionHint}
 Odpověď: ${input.userAnswer}
 
 Vygeneruj 3 doplňující otázky:`
-      }
-    ]
-  });
+        }
+      ]
+    })
+  );
 
   const text = response.content
     .filter((p) => p.type === "text")
@@ -342,10 +371,11 @@ export async function generateClarification(input: {
 }): Promise<{ isClarification: boolean; explanation?: string }> {
   if (!anthropic) return { isClarification: false };
 
-  const response = await anthropic.messages.create({
-    model: env.ANTHROPIC_MODEL,
-    max_tokens: 400,
-    system: `Jsi PM coach v konverzačním průvodci. Uživatel odpovídá na PM otázky.
+  const response = await withRetry(() =>
+    anthropic.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 400,
+      system: `Jsi PM coach v konverzačním průvodci. Uživatel odpovídá na PM otázky.
 Tvůj úkol: Rozhodni, zda uživatelův text je ŽÁDOST O VYSVĚTLENÍ otázky (nerozumí, ptá se co to znamená, říká "nevím" apod.), nebo SKUTEČNÁ ODPOVĚĎ na otázku.
 
 Pokud jde o ŽÁDOST O VYSVĚTLENÍ:
@@ -364,7 +394,8 @@ Otázka: ${input.questionName} – ${input.questionHint}
 Uživatelův text: "${input.userText}"`
       }
     ]
-  });
+  })
+  );
 
   const raw = response.content
     .filter((p) => p.type === "text")
@@ -391,10 +422,11 @@ export async function generateProjectMemorySummary(input: {
     return { summary: input.accumulatedContext.slice(0, 600) };
   }
 
-  const response = await anthropic.messages.create({
-    model: env.ANTHROPIC_MODEL,
-    max_tokens: 512,
-    system: `Jsi PM asistent. Dostaneš akumulovaný kontext projektu – záznamy z různých schůzek a fází.
+  const response = await withRetry(() =>
+    anthropic.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 512,
+      system: `Jsi PM asistent. Dostaneš akumulovaný kontext projektu – záznamy z různých schůzek a fází.
 Vytvoř z toho JEDEN srozumitelný, souvislý odstavec (max. 4–6 vět) v češtině.
 Zaměř se na: co je cílem projektu, kde projekt stojí, klíčové závěry a rozhodnutí.
 Piš přirozeně, jako byste to vysvětloval kolegovi. Žádné odrážky, žádný markdown, jen čistý text.`,
@@ -404,7 +436,8 @@ Piš přirozeně, jako byste to vysvětloval kolegovi. Žádné odrážky, žád
         content: `Projekt: ${input.projectName} (${input.framework} framework)\n\nKontext:\n${input.accumulatedContext}`
       }
     ]
-  });
+  })
+  );
 
   const text = response.content
     .filter((p) => p.type === "text")

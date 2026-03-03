@@ -6,6 +6,7 @@ import { ensureDb, getLastSession, getOrCreateProjectContext, requireProject } f
 import { detectChangeSignals, summarizeForContext } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
+import { logAudit } from "@/lib/audit";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { searchMarket, buildQueryFromTranscript } from "@/lib/tavily";
 
@@ -125,6 +126,13 @@ Shrnutí: ${aiResult.content}`
         updated_at: new Date().toISOString()
       })
       .eq("id", job.id);
+
+    await logAudit({
+      userId: user.id,
+      action: "transcript_process",
+      resourceType: "session",
+      resourceId: insertedSession.id,
+    });
 
     return NextResponse.json({
       sessionId: insertedSession.id,

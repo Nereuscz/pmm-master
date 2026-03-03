@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createProjectSchema } from "@/lib/schemas";
 import { ensureDb, ensureUser } from "@/lib/db";
 import { getAuthUser, unauthorized, canProcess } from "@/lib/auth-guard";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export async function GET() {
   const db = ensureDb();
   let query = db
     .from("projects")
-    .select("id,name,framework,phase,owner_id,created_at,updated_at")
+    .select("id,name,framework,phase,owner_id,asana_project_id,created_at,updated_at")
     .order("created_at", { ascending: false });
 
   // Admin vidí všechny projekty; PM/Viewer jen vlastní
@@ -69,6 +70,13 @@ export async function POST(request: NextRequest) {
     project_id: data.id,
     accumulated_context: "",
     last_updated: new Date().toISOString()
+  });
+
+  await logAudit({
+    userId: user.id,
+    action: "project_create",
+    resourceType: "project",
+    resourceId: data.id,
   });
 
   return NextResponse.json({ project: data }, { status: 201 });

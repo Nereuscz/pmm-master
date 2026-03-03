@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import LayoutShell from "@/components/LayoutShell";
+import Toaster from "@/components/Toaster";
 
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="cs" className={inter.variable}>
       <body>
         <LayoutShell>{children}</LayoutShell>
+        <Toaster />
       </body>
     </html>
   );

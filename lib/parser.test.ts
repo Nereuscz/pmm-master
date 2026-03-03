@@ -58,7 +58,7 @@ describe("parseFileBuffer", () => {
 
   it("throws for unsupported mime type", async () => {
     await expect(
-      parseFileBuffer(Buffer.from("x"), "application/octet-stream")
+      parseFileBuffer(Buffer.from("xxxx"), "application/octet-stream")
     ).rejects.toThrow("Nepodporovaný formát");
   });
 });

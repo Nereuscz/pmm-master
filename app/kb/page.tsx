@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import ErrorMessage from "@/components/ErrorMessage";
 
 type DocumentRow = {
   id: string;
@@ -24,12 +28,21 @@ export default function KnowledgeBasePage() {
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [logs, setLogs] = useState<SyncLog[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadMode, setUploadMode] = useState<UploadMode>("file");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmDocId, setConfirmDocId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+
+  const categories = [...new Set(documents.map((d) => d.category).filter(Boolean))].sort();
+  const filteredDocuments = documents.filter((d) => {
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = !query || d.title.toLowerCase().includes(query);
+    const matchesCategory = !categoryFilter || d.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   async function reload() {
     const [docsRes, logsRes] = await Promise.all([fetch("/api/kb/documents"), fetch("/api/kb/sync/logs")]);
@@ -47,7 +60,6 @@ export default function KnowledgeBasePage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSuccess(null);
     const form = e.currentTarget;
     const data = new FormData(form);
     try {
@@ -62,7 +74,7 @@ export default function KnowledgeBasePage() {
         const response = await fetch("/api/kb/upload", { method: "POST", body: fd });
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || "Nahrání selhalo.");
-        setSuccess(`Soubor nahrán (${json.chunksCount} chunků, ${json.extractedLength} znaků).`);
+        toast.success(`Soubor nahrán (${json.chunksCount} chunků, ${json.extractedLength} znaků).`);
       } else {
         const payload = {
           title: String(data.get("title") || ""),
@@ -78,13 +90,13 @@ export default function KnowledgeBasePage() {
         });
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || "Uložení dokumentu selhalo.");
-        setSuccess(`Dokument uložen (${json.chunksCount} chunků).`);
+        toast.success(`Dokument uložen (${json.chunksCount} chunků).`);
       }
       form.reset();
       if (fileInputRef.current) fileInputRef.current.value = "";
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      toast.error(e instanceof Error ? e.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -93,7 +105,6 @@ export default function KnowledgeBasePage() {
   async function deleteDocument(id: string) {
     setDeletingDocId(id);
     setConfirmDocId(null);
-    setError(null);
     try {
       const r = await fetch(`/api/kb/documents/${id}`, { method: "DELETE" });
       if (!r.ok) {
@@ -101,9 +112,9 @@ export default function KnowledgeBasePage() {
         throw new Error(json.error || "Smazání selhalo");
       }
       setDocuments((prev) => prev.filter((d) => d.id !== id));
-      setSuccess("Dokument smazán.");
+      toast.success("Dokument smazán.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Smazání selhalo");
+      toast.error(e instanceof Error ? e.message : "Smazání selhalo");
     } finally {
       setDeletingDocId(null);
     }
@@ -112,7 +123,6 @@ export default function KnowledgeBasePage() {
   async function runSimulatedSharepointSync() {
     setLoading(true);
     setError(null);
-    setSuccess(null);
     try {
       const payload = {
         sourcePath: "/sites/jic/shared/pm-docs",
@@ -130,10 +140,10 @@ export default function KnowledgeBasePage() {
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Sync selhal.");
-      setSuccess("SharePoint sync dokončen.");
+      toast.success("SharePoint sync dokončen.");
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      toast.error(e instanceof Error ? e.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -143,16 +153,16 @@ export default function KnowledgeBasePage() {
     <main className="mx-auto max-w-6xl px-8 py-10">
       {/* Hlavička */}
       <div className="mb-8">
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Znalostní báze</h1>
+        <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Znalostní báze" }]} />
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Znalostní báze</h1>
         <p className="mt-1 text-[15px] text-[#6e6e73]">Správa dokumentů, reindexace a SharePoint sync.</p>
       </div>
 
-      {/* Notifikace */}
+      {/* Chyba z načítání */}
       {error ? (
-        <div className="mb-4 rounded-apple bg-[#fff2f2] px-5 py-3 text-[14px] text-[#c0392b]">{error}</div>
-      ) : null}
-      {success ? (
-        <div className="mb-4 rounded-apple bg-[#f0fdf4] px-5 py-3 text-[14px] text-[#1a7f37]">{success}</div>
+        <div className="mb-4">
+          <ErrorMessage message={error} />
+        </div>
       ) : null}
 
       {/* Upload sekce */}
@@ -245,14 +255,35 @@ export default function KnowledgeBasePage() {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Dokumenty */}
         <section className="rounded-apple bg-white p-6 shadow-apple">
-          <div className="mb-4 flex items-center gap-3">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">Dokumenty</p>
             <span className="rounded-full bg-[#f2f2f7] px-2.5 py-0.5 text-[12px] font-medium text-[#6e6e73]">
               {documents.length}
             </span>
+            {documents.length > 0 ? (
+              <div className="ml-auto flex flex-1 flex-wrap items-center gap-2 sm:flex-initial">
+                <input
+                  type="search"
+                  placeholder="Hledat…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full min-w-[120px] max-w-[180px] rounded-lg border border-[#d2d2d7] bg-white px-3 py-1.5 text-[13px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20 sm:w-auto"
+                />
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="rounded-lg border border-[#d2d2d7] bg-white px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+                >
+                  <option value="">Všechny kategorie</option>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
           <div className="divide-y divide-[#f2f2f7]">
-            {documents.map((doc) => (
+            {filteredDocuments.map((doc) => (
               <div key={doc.id} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-medium text-[#1d1d1f]">{doc.title}</p>
@@ -261,42 +292,27 @@ export default function KnowledgeBasePage() {
                   </p>
                 </div>
                 <div className="shrink-0">
-                  {deletingDocId === doc.id ? (
-                    <div className="flex h-7 w-7 items-center justify-center">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#ff3b30] border-t-transparent" />
-                    </div>
-                  ) : confirmDocId === doc.id ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[12px] text-[#6e6e73]">Smazat?</span>
-                      <button
-                        onClick={() => deleteDocument(doc.id)}
-                        className="rounded-full bg-[#ff3b30] px-2.5 py-1 text-[11px] font-medium text-white hover:bg-[#e03029]"
-                      >
-                        Ano
-                      </button>
-                      <button
-                        onClick={() => setConfirmDocId(null)}
-                        className="rounded-full border border-[#d2d2d7] px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
-                      >
-                        Ne
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDocId(doc.id)}
-                      title="Smazat dokument"
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-red-50 hover:text-[#ff3b30]"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                        <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setConfirmDocId(doc.id)}
+                    title="Smazat dokument"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-red-50 hover:text-[#ff3b30]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                      <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}
             {documents.length === 0 ? (
-              <p className="py-4 text-[14px] text-[#aeaeb2]">Žádné dokumenty.</p>
+              <div className="py-8 text-center">
+                <p className="text-[14px] text-[#6e6e73]">Zatím žádné dokumenty.</p>
+                <p className="mt-1 text-[13px] text-[#aeaeb2]">Nahraj první dokument výše.</p>
+              </div>
+            ) : filteredDocuments.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-[14px] text-[#6e6e73]">Žádný dokument neodpovídá filtru.</p>
+              </div>
             ) : null}
           </div>
         </section>
@@ -319,6 +335,20 @@ export default function KnowledgeBasePage() {
           </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        open={confirmDocId !== null}
+        title="Smazat dokument?"
+        message={
+          confirmDocId
+            ? `Dokument „${documents.find((d) => d.id === confirmDocId)?.title ?? ""}“ bude trvale smazán.`
+            : ""
+        }
+        confirmLabel="Smazat"
+        onConfirm={() => confirmDocId && deleteDocument(confirmDocId)}
+        onCancel={() => setConfirmDocId(null)}
+        loading={deletingDocId !== null}
+      />
     </main>
   );
 }

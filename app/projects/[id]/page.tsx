@@ -3,21 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AiOutput from "@/components/AiOutput";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import MarkdownContent from "@/components/MarkdownContent";
+import { PHASE_COLORS } from "@/lib/constants";
+import ErrorMessage from "@/components/ErrorMessage";
 
 type Project = { id: string; name: string; framework: string; phase: string; created_at: string };
 type Session = { id: string; phase: string; ai_output: string; created_at: string };
 type ContextData = { accumulated_context: string; last_updated: string | null };
-
-const PHASE_COLORS: Record<string, string> = {
-  Iniciace:  "bg-blue-100 text-blue-700",
-  Plánování: "bg-violet-100 text-violet-700",
-  Realizace: "bg-amber-100 text-amber-700",
-  Closing:   "bg-[#d1f5d3] text-[#1a7f37]",
-  "Gate 1":  "bg-[#f2f2f7] text-[#6e6e73]",
-  "Gate 2":  "bg-[#f2f2f7] text-[#6e6e73]",
-  "Gate 3":  "bg-[#f2f2f7] text-[#6e6e73]",
-};
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
@@ -58,19 +51,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   );
   if (error) return (
     <main className="mx-auto max-w-5xl px-8 py-10">
-      <div className="rounded-apple bg-[#fff2f2] p-6 text-[#c0392b]">{error}</div>
+      <ErrorMessage message={error} />
     </main>
   );
   if (!project) return null;
 
   return (
     <main className="mx-auto max-w-5xl px-8 py-10">
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <Link href="/dashboard" className="text-[14px] text-brand-600 hover:text-brand-700">
-          ← Projekty
-        </Link>
-      </div>
+      <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: project.name }]} />
 
       {/* Header karta */}
       <div className="mb-6 rounded-apple bg-white p-6 shadow-apple">
@@ -190,7 +178,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
             </div>
-            <p className="text-[15px] font-medium text-[#1d1d1f]">Zatím žádná zpracování</p>
+            <p className="text-[15px] font-medium text-[#1d1d1f]">Zatím žádné zpracované transkripty</p>
             <Link
               href={`/process?projectId=${project.id}`}
               className="mt-4 inline-block text-[14px] font-medium text-brand-600 hover:text-brand-700"

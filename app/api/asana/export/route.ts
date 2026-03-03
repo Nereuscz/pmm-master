@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { asanaExportSchema } from "@/lib/schemas";
 import { ensureDb } from "@/lib/db";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,13 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    await logAudit({
+      userId: user.id,
+      action: "asana_export",
+      resourceType: "export_job",
+      resourceId: created.id,
+    });
 
     return NextResponse.json({
       exportJobId: created.id,

@@ -7,7 +7,7 @@ const isAuthEnabled =
   !!process.env.AZURE_AD_CLIENT_ID && !!process.env.NEXTAUTH_SECRET;
 
 // Stránky, které vyžadují přihlášení
-const PROTECTED_PATHS = ["/dashboard", "/projects", "/process", "/guide", "/kb"];
+const PROTECTED_PATHS = ["/dashboard", "/projects", "/process", "/guide", "/kb", "/settings", "/admin"];
 
 function isProtected(pathname: string) {
   return PROTECTED_PATHS.some((p) => pathname.startsWith(p));
@@ -37,6 +37,8 @@ export const config = {
     "/projects/:path*",
     "/process/:path*",
     "/guide/:path*",
-    "/kb/:path*"
+    "/kb/:path*",
+    "/settings/:path*",
+    "/admin/:path*"
   ]
 };

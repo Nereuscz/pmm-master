@@ -39,6 +39,7 @@ První implementační iterace projektu PM Assistant podle technického zadání
 3. Spusť SQL schema/migraci v Supabase SQL editoru:
    - `db/schema.sql`
    - `db/migrations/001_v12_upgrade.sql` (pokud už existuje starší schema)
+   - `db/migrations/004_audit_log.sql` (audit log pro spec §11.1)
 4. Spusť:
    - `npm run dev`
 

@@ -5,6 +5,7 @@ import { kbDocumentUpdateSchema } from "@/lib/schemas";
 export const dynamic = "force-dynamic";
 import { upsertDocumentWithChunks } from "@/lib/kb";
 import { getAuthUser, unauthorized, canManageKb, forbidden } from "@/lib/auth-guard";
+import { logAudit } from "@/lib/audit";
 
 type Params = { params: { id: string } };
 
@@ -67,5 +68,11 @@ export async function DELETE(_: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Smazání dokumentu selhalo." }, { status: 500 });
   }
   await db.from("kb_chunks").delete().eq("document_id", params.id);
+  await logAudit({
+    userId: user.id,
+    action: "kb_delete",
+    resourceType: "kb_document",
+    resourceId: params.id,
+  });
   return NextResponse.json({ ok: true });
 }

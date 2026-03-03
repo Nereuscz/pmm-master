@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AiOutput from "@/components/AiOutput";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 // ─── Typy ─────────────────────────────────────────────────────────────────────
 
@@ -537,7 +538,8 @@ function GuideChat() {
     <main className="mx-auto flex max-w-3xl flex-col px-6 py-10" style={{ height: "100dvh" }}>
       {/* Nadpis */}
       <div className="mb-4 shrink-0">
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Průvodce PM otázkami</h1>
+        <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Průvodce" }]} />
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Průvodce PM otázkami</h1>
         <p className="mt-1 text-[15px] text-[#6e6e73]">
           Konverzační průvodce – AI klade otázky, nabídne 3 doplňující a na konci vygeneruje PM dokumentaci.
         </p>
@@ -590,6 +592,11 @@ function GuideChat() {
               </select>
             </div>
           </div>
+          {projects.length === 0 ? (
+            <div className="rounded-xl bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+              Vytvoř projekt v sekci Projekty.
+            </div>
+          ) : null}
           <button
             onClick={handleStart}
             disabled={!selectedProject}

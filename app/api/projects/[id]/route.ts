@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensureDb } from "@/lib/db";
 import { updateProjectSchema } from "@/lib/schemas";
 import { getAuthUser, unauthorized, forbidden, isAdmin } from "@/lib/auth-guard";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ async function resolveProject(projectId: string) {
   const db = ensureDb();
   const { data, error } = await db
     .from("projects")
-    .select("id,name,framework,phase,owner_id,created_at,updated_at")
+    .select("id,name,framework,phase,owner_id,asana_project_id,created_at,updated_at")
     .eq("id", projectId)
     .single();
   if (error || !data) return null;
@@ -57,6 +58,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (error || !data) {
     return NextResponse.json({ error: "Projekt nebyl nalezen." }, { status: 404 });
   }
+  await logAudit({
+    userId: user.id,
+    action: "project_update",
+    resourceType: "project",
+    resourceId: params.id,
+  });
   return NextResponse.json({ project: data });
 }
 
@@ -73,5 +80,11 @@ export async function DELETE(_: NextRequest, { params }: Params) {
   if (error) {
     return NextResponse.json({ error: "Smazání projektu selhalo." }, { status: 500 });
   }
+  await logAudit({
+    userId: user.id,
+    action: "project_delete",
+    resourceType: "project",
+    resourceId: params.id,
+  });
   return NextResponse.json({ ok: true });
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ErrorMessage from "@/components/ErrorMessage";
 
 const FRAMEWORK_INFO = {
   Produktový: "Tvorba nebo redesign konkrétní služby / produktu JIC pro klienty.",
@@ -118,7 +119,7 @@ export default function NewProjectPage() {
         </div>
 
         {error ? (
-          <div className="rounded-xl bg-[#fff2f2] px-4 py-3 text-[14px] text-[#c0392b]">{error}</div>
+          <ErrorMessage message={error} />
         ) : null}
 
         <button
