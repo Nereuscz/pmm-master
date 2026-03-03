@@ -11,6 +11,7 @@ type DocumentRow = {
   title: string;
   category: string;
   source: string;
+  source_url?: string | null;
   created_at: string;
 };
 
@@ -29,12 +30,14 @@ export default function KnowledgeBasePage() {
   const [logs, setLogs] = useState<SyncLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [uploadMode, setUploadMode] = useState<UploadMode>("file");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmDocId, setConfirmDocId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [refreshingDocId, setRefreshingDocId] = useState<string | null>(null);
 
   const categories = [...new Set(documents.map((d) => d.category).filter(Boolean))].sort();
   const filteredDocuments = documents.filter((d) => {
@@ -53,7 +56,9 @@ export default function KnowledgeBasePage() {
   }
 
   useEffect(() => {
-    reload().catch((e) => setError(e instanceof Error ? e.message : "Unknown error"));
+    reload()
+      .catch((e) => setError(e instanceof Error ? e.message : "Unknown error"))
+      .finally(() => setInitialLoading(false));
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -114,6 +119,21 @@ export default function KnowledgeBasePage() {
       toast.error(e instanceof Error ? e.message : "Unknown error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function refreshDocument(id: string) {
+    setRefreshingDocId(id);
+    try {
+      const r = await fetch(`/api/kb/documents/${id}/refresh`, { method: "POST" });
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || "Obnovení selhalo");
+      toast.success(`Dokument obnoven (${json.chunksCount} chunků).`);
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Obnovení selhalo");
+    } finally {
+      setRefreshingDocId(null);
     }
   }
 
@@ -283,6 +303,14 @@ export default function KnowledgeBasePage() {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Dokumenty */}
         <section className="rounded-apple bg-white p-6 shadow-apple">
+          {initialLoading ? (
+            <div className="space-y-3 py-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-14 animate-pulse rounded-lg bg-[#f5f5f7]" />
+              ))}
+            </div>
+          ) : (
+          <>
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">Dokumenty</p>
             <span className="rounded-full bg-[#f2f2f7] px-2.5 py-0.5 text-[12px] font-medium text-[#6e6e73]">
@@ -314,12 +342,42 @@ export default function KnowledgeBasePage() {
             {filteredDocuments.map((doc) => (
               <div key={doc.id} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-medium text-[#1d1d1f]">{doc.title}</p>
+                  <p className="truncate text-[14px] font-medium text-[#1d1d1f]">
+                    {doc.source === "url" && doc.source_url ? (
+                      <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="hover:text-brand-600 hover:underline">
+                        {doc.title}
+                      </a>
+                    ) : (
+                      doc.title
+                    )}
+                  </p>
                   <p className="mt-0.5 text-[12px] text-[#86868b]">
-                    {doc.category ? `${doc.category} · ` : ""}{doc.source} · {new Date(doc.created_at).toLocaleDateString("cs-CZ")}
+                    {doc.category ? `${doc.category} · ` : ""}{doc.source}
+                    {doc.source === "url" && doc.source_url ? (
+                      <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="ml-1 text-brand-600 hover:underline">
+                        ↗
+                      </a>
+                    ) : null}
+                    {" · "}{new Date(doc.created_at).toLocaleDateString("cs-CZ")}
                   </p>
                 </div>
-                <div className="shrink-0">
+                <div className="flex shrink-0 items-center gap-1">
+                  {doc.source === "url" && doc.source_url ? (
+                    <button
+                      onClick={() => refreshDocument(doc.id)}
+                      disabled={refreshingDocId === doc.id}
+                      title="Obnovit z URL"
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-50"
+                    >
+                      {refreshingDocId === doc.id ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                          <path fillRule="evenodd" d="M15.312 4.437A7.5 7.5 0 011.875 10.5 7.5 7.5 0 0115.312 4.437 1.25 1.25 0 0117.25 5.25v3.375a1.25 1.25 0 01-2.5 0V5.25a1.25 1.25 0 01.562-1.063zM2.5 10.5a5.625 5.625 0 0111.25 0 5.625 5.625 0 01-5.625 5.625.75.75 0 010-1.5 4.125 4.125 0 004.125-4.125 4.125 4.125 0 00-4.125-4.125.75.75 0 010-1.5 5.625 5.625 0 015.625 5.625z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ) : null}
                   <button
                     onClick={() => setConfirmDocId(doc.id)}
                     title="Smazat dokument"
@@ -335,7 +393,9 @@ export default function KnowledgeBasePage() {
             {documents.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-[14px] text-[#6e6e73]">Zatím žádné dokumenty.</p>
-                <p className="mt-1 text-[13px] text-[#aeaeb2]">Nahraj první dokument výše.</p>
+                <p className="mt-1 text-[13px] text-[#aeaeb2]">
+                  Bez dokumentů bude RAG prázdný a výstupy AI méně přesné. Nahrajte soubory, text nebo URL výše.
+                </p>
               </div>
             ) : filteredDocuments.length === 0 ? (
               <div className="py-8 text-center">
@@ -343,6 +403,8 @@ export default function KnowledgeBasePage() {
               </div>
             ) : null}
           </div>
+          </>
+          )}
         </section>
 
         {/* Sync log */}

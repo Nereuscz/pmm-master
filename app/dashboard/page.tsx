@@ -108,15 +108,17 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : projects.length === 0 ? (
-        /* Empty state */
-        <div className="rounded-apple bg-white py-20 text-center shadow-apple">
+        /* Empty state + onboarding */
+        <div className="rounded-apple bg-white py-16 px-8 text-center shadow-apple">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
             </svg>
           </div>
           <p className="text-[17px] font-medium text-[#1d1d1f]">Zatím žádné projekty</p>
-          <p className="mt-1 text-[14px] text-[#6e6e73]">Začni vytvořením svého prvního projektu.</p>
+          <p className="mt-2 text-[14px] text-[#6e6e73] max-w-md mx-auto">
+            Začněte vytvořením projektu → nahrajte dokumenty do Znalostní báze → zpracujte transkript nebo použijte Průvodce.
+          </p>
           <Link
             href="/projects/new"
             className="mt-6 inline-block rounded-full bg-brand-600 px-6 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-brand-700"
@@ -162,7 +164,13 @@ export default function DashboardPage() {
                     href={`/process?projectId=${project.id}`}
                     className="rounded-full border border-[#d2d2d7] bg-white px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
                   >
-                    Zpracovat →
+                    Zpracovat
+                  </Link>
+                  <Link
+                    href={`/guide?projectId=${project.id}`}
+                    className="rounded-full border border-[#d2d2d7] bg-white px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
+                  >
+                    Průvodce
                   </Link>
 
                   <button

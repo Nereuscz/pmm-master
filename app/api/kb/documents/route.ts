@@ -14,7 +14,7 @@ export async function GET() {
   const db = ensureDb();
   const { data, error } = await db
     .from("kb_documents")
-    .select("id,title,category,source,sharepoint_id,visibility,created_at,deleted_at")
+    .select("id,title,category,source,source_url,sharepoint_id,visibility,created_at,deleted_at")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 

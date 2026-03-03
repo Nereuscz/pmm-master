@@ -1,51 +1,41 @@
 # PM Assistant
 
-První implementační iterace projektu PM Assistant podle technického zadání v1.2.
+Webová aplikace pro JIC – zpracování PM transkriptů s AI, RAG nad znalostní bází a export do Asany.
 
 ## Co je hotové
 
-- Next.js 14 app skeleton (`app/` router)
-- Auth skeleton (NextAuth + Azure AD provider, bez ostrého napojení)
-- API route pro zpracování transkriptu: `POST /api/process` (processing jobs + project context + change signals)
-- API route pro Asana export (simulace + idempotency persistence): `POST /api/asana/export`
-- API pro projekty:
-  - `GET/POST /api/projects`
-  - `GET/PATCH/DELETE /api/projects/:id`
-  - `GET /api/projects/:id/sessions`
-  - `GET /api/projects/:id/context`
-- API pro znalostní bázi:
-  - `GET/POST /api/kb/documents`
-  - `PATCH/DELETE /api/kb/documents/:id`
-  - `POST /api/kb/documents/:id/reindex`
-  - `POST /api/kb/upload-parse` (extrakce textu z PDF/DOCX pro stránku Zpracovat)
-  - `POST /api/kb/search`
-  - `POST /api/kb/sync/sharepoint` (simulovaný sync batch)
-  - `GET /api/kb/sync/logs`
-- Supabase schema baseline: [`db/schema.sql`](/Users/samuelpacek/Desktop/_Projekty/APPKY/PM Assistant/db/schema.sql)
-- Vstupní validace přes `zod`
-- UI stránky:
-  - `/dashboard`, `/projects/new`, `/projects/[id]`, `/process`, `/kb`
+- Next.js 14 (App Router), TypeScript, Tailwind
+- **Auth**: NextAuth + Asana OAuth (přihlášení přes Asana účet)
+- **Projekty**: CRUD, historie, kontext, propojení s Asanou
+- **Zpracování transkriptu**: AI analýza, doplňující otázky, RAG z KB, export DOCX/PDF
+- **Průvodce**: interaktivní PM otázky, generování dokumentace
+- **Znalostní báze**: upload souborů (PDF, DOCX, TXT, MD), URL adresy, text; reindexace
+- **Asana**: OAuth tokeny, export (simulace – připraveno k napojení API)
+- **Audit log**: záznam akcí
+- Supabase: PostgreSQL, pgvector pro RAG
+
+## API
+
+- `POST /api/process` – zpracování transkriptu
+- `POST /api/asana/export` – export do Asany (idempotence)
+- `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/:id`
+- `GET/POST /api/kb/documents`, `POST /api/kb/upload`, `POST /api/kb/url`
+- `POST /api/kb/sync/sharepoint` (simulovaný)
 
 ## Testy
 
-- `npm run test` – spustí Vitest (lib/text, lib/parser, lib/schemas)
+- `npm run test` – Vitest (lib/text, lib/parser, lib/schemas)
 - `npm run test:watch` – watch mód
 
 ## Lokální spuštění
 
-1. Nainstaluj balíčky:
-   - `npm install`
-2. Vytvoř `.env.local` podle `.env.example`.
-3. Spusť SQL schema/migraci v Supabase SQL editoru:
-   - `db/schema.sql`
-   - `db/migrations/001_v12_upgrade.sql` (pokud už existuje starší schema)
-   - `db/migrations/004_audit_log.sql` (audit log pro spec §11.1)
-4. Spusť:
-   - `npm run dev`
+1. `npm install`
+2. Vytvoř `.env.local` podle `.env.example`
+3. Spusť SQL v Supabase: `db/schema.sql`, migrace `001`–`007`
+4. `npm run dev`
 
 ## Poznámky
 
-- `lib/rag.ts` používá lexikální relevance fallback (limit 200 chunků). Při dostupných embeddings se používá pgvector.
-- Rate limiting na AI endpointy: 20 req/min na uživatele (vyžaduje UPSTASH_REDIS_REST_URL a UPSTASH_REDIS_REST_TOKEN).
-- Asana endpoint je záměrně simulovaný (bez napojení), ale job/idempotence se ukládá.
-- Microsoft autorizace je zatím pouze skeleton bez produkční konfigurace.
+- RAG: pgvector při `OPENAI_API_KEY`; jinak lexikální fallback
+- Rate limiting: 20 req/min (vyžaduje UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
+- Asana: simulovaný export; pro produkci napojit Asana API

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import MarkdownContent from "./MarkdownContent";
 
 type Props = { content: string; downloadFilename?: string };
@@ -25,6 +26,7 @@ export default function AiOutput({ content, downloadFilename = "pm-vystup" }: Pr
       downloadDocx(blob, `${downloadFilename}.docx`);
     } catch (e) {
       console.error("DOCX export failed:", e);
+      toast.error("Export DOCX selhal. Zkuste to znovu.");
     } finally {
       setExporting(null);
     }
@@ -46,6 +48,7 @@ export default function AiOutput({ content, downloadFilename = "pm-vystup" }: Pr
         .save();
     } catch (e) {
       console.error("PDF export failed:", e);
+      toast.error("Export PDF selhal. Zkuste to znovu.");
     } finally {
       setExporting(null);
     }

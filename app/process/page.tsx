@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import AiOutput from "@/components/AiOutput";
@@ -459,13 +460,26 @@ function ProcessForm() {
           </div>
         ) : result ? (
           <div className="space-y-3">
+            {result.meta.lowKbConfidence ? (
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="text-[14px] font-medium text-amber-800">Nenalezen dostatečný interní kontext</p>
+                  <p className="mt-0.5 text-[13px] text-amber-700">
+                    Výstup vznikl bez relevantních dokumentů ze znalostní báze. Pro přesnější výsledky doplňte dokumenty v sekci Znalostní báze.
+                  </p>
+                  <Link href="/kb" className="mt-2 inline-block text-[13px] font-medium text-amber-800 underline hover:text-amber-900">
+                    Přejít do Znalostní báze →
+                  </Link>
+                </div>
+              </div>
+            ) : null}
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-[#f2f2f7] px-3 py-1 text-[12px] text-[#6e6e73]">
                 KB chunků: {result.meta.kbChunksUsed}
               </span>
-              {result.meta.lowKbConfidence ? (
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-[12px] text-amber-700">Nenalezen dostatečný interní kontext</span>
-              ) : null}
               {result.meta.changeSignals.length > 0 ? (
                 <span className="rounded-full bg-orange-100 px-3 py-1 text-[12px] text-orange-700">Změny v rozsahu</span>
               ) : null}

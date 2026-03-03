@@ -25,7 +25,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const db = ensureDb();
   const { data: existing, error: existingError } = await db
     .from("kb_documents")
-    .select("id,title,category,source,sharepoint_id,source_text,visibility,uploaded_by")
+    .select("id,title,category,source,sharepoint_id,source_url,source_text,visibility,uploaded_by")
     .eq("id", params.id)
     .is("deleted_at", null)
     .maybeSingle();
@@ -37,9 +37,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const merged = {
     title: parsed.data.title ?? existing.title,
     category: parsed.data.category ?? existing.category,
-    source: existing.source as "upload" | "sharepoint",
+    source: existing.source as "upload" | "sharepoint" | "url",
     content: parsed.data.content ?? existing.source_text ?? "",
     sharepointId: existing.sharepoint_id ?? undefined,
+    sourceUrl: existing.source_url ?? undefined,
     uploadedBy: existing.uploaded_by ?? undefined,
     visibility: (parsed.data.visibility ?? existing.visibility ?? "global") as "global" | "team"
   };

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const { data: existing, error } = await db
     .from("kb_documents")
-    .select("id,title,category,source,sharepoint_id,source_text,visibility,uploaded_by")
+    .select("id,title,category,source,sharepoint_id,source_url,source_text,visibility,uploaded_by")
     .eq("id", params.id)
     .is("deleted_at", null)
     .maybeSingle();
@@ -36,9 +36,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       documentId: params.id,
       title: existing.title,
       category: existing.category,
-      source: existing.source as "upload" | "sharepoint",
+      source: existing.source as "upload" | "sharepoint" | "url",
       content,
       sharepointId: existing.sharepoint_id ?? undefined,
+      sourceUrl: existing.source_url ?? undefined,
       uploadedBy: existing.uploaded_by ?? undefined,
       visibility: (existing.visibility ?? "global") as "global" | "team"
     });

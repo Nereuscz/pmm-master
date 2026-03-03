@@ -3,6 +3,8 @@ import { asanaExportSchema } from "@/lib/schemas";
 import { ensureDb } from "@/lib/db";
 import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
 import { logAudit } from "@/lib/audit";
+import { getValidAsanaToken } from "@/lib/asana-auth";
+import { createTask, createSubtask } from "@/lib/asana-api";
 
 export const dynamic = "force-dynamic";
 
@@ -53,18 +55,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const createdObjects = {
-      simulated: true,
-      mainTaskId: `task_${Date.now()}`,
-      subtasksCount: input.sections.length
-    };
+    const accessToken = await getValidAsanaToken(user.id);
+    let createdObjects: { mainTaskId: string; subtaskIds: string[]; simulated?: boolean };
+
+    if (accessToken) {
+      const mainNotes = input.sections
+        .map((s) => `**${s.question}**\n${s.answer}`)
+        .join("\n\n---\n\n");
+      const mainTask = await createTask(
+        accessToken,
+        input.asanaProjectId,
+        input.title,
+        mainNotes
+      );
+      const subtaskIds: string[] = [];
+      for (const section of input.sections) {
+        const sub = await createSubtask(
+          accessToken,
+          mainTask.gid,
+          section.question,
+          section.answer
+        );
+        subtaskIds.push(sub.gid);
+      }
+      createdObjects = {
+        mainTaskId: mainTask.gid,
+        subtaskIds,
+      };
+    } else {
+      createdObjects = {
+        simulated: true,
+        mainTaskId: `task_${Date.now()}`,
+        subtaskIds: input.sections.map((_, i) => `sub_${i}`),
+      };
+    }
 
     const { data: created, error } = await db
       .from("export_jobs")
       .insert({
         session_id: input.sessionId,
         asana_project_id: input.asanaProjectId,
-        status: "simulated",
+        status: accessToken ? "exported" : "simulated",
         idempotency_key: input.idempotencyKey,
         created_objects_json: createdObjects
       })
