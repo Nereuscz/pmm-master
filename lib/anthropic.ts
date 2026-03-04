@@ -350,6 +350,7 @@ export async function generateStructuredOutput(input: {
   projectContext: string;
   ragContext: string[];
   marketInsight?: string;
+  contextNote?: string;
 }) {
   if (!anthropic) {
     return {
@@ -367,6 +368,10 @@ export async function generateStructuredOutput(input: {
     `**Framework:** ${input.framework}`,
     `**Fáze:** ${input.phase}`
   ];
+
+  if (input.contextNote?.trim()) {
+    parts.push(`**Poznámka průvodce k záznamu:** ${input.contextNote.trim()}`);
+  }
 
   if (input.projectContext?.trim()) {
     parts.push(`**Projektový kontext (z předchozích schůzek):**\n${input.projectContext}`);
@@ -649,6 +654,7 @@ export async function generateFollowUpsForCanvas(input: {
   questions: { name: string; hint: string }[];
   framework: string;
   phase: string;
+  projectContext?: string;
 }): Promise<{ questionName: string; followUps: string[] }[]> {
   if (!anthropic) {
     return input.questions.map((q) => ({
@@ -668,11 +674,11 @@ export async function generateFollowUpsForCanvas(input: {
       anthropic.messages.create({
         model: env.ANTHROPIC_MODEL,
         max_tokens: 256,
-        system: `Jsi PM coach. Pro danou základní PM otázku vygeneruj přesně 3 relevantní otevřené otázky, které mohou být kladeny pro upřesnění nebo vylepšení odpovědí dle kontextu projektu. Vrať POUZE číslovaný seznam 3 otázek (jedna věta každá). Žádný jiný text.`,
+        system: `Jsi PM coach. Pro danou základní PM otázku vygeneruj přesně 3 relevantní otevřené otázky, které mohou být kladeny pro upřesnění nebo vylepšení odpovědí dle kontextu projektu. Formuluj otázky přirozeně a konverzačně. Vrať POUZE číslovaný seznam 3 otázek (jedna věta každá). Žádný jiný text.`,
         messages: [
           {
             role: "user",
-            content: `Framework: ${input.framework} | Fáze: ${input.phase}
+            content: `Framework: ${input.framework} | Fáze: ${input.phase}${input.projectContext ? `\nKontext projektu: ${input.projectContext}` : ""}
 Základní otázka: ${q.name} – ${q.hint}
 
 Vygeneruj 3 doplňující otázky pro upřesnění odpovědi:`
@@ -704,6 +710,54 @@ Vygeneruj 3 doplňující otázky pro upřesnění odpovědi:`
   }
 
   return results;
+}
+
+// ─── Iterativní doladění výstupu ──────────────────────────────────────────────
+
+export async function generateRefinement(input: {
+  existingOutput: string;
+  refinementPrompt: string;
+  phase: string;
+  framework: string;
+  projectContext: string;
+}): Promise<{ content: string }> {
+  if (!anthropic) {
+    return { content: input.existingOutput };
+  }
+
+  const response = await withRetry(() =>
+    anthropic.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 4096,
+      system: `Jsi PM asistent pro JIC. Dostaneš existující PM výstup a instrukce k doladění od průvodce.
+
+Vrať VYLEPŠENOU verzi celého výstupu:
+- Zachovej sekce, které jsou v pořádku
+- Doplň, přepiš nebo odstraň to, co průvodce specifikuje
+- Dodržuj původní formátování (### 🟨 záhlaví, odrážky, tučný text)
+- Zachovej self-check blok a sekci 💡 Návrhy na konci
+
+Tón: přímý, lidský, analytický – jako zkušený PM kolega.`,
+      messages: [
+        {
+          role: "user",
+          content: `Framework: ${input.framework} | Fáze: ${input.phase}
+${input.projectContext ? `Projektový kontext: ${input.projectContext}\n` : ""}
+Instrukce k doladění: ${input.refinementPrompt}
+
+Stávající výstup:
+${input.existingOutput}`
+        }
+      ]
+    })
+  );
+
+  const text = response.content
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("\n");
+
+  return { content: text || input.existingOutput };
 }
 
 // ─── AI shrnutí paměti projektu ───────────────────────────────────────────────

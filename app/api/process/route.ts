@@ -79,7 +79,8 @@ export async function POST(request: NextRequest) {
       transcript: input.transcript,
       projectContext: projectContextRow.accumulated_context,
       ragContext: [...changeSignals, ...ragContext],
-      marketInsight: marketInsight || undefined
+      marketInsight: marketInsight || undefined,
+      contextNote: input.contextNote || undefined
     });
 
     const { data: insertedSession, error: sessionError } = await db

@@ -12,7 +12,8 @@ export const processTranscriptSchema = z.object({
     "Gate 3"
   ]),
   framework: z.enum(["Univerzální", "Produktový"]),
-  transcript: z.string().min(300).max(50000)
+  transcript: z.string().min(300).max(50000),
+  contextNote: z.string().max(600).optional()
 });
 
 export const asanaExportSchema = z.object({

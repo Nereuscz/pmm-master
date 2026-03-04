@@ -34,16 +34,24 @@ function ProcessForm() {
 
   const [clarifyingQuestions, setClarifyingQuestions] = useState<string[]>([]);
   const [clarifyingAnswers, setClarifyingAnswers] = useState("");
+  const [contextNote, setContextNote] = useState("");
   const [fileUploadState, setFileUploadState] = useState<"idle" | "loading" | "error">("idle");
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
   const [hasAsanaToken, setHasAsanaToken] = useState<boolean | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  // Iterativní doladění
+  const [refinementPrompt, setRefinementPrompt] = useState("");
+  const [refining, setRefining] = useState(false);
+  const [refinementError, setRefinementError] = useState<string | null>(null);
+  const [showRefinement, setShowRefinement] = useState(false);
 
   const pendingPayloadRef = useRef<{
     projectId: string;
     phase: string;
     framework: string;
     transcript: string;
+    contextNote?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -85,7 +93,8 @@ function ProcessForm() {
       projectId: selectedProject.id,
       phase: selectedPhase,
       framework: selectedProject.framework,
-      transcript: transcript.trim()
+      transcript: transcript.trim(),
+      contextNote: contextNote.trim() || undefined
     };
     pendingPayloadRef.current = payload;
 
@@ -183,6 +192,10 @@ function ProcessForm() {
     setError(null);
     setClarifyingQuestions([]);
     setClarifyingAnswers("");
+    setContextNote("");
+    setRefinementPrompt("");
+    setRefinementError(null);
+    setShowRefinement(false);
     pendingPayloadRef.current = null;
   }
 
@@ -214,6 +227,35 @@ function ProcessForm() {
       toast.error(e instanceof Error ? e.message : "Export selhal.");
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleRefine() {
+    if (!result || !selectedProject || !refinementPrompt.trim()) return;
+    setRefining(true);
+    setRefinementError(null);
+    try {
+      const r = await fetch("/api/process/refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: result.sessionId,
+          projectId: selectedProject.id,
+          phase: selectedPhase,
+          framework: selectedProject.framework,
+          existingOutput: result.output,
+          refinementPrompt: refinementPrompt.trim()
+        })
+      });
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || "Doladění selhalo.");
+      setResult((prev) => prev ? { ...prev, output: json.content } : prev);
+      setRefinementPrompt("");
+      toast.success("Výstup byl doladen.");
+    } catch (e) {
+      setRefinementError(e instanceof Error ? e.message : "Neznámá chyba");
+    } finally {
+      setRefining(false);
     }
   }
 
@@ -408,6 +450,23 @@ function ProcessForm() {
               </div>
             </div>
 
+            <div>
+              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
+                Poznámka k záznamu <span className="font-normal normal-case text-[#aeaeb2]">(volitelné)</span>
+              </label>
+              <textarea
+                rows={2}
+                value={contextNote}
+                onChange={(e) => setContextNote(e.target.value)}
+                maxLength={600}
+                className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                placeholder="Např. „Relevantní část od 15. minuty" nebo „Zaměř se na diskusi o cílové skupině""
+              />
+              {contextNote.length > 0 && (
+                <p className="mt-1 text-right text-[12px] text-[#aeaeb2]">{contextNote.length}/600</p>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={projects.length === 0 || transcript.length < 300 || transcript.length > 50000}
@@ -507,30 +566,71 @@ function ProcessForm() {
 
         {/* Krok: Hotovo */}
         {step === "done" ? (
-          <div className="rounded-apple bg-[#f0fdf4] p-5 shadow-apple-sm">
-            <p className="mb-3 text-[14px] font-medium text-[#1a7f37]">✅ Dokumentace vygenerována a uložena do projektu.</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={resetForm}
-                className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
-              >
-                Zpracovat další transkript
-              </button>
-              {hasAsanaToken && selectedProject?.asana_project_id ? (
+          <div className="space-y-3">
+            <div className="rounded-apple bg-[#f0fdf4] p-5 shadow-apple-sm">
+              <p className="mb-3 text-[14px] font-medium text-[#1a7f37]">✅ Dokumentace vygenerována a uložena do projektu.</p>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={handleExportToAsana}
-                  disabled={exporting}
-                  className="rounded-full bg-[#1a7f37] px-5 py-2 text-[14px] font-medium text-white hover:bg-[#15803d] disabled:opacity-50"
-                >
-                  {exporting ? "Exportuji…" : "Exportovat do Asany"}
-                </button>
-              ) : hasAsanaToken && selectedProject ? (
-                <a
-                  href={`/projects/${selectedProject.id}`}
+                  onClick={resetForm}
                   className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
                 >
-                  Propojit projekt s Asanou →
-                </a>
+                  Zpracovat další transkript
+                </button>
+                {hasAsanaToken && selectedProject?.asana_project_id ? (
+                  <button
+                    onClick={handleExportToAsana}
+                    disabled={exporting}
+                    className="rounded-full bg-[#1a7f37] px-5 py-2 text-[14px] font-medium text-white hover:bg-[#15803d] disabled:opacity-50"
+                  >
+                    {exporting ? "Exportuji…" : "Exportovat do Asany"}
+                  </button>
+                ) : hasAsanaToken && selectedProject ? (
+                  <a
+                    href={`/projects/${selectedProject.id}`}
+                    className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
+                  >
+                    Propojit projekt s Asanou →
+                  </a>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Iterativní doladění */}
+            <div className="rounded-apple bg-white shadow-apple-sm">
+              <button
+                type="button"
+                onClick={() => setShowRefinement((v) => !v)}
+                className="flex w-full items-center justify-between px-5 py-4 text-left"
+              >
+                <div>
+                  <p className="text-[14px] font-semibold text-[#1d1d1f]">✏️ Doladit výstup</p>
+                  <p className="text-[12px] text-[#6e6e73]">Doplň nebo přepiš konkrétní sekce — AI zachová zbytek</p>
+                </div>
+                <span className="text-[12px] text-[#aeaeb2]">{showRefinement ? "▲" : "▼"}</span>
+              </button>
+
+              {showRefinement ? (
+                <div className="border-t border-[#f2f2f7] px-5 pb-5 pt-4 space-y-3">
+                  <textarea
+                    rows={3}
+                    value={refinementPrompt}
+                    onChange={(e) => setRefinementPrompt(e.target.value)}
+                    maxLength={1000}
+                    placeholder="Např. „Přidej sekci Rizika", „Doplň RACI pro Jana Nováka", „Přepiš Výsledky – chybí konkrétní změna u klienta""
+                    className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                  />
+                  {refinementError ? (
+                    <p className="text-[13px] text-red-600">{refinementError}</p>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleRefine}
+                    disabled={refining || !refinementPrompt.trim()}
+                    className="rounded-full bg-brand-600 px-5 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    {refining ? "Doladuji…" : "Regenerovat →"}
+                  </button>
+                </div>
               ) : null}
             </div>
           </div>
