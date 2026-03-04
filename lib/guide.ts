@@ -4,6 +4,7 @@ export type GuideQuestion = {
   id: string;
   text: string;
   hint: string;
+  context?: string;
 };
 
 export function getQuestionsForPhase(
@@ -14,6 +15,7 @@ export function getQuestionsForPhase(
   return questions.map((q, i) => ({
     id: `q_${i}`,
     text: q.name,
-    hint: q.hint
+    hint: q.hint,
+    context: q.context
   }));
 }

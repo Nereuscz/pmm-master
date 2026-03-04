@@ -10,7 +10,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 
 type Project = { id: string; name: string; framework: string; phase: string };
 type Answer = { questionId: string; question: string; answer: string };
-type GuideQ = { id: string; text: string; hint: string };
+type GuideQ = { id: string; text: string; hint: string; context?: string };
 
 type ChatMsg =
   | { id: string; role: "ai"; kind: "question"; q: GuideQ }
@@ -350,6 +350,11 @@ function GuideChat() {
               🟨 {msg.q.text}
             </p>
             <p className="text-[13px] text-[#6e6e73]">{msg.q.hint}</p>
+            {msg.q.context && (
+              <div className="mt-1.5 rounded-lg bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-800">
+                💡 {msg.q.context}
+              </div>
+            )}
           </div>
         </div>
       );
