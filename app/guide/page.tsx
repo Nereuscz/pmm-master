@@ -39,8 +39,7 @@ function GuideChat() {
     handleSend,
     handleFollowUpContinue,
     updateFollowUpAnswer,
-    deleteDraft,
-    generateCanvas
+    deleteDraft
   } = useGuideChat(projectIdParam, modeParam);
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
