@@ -681,6 +681,7 @@ function ProcessForm() {
             <AiOutput
               content={result.output}
               downloadFilename={selectedProject ? `pm-vystup-${sanitizeFilename(selectedProject.name)}` : "pm-vystup"}
+              sessionId={result.sessionId}
             />
           </div>
         ) : (

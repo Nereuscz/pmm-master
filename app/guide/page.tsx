@@ -30,6 +30,13 @@ type Status =
   | "awaiting_fu"
   | "done";
 
+type GuideDraft = {
+  id: string;
+  answers: Answer[];
+  messages: ChatMsg[];
+  updated_at: string;
+};
+
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
 function sanitizeFilename(name: string): string {
@@ -75,6 +82,9 @@ function GuideChat() {
   const [status, setStatus] = useState<Status>("idle");
   const [totalCount, setTotalCount] = useState<number | null>(null);
 
+  // Draft autosave
+  const [pendingDraft, setPendingDraft] = useState<GuideDraft | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const autoStartedRef = useRef(false);
@@ -103,6 +113,9 @@ function GuideChat() {
   const handleStartRef = useRef<() => void>(() => {});
   handleStartRef.current = handleStart;
 
+  const startFreshRef = useRef<() => void>(() => {});
+  startFreshRef.current = startFresh;
+
   useEffect(() => {
     if (
       projectIdParam &&
@@ -111,7 +124,8 @@ function GuideChat() {
       !autoStartedRef.current
     ) {
       autoStartedRef.current = true;
-      handleStartRef.current();
+      // Auto-start from project link – go directly to fresh start (no resume prompt)
+      startFreshRef.current();
     }
   }, [projectIdParam, selectedProject?.id, started]);
 
@@ -166,6 +180,7 @@ function GuideChat() {
           projectId: json.projectId ?? selectedProject?.id,
           saved: json.saved !== false
         });
+        deleteDraft();
         setStatus("done");
       } else {
         const q: GuideQ = json.nextQuestion;
@@ -181,10 +196,57 @@ function GuideChat() {
     }
   }
 
+  // ── Draft helpers ────────────────────────────────────────────────────────────
+
+  function saveDraft(currentAnswers: Answer[], currentMessages: ChatMsg[]) {
+    if (!selectedProject) return;
+    fetch("/api/guide/draft", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId: selectedProject.id,
+        phase,
+        framework,
+        answers: currentAnswers,
+        messages: currentMessages,
+      }),
+    }).catch(() => undefined);
+  }
+
+  function deleteDraft() {
+    if (!selectedProject) return;
+    fetch("/api/guide/draft", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: selectedProject.id, phase, framework }),
+    }).catch(() => undefined);
+  }
+
   // ── Start ───────────────────────────────────────────────────────────────────
 
-  function handleStart() {
+  async function handleStart() {
     if (!selectedProject) return;
+
+    // Check for an existing draft before launching fresh
+    try {
+      const r = await fetch(
+        `/api/guide/draft?projectId=${selectedProject.id}&phase=${encodeURIComponent(phase)}&framework=${encodeURIComponent(framework)}`
+      );
+      const json = await r.json();
+      if (json.draft && (json.draft.answers as Answer[]).length > 0) {
+        setPendingDraft(json.draft as GuideDraft);
+        return; // Show resume modal – don't start yet
+      }
+    } catch {
+      // Silently ignore – proceed with fresh start
+    }
+
+    startFresh();
+  }
+
+  function startFresh() {
+    if (!selectedProject) return;
+    setPendingDraft(null);
     setStarted(true);
     setMessages([]);
     setAnswers([]);
@@ -194,6 +256,21 @@ function GuideChat() {
     setTotalCount(null);
     setStatus("idle");
     fetchNextQuestion([]);
+  }
+
+  function resumeDraft(draft: GuideDraft) {
+    if (!selectedProject) return;
+    setPendingDraft(null);
+    setStarted(true);
+    setMessages(draft.messages);
+    setAnswers(draft.answers);
+    setCurrentQ(null);
+    setPendingMain(null);
+    setInputValue("");
+    setTotalCount(null);
+    setStatus("idle");
+    // Continue from where we left off
+    fetchNextQuestion(draft.answers);
   }
 
   // ── Odeslání odpovědi → detekce vysvětlení → follow-up ────────────────────
@@ -312,6 +389,11 @@ function GuideChat() {
     const combined = fuLines ? `${mainAnswer} ${fuLines}` : mainAnswer;
     const next: Answer[] = [...answers, { questionId: q.id, question: q.text, answer: combined }];
     setAnswers(next);
+    // Autosave after each answered question (fire-and-forget)
+    setMessages((current) => {
+      saveDraft(next, current);
+      return current;
+    });
     await fetchNextQuestion(next);
   }
 
@@ -470,6 +552,7 @@ function GuideChat() {
             <AiOutput
               content={msg.content}
               downloadFilename={selectedProject ? `pm-vystup-${sanitizeFilename(selectedProject.name)}` : "pm-vystup"}
+              sessionId={msg.sessionId}
             />
             {isSaved && msg.projectId ? (
               <div className="mt-4 rounded-lg border border-brand-100 bg-brand-50 p-3 text-sm text-brand-700">
@@ -647,12 +730,47 @@ function GuideChat() {
             </div>
           ) : null}
           <button
-            onClick={handleStart}
+            onClick={status === "done" ? startFresh : handleStart}
             disabled={!selectedProject}
             className="rounded-full bg-brand-600 px-5 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
           >
             {status === "done" ? "🔄 Spustit znovu" : "Potvrdit a spustit průvodce"}
           </button>
+        </div>
+      ) : null}
+
+      {/* Resume modal – zobrazí se, pokud existuje rozpracovaný draft */}
+      {pendingDraft ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+          <div className="w-full max-w-sm rounded-apple bg-white p-6 shadow-apple">
+            <h2 className="text-[17px] font-semibold text-[#1d1d1f]">Máš rozpracovaný chat</h2>
+            <p className="mt-2 text-[14px] text-[#6e6e73]">
+              Naposledy uloženo{" "}
+              {new Date(pendingDraft.updated_at).toLocaleString("cs-CZ")}.{" "}
+              Chceš pokračovat tam, kde jsi skončil/a?
+            </p>
+            <p className="mt-1 text-[13px] text-[#aeaeb2]">
+              {pendingDraft.answers.length} {pendingDraft.answers.length === 1 ? "otázka" : pendingDraft.answers.length < 5 ? "otázky" : "otázek"} zodpovězeno
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => resumeDraft(pendingDraft)}
+                className="flex-1 rounded-full bg-brand-600 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-700"
+              >
+                Pokračovat →
+              </button>
+              <button
+                onClick={() => {
+                  deleteDraft();
+                  setPendingDraft(null);
+                  startFresh();
+                }}
+                className="flex-1 rounded-full border border-[#d2d2d7] py-2 text-[14px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7]"
+              >
+                Začít znovu
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 

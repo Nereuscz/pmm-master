@@ -313,6 +313,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <AiOutput
                       content={session.ai_output}
                       downloadFilename={`pm-vystup-${sanitizeFilename(project.name)}`}
+                      sessionId={session.id}
+                      onContentSaved={(newContent) =>
+                        setSessions((prev) =>
+                          prev.map((s) => (s.id === session.id ? { ...s, ai_output: newContent } : s))
+                        )
+                      }
                     />
                   </div>
                 ) : null}
