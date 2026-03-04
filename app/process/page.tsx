@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import AiOutput from "@/components/AiOutput";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { Spinner } from "@/components/LoadingState";
 import { parsePmOutputIntoSections } from "@/lib/pm-output-parser";
 
 type ProcessResponse = {
@@ -57,6 +58,17 @@ function ProcessForm() {
       })
       .catch(() => undefined);
   }, [projectIdParam]);
+
+  // Přeskočit krok "Ověření kontextu" při příchodu z detailu projektu (projectId v URL)
+  useEffect(() => {
+    if (
+      projectIdParam &&
+      selectedProject?.id === projectIdParam &&
+      projects.length > 0
+    ) {
+      setStep((s) => (s === "confirm_context" ? "idle" : s));
+    }
+  }, [projectIdParam, selectedProject?.id, projects.length]);
 
   useEffect(() => {
     fetch("/api/settings/asana-token")
@@ -409,10 +421,7 @@ function ProcessForm() {
         {/* Krok: Načítám doplňující otázky */}
         {step === "clarifying" ? (
           <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
-            <div className="text-center">
-              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-              <p className="text-[14px] text-[#6e6e73]">AI analyzuje transkript…</p>
-            </div>
+            <Spinner message="AI analyzuje transkript…" />
           </div>
         ) : null}
 
@@ -492,11 +501,7 @@ function ProcessForm() {
         {/* Krok: Generuji */}
         {step === "processing" ? (
           <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
-            <div className="text-center">
-              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-              <p className="text-[14px] text-[#6e6e73]">AI generuje PM dokumentaci…</p>
-              <p className="mt-1 text-[12px] text-[#aeaeb2]">Může trvat 15–30 sekund</p>
-            </div>
+            <Spinner message="AI generuje PM dokumentaci… Může trvat 15–30 sekund" />
           </div>
         ) : null}
 
@@ -532,14 +537,11 @@ function ProcessForm() {
         ) : null}
       </div>
 
-      {/* ── Pravý panel – výstup ── */}
-      <div>
+      {/* ── Pravý panel – výstup (na mobilu skrytý dokud není výsledek nebo processing) ── */}
+      <div className={!result && step !== "processing" ? "hidden lg:block" : ""}>
         {step === "processing" ? (
           <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
-            <div className="text-center">
-              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-              <p className="text-[14px] text-[#6e6e73]">Připravuji výstup…</p>
-            </div>
+            <Spinner message="Připravuji výstup…" />
           </div>
         ) : result ? (
           <div className="space-y-3">

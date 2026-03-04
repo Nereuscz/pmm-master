@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorMessage from "@/components/ErrorMessage";
 
 const FRAMEWORK_INFO = {
@@ -45,10 +46,8 @@ export default function NewProjectPage() {
   return (
     <main className="mx-auto max-w-xl px-8 py-10">
       <div className="mb-6">
-        <Link href="/dashboard" className="text-[14px] text-brand-600 hover:text-brand-700">
-          ← Zpět na projekty
-        </Link>
-        <h1 className="mt-3 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Nový projekt</h1>
+        <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Nový projekt" }]} />
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Nový projekt</h1>
         <p className="mt-1 text-[15px] text-[#6e6e73]">Vyplň základní informace o projektu.</p>
       </div>
 

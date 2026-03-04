@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PHASE_COLORS } from "@/lib/constants";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorMessage from "@/components/ErrorMessage";
+import { SkeletonGrid } from "@/components/LoadingState";
 
 type Project = {
   id: string;
@@ -69,7 +71,8 @@ export default function DashboardPage() {
       {/* Hlavička */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Projekty</h1>
+          <Breadcrumbs items={[{ label: "Projekty" }]} />
+          <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Projekty</h1>
           <p className="mt-1 text-[15px] text-[#6e6e73]">Přehled všech PM projektů</p>
         </div>
         <Link
@@ -102,11 +105,7 @@ export default function DashboardPage() {
 
       {/* Skeleton */}
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-apple bg-white shadow-apple-sm" />
-          ))}
-        </div>
+        <SkeletonGrid count={4} />
       ) : projects.length === 0 ? (
         /* Empty state + onboarding */
         <div className="rounded-apple bg-white py-16 px-8 text-center shadow-apple">
@@ -176,7 +175,8 @@ export default function DashboardPage() {
                   <button
                     onClick={() => setConfirmId(project.id)}
                     title="Smazat projekt"
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-red-50 hover:text-[#ff3b30]"
+                    aria-label={`Smazat projekt ${project.name}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-red-50 hover:text-[#ff3b30] focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                       <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />

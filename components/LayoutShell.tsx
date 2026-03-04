@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Sidebar from "@/components/Sidebar";
 
 const HIDE_SIDEBAR = ["/", "/signin"];
@@ -20,7 +20,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#6e6e73] hover:bg-[#f5f5f7]"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#6e6e73] hover:bg-[#f5f5f7] focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
               aria-label="Otevřít menu"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -35,10 +35,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
             </a>
           </header>
 
-          <Sidebar
-            drawerOpen={drawerOpen}
-            onDrawerClose={() => setDrawerOpen(false)}
-          />
+          <Suspense fallback={null}>
+            <Sidebar
+              drawerOpen={drawerOpen}
+              onDrawerClose={() => setDrawerOpen(false)}
+            />
+          </Suspense>
         </>
       )}
       <main

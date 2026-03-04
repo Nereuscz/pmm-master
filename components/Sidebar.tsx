@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 
@@ -84,7 +84,10 @@ type UserInfo = { role: UserRole | null; name?: string | null; email?: string | 
 
 export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const projectIdParam = searchParams.get("projectId");
   const [user, setUser] = useState<UserInfo>({ role: null });
+  const [currentProjectName, setCurrentProjectName] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -98,6 +101,24 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
       )
       .catch(() => setUser({ role: null }));
   }, []);
+
+  useEffect(() => {
+    if (
+      projectIdParam &&
+      (pathname === "/process" || pathname === "/guide")
+    ) {
+      fetch("/api/projects")
+        .then((r) => r.json())
+        .then((json) => {
+          const projects = json.projects ?? [];
+          const p = projects.find((x: { id: string }) => x.id === projectIdParam);
+          setCurrentProjectName(p?.name ?? null);
+        })
+        .catch(() => setCurrentProjectName(null));
+    } else {
+      setCurrentProjectName(null);
+    }
+  }, [pathname, projectIdParam]);
 
   const visibleLinks = links.filter(
     (link) => !link.roles || !user.role || link.roles.includes(user.role)
@@ -120,6 +141,20 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
 
       {/* Divider */}
       <div className="mx-4 border-t border-[#f2f2f7]" />
+
+      {/* Kontext projektu – na Process/Guide s projectId */}
+      {currentProjectName && projectIdParam ? (
+        <div className="mx-3 mt-3 rounded-xl border border-brand-100 bg-brand-50 px-3 py-2 text-[12px]">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">Projekt</p>
+          <Link
+            href={`/projects/${projectIdParam}`}
+            onClick={onDrawerClose}
+            className="mt-0.5 block truncate font-medium text-brand-700 hover:text-brand-800 hover:underline"
+          >
+            {currentProjectName}
+          </Link>
+        </div>
+      ) : null}
 
       {/* Navigace */}
       <nav className="mt-2 flex-1 space-y-0.5 px-3">

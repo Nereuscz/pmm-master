@@ -14,7 +14,7 @@ export async function GET() {
   let query = db
     .from("projects")
     .select("id,name,framework,phase,owner_id,asana_project_id,created_at,updated_at")
-    .order("created_at", { ascending: false });
+    .order("updated_at", { ascending: false });
 
   // Každý uživatel vidí jen projekty, které vytvořil
   query = query.eq("owner_id", user.id);

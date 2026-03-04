@@ -8,6 +8,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import MarkdownContent from "@/components/MarkdownContent";
 import { PHASE_COLORS } from "@/lib/constants";
 import ErrorMessage from "@/components/ErrorMessage";
+import { SkeletonDetail } from "@/components/LoadingState";
 
 type Project = { id: string; name: string; framework: string; phase: string; created_at: string; asana_project_id?: string | null };
 type Session = { id: string; phase: string; ai_output: string; created_at: string };
@@ -45,11 +46,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   if (loading) return (
     <main className="mx-auto max-w-5xl px-8 py-10">
-      <div className="space-y-4">
-        <div className="h-6 w-32 animate-pulse rounded-lg bg-white shadow-apple-sm" />
-        <div className="h-32 animate-pulse rounded-apple bg-white shadow-apple" />
-        <div className="h-48 animate-pulse rounded-apple bg-white shadow-apple" />
-      </div>
+      <SkeletonDetail />
     </main>
   );
   if (error) return (

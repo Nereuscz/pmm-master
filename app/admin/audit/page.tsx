@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorMessage from "@/components/ErrorMessage";
 
 type AuditLog = {
@@ -44,10 +45,8 @@ export default function AuditLogPage() {
   return (
     <main className="mx-auto max-w-4xl px-8 py-10">
       <div className="mb-6">
-        <Link href="/dashboard" className="text-[14px] text-brand-600 hover:text-brand-700">
-          ← Zpět na projekty
-        </Link>
-        <h1 className="mt-3 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
+        <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Audit log" }]} />
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
           Audit log
         </h1>
         <p className="mt-1 text-[15px] text-[#6e6e73]">
@@ -63,7 +62,7 @@ export default function AuditLogPage() {
 
       {loading ? (
         <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-12 animate-pulse rounded-apple bg-white shadow-apple-sm" />
           ))}
         </div>

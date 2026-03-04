@@ -75,7 +75,8 @@ export default function AiOutput({ content, downloadFilename = "pm-vystup" }: Pr
           </button>
           <button
             onClick={copy}
-            className="rounded-full border border-[#d2d2d7] px-3.5 py-1.5 text-[12px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+            aria-label={copied ? "Zkopírováno" : "Kopírovat do schránky"}
+            className="rounded-full border border-[#d2d2d7] px-3.5 py-1.5 text-[12px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
           >
             {copied ? "✓ Zkopírováno" : "Kopírovat"}
           </button>
