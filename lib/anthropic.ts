@@ -182,7 +182,7 @@ const PRODUKTOVY: Record<string, Question[]> = {
       hint: "Jak produkt přispívá k dlouhodobé strategii JIC a které KPIs naplňuje?",
       context: "JIC má strategické KPIs – počet podpořených firem, vytvořená pracovní místa, přitažené investice. Tato otázka propojuje nový produkt s těmito ambicemi, aby byl obhajitelný před vedením a Steering Boardem a aby soutěžil o zdroje s jasným argumentem."
     },
-    { name: "Customer Journey (Portfolio)", hint: "Jak produkt zapadá mezi naše stávající produkty a služby?" },
+    { name: "Customer Journey (Portfolio)", hint: "Jaké jsou vazby mezi tímto produktem a ostatními produkty/službami v portfoliu JIC? Kde se navazují, kde se překrývají a kde soutěží o stejnou cílovou skupinu?" },
     {
       name: "Výstupy",
       hint: "Co hmatatelného z aktivit produktu vznikne? Jak budeme měřit doručení těchto částí?",
@@ -279,24 +279,22 @@ Sekci zařaď JEDINĚ tehdy, když transkript obsahuje konkrétní informaci k d
 - NEZAPLŇUJ výstup vymyšlenými nebo odhadovanými informacemi.
 
 ═══════════════════════════════
-PRAVIDLO 2 – RACI (sekce Stakeholdeři / Role)
+PRAVIDLO 2 – CI matice (sekce Stakeholdeři)
 ═══════════════════════════════
-Kategorizuj KAŽDOU konkrétní osobu nebo roli zmíněnou v transkriptu do RACI tabulky:
-  - **R – Responsible**: Kdo fyzicky vykonává práci / aktivitu
-  - **A – Accountable**: Kdo nese konečnou odpovědnost za výsledek (schvaluje, podepisuje)
-  - **C – Consulted**: Koho je nutné před rozhodnutím konzultovat (obousměrná komunikace)
-  - **I – Informed**: Kdo musí být o výsledku/postupu informován (jednosměrná komunikace)
+V sekci Stakeholdeři kategorizuj každou zmíněnou osobu nebo roli pouze do dvou kategorií:
+  - **C – Consulted**: Koho je nutné PŘED rozhodnutím konzultovat (obousměrná komunikace)
+  - **I – Informed**: Kdo musí být o výsledku/postupu informován PO rozhodnutí (jednosměrná komunikace)
 
-Požadovaný formát výstupu RACI:
-**R:** [Jméno / Role] – [stručný popis co dělá]
-**A:** [Jméno / Role] – [za co odpovídá]
+POZNÁMKA: Role Responsible (R) a Accountable (A) patří do sekce Role (Product Team) ve fázi Plánování, ne do Stakeholderů.
+
+Požadovaný formát výstupu:
 **C:** [Jméno / Role] – [v jaké věci se konzultuje]
 **I:** [Jméno / Role] – [o čem se informuje]
 
 Pravidla:
-- Jedna osoba může být ve více kategoriích (uveď ji pak v každé zvlášť).
+- Jedna osoba může být v obou kategoriích (uveď ji pak v každé zvlášť).
 - Pokud transkript žádná jména ani konkrétní role neobsahuje, napiš:
-  *RACI nebylo možné sestavit – transkript neobsahuje konkrétní jména ani role. Doplňte ručně.*
+  *CI matici nebylo možné sestavit – transkript neobsahuje konkrétní jména ani role. Doplňte ručně.*
 - Neodhaduj ani nevymýšlej role, které transkript nezmiňuje.
 
 ═══════════════════════════════
@@ -320,7 +318,7 @@ FORMÁTOVÁNÍ (Asana-ready)
 - Záhlaví sekce: ### 🟨 **Název**: Návodná otázka v regular
 - DŮLEŽITÉ: Název v záhlaví sekce (**Název**) musí být DOSLOVNĚ převzat ze seznamu otázek – bez synonym, zkrácení, parafráze nebo modifikace. Wording otázek je záměrný a nelze ho měnit.
 - Text: Přímé odpovědi v krátkém, souvislém textu – piš v odstavcích (2–3 věty na myšlenku), NE v odrážkách. Zachovej plné znění klíčových myšlenek (přidaná hodnota, potřeby klienta apod.). **Tučně** zvýrazni jen zásadní termíny.
-- Výjimky: RACI tabulka (PRAVIDLO 2) zachovává svůj strukturovaný formát. Market Insight (PRAVIDLO 4) a 💡 Návrhy na závěr mohou používat odrážky.
+- Výjimky: CI matice (PRAVIDLO 2) zachovává svůj strukturovaný formát. Market Insight (PRAVIDLO 4) a 💡 Návrhy na závěr mohou používat odrážky.
 - PM Kontext vždy kurzívou: *PM Kontext: ...*
 - Žádné prázdné sekce, žádné opakování nadpisů bez obsahu.
 
