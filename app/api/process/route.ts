@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         queryText: input.transcript,
         limit: 8
       }),
-      searchMarket(marketQuery)
+      searchMarket(marketQuery, input.framework as "Produktový" | "Univerzální")
     ]);
 
     const ragContext = chunks.map((chunk) => chunk.content);

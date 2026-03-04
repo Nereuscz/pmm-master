@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       db
         ? retrieveTopChunks({ projectId: input.projectId, queryText: transcriptFromAnswers, limit: 6 })
         : Promise.resolve([]),
-      searchMarket(marketQuery)
+      searchMarket(marketQuery, input.framework)
     ]);
 
     const generated = await generateStructuredOutput({

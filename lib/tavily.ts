@@ -19,10 +19,23 @@ type TavilyResponse = {
 /**
  * Prohledá web přes Tavily API a vrátí formátovaný přehled podobných produktů/projektů.
  * Vrátí prázdný řetězec pokud chybí API klíč nebo search selže.
+ *
+ * @param query - sestavený search dotaz
+ * @param framework - "Produktový" nebo "Univerzální"; ovlivňuje suffix dotazu
  */
-export async function searchMarket(query: string): Promise<string> {
+export async function searchMarket(
+  query: string,
+  framework: "Produktový" | "Univerzální" = "Produktový"
+): Promise<string> {
   if (!env.TAVILY_API_KEY) return "";
   if (!query.trim()) return "";
+
+  // Suffix odpovídá kontextu: produkty hledají tržní srovnatele,
+  // univerzální projekty hledají best practices a implementační vzory.
+  const suffix =
+    framework === "Produktový"
+      ? "innovation program product market fit competitive landscape"
+      : "best practices implementation case studies innovation ecosystem";
 
   try {
     const response = await fetch("https://api.tavily.com/search", {
@@ -30,7 +43,7 @@ export async function searchMarket(query: string): Promise<string> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         api_key: env.TAVILY_API_KEY,
-        query: `${query} – similar products competitors alternatives`,
+        query: `${query} ${suffix}`,
         search_depth: "basic",
         include_answer: true,
         max_results: 5,
@@ -50,8 +63,9 @@ export async function searchMarket(query: string): Promise<string> {
       parts.push(`**Přehled trhu:** ${data.answer.trim()}`);
     }
 
+    // Vyšší práh skóre = relevantnější výsledky, méně šumu
     const topResults = data.results
-      .filter((r) => r.score > 0.3)
+      .filter((r) => r.score > 0.4)
       .slice(0, 5);
 
     if (topResults.length > 0) {
@@ -83,32 +97,49 @@ export async function searchMarket(query: string): Promise<string> {
 // ─── Extrakce search query ─────────────────────────────────────────────────────
 
 /**
- * Vytvoří stručný search query z pole odpovědí průvodce.
- * Hledá nejdříve "Předmět" / "Problém" / "Hodnota produktu" jako nejrelevantnější odpovědi.
+ * Vytvoří search query z odpovědí průvodce kombinací více klíčových odpovědí.
+ * Místo jedné odpovědi spojuje Problém + Hodnotu + Cílovku pro bohatší kontext.
  */
 export function buildQueryFromAnswers(
   answers: Array<{ question: string; answer: string }>
 ): string {
   if (answers.length === 0) return "";
 
-  const priority = ["Předmět", "Problém", "Hodnota", "Positioning", "Cíl"];
-  const best = priority
-    .map((keyword) =>
-      answers.find((a) => a.question.toLowerCase().includes(keyword.toLowerCase()))
-    )
-    .find(Boolean);
+  // Extrahuj hodnoty pro každou klíčovou dimenzi (první shoda)
+  const pick = (keywords: string[]) =>
+    answers.find((a) =>
+      keywords.some((kw) => a.question.toLowerCase().includes(kw.toLowerCase()))
+    )?.answer.trim() ?? "";
 
-  const chosen = best ?? answers[0];
-  return chosen.answer.trim().slice(0, 200);
+  const problem = pick(["Problém", "Potřeba", "Předmět"]);
+  const value = pick(["Hodnota", "Value Proposition", "Positioning"]);
+  const audience = pick(["Cílovka", "cílová skupina", "Zákazník"]);
+
+  // Zkombinuj dostupné části do jednoho dotazu
+  const parts = [problem, value, audience]
+    .filter(Boolean)
+    .map((s) => s.slice(0, 120));
+
+  if (parts.length === 0) {
+    // Fallback: první odpověď
+    return answers[0].answer.trim().slice(0, 300);
+  }
+
+  return parts.join(". ").slice(0, 400);
 }
 
 /**
- * Vytvoří stručný search query z transkriptu schůzky.
- * Vezme první větu / odstavec jako nejrelevantnější kontext.
+ * Vytvoří search query z transkriptu schůzky.
+ * Přeskakuje krátké úvodní řádky (metadata, přivítání) a hledá věcný obsah.
  */
 export function buildQueryFromTranscript(transcript: string): string {
-  // Vezmi první 2 odstavce nebo max. 300 znaků
   const lines = transcript.trim().split(/\n+/).filter(Boolean);
-  const snippet = lines.slice(0, 3).join(" ").replace(/\s+/g, " ");
-  return snippet.slice(0, 300);
+
+  // Přeskoč řádky kratší než 40 znaků – pravděpodobně metadata nebo pozdravy
+  const meaningful = lines.filter((l) => l.trim().length >= 40);
+  const source = meaningful.length > 0 ? meaningful : lines;
+
+  // Vezmi první 3 věcné řádky
+  const snippet = source.slice(0, 3).join(" ").replace(/\s+/g, " ");
+  return snippet.slice(0, 400);
 }
