@@ -108,22 +108,54 @@ export default function DashboardPage() {
         <SkeletonGrid count={4} />
       ) : projects.length === 0 ? (
         /* Empty state + onboarding */
-        <div className="rounded-apple bg-white py-16 px-8 text-center shadow-apple">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-            </svg>
+        <div className="rounded-apple bg-white p-8 shadow-apple">
+          <p className="text-[17px] font-semibold text-[#1d1d1f]">Jak začít s PM Assistant</p>
+          <p className="mt-1 text-[14px] text-[#6e6e73]">Tři kroky a jste připraveni zpracovávat schůzky.</p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                step: "1",
+                icon: "📁",
+                title: "Vytvoř projekt",
+                desc: "Pojmenuj iniciativu, nastav framework (Univerzální nebo Produktový) a aktuální fázi."
+              },
+              {
+                step: "2",
+                icon: "📚",
+                title: "Nahraj dokumenty",
+                desc: "Přidej materiály do Znalostní báze – AI je použije jako kontext při generování."
+              },
+              {
+                step: "3",
+                icon: "✨",
+                title: "Zpracuj nebo veď schůzku",
+                desc: "Nahraj transkript k analýze, nebo spusť Průvodce pro strukturovaný rozhovor."
+              }
+            ].map(({ step, icon, title, desc }) => (
+              <div key={step} className="flex flex-col rounded-xl border border-[#e8e8ed] bg-[#fafafa] p-5">
+                <div className="mb-3 flex items-center gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[12px] font-bold text-white">{step}</span>
+                  <span className="text-xl">{icon}</span>
+                </div>
+                <p className="text-[14px] font-semibold text-[#1d1d1f]">{title}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-[#6e6e73]">{desc}</p>
+              </div>
+            ))}
           </div>
-          <p className="text-[17px] font-medium text-[#1d1d1f]">Zatím žádné projekty</p>
-          <p className="mt-2 text-[14px] text-[#6e6e73] max-w-md mx-auto">
-            Začněte vytvořením projektu → nahrajte dokumenty do Znalostní báze → zpracujte transkript nebo použijte Průvodce.
-          </p>
-          <Link
-            href="/projects/new"
-            className="mt-6 inline-block rounded-full bg-brand-600 px-6 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-brand-700"
-          >
-            Vytvořit první projekt
-          </Link>
+          <div className="mt-6 flex items-center gap-3">
+            <Link
+              href="/projects/new"
+              className="rounded-full bg-brand-600 px-6 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-brand-700"
+            >
+              + Vytvořit první projekt
+            </Link>
+            <Link
+              href="/kb"
+              className="rounded-full border border-[#d2d2d7] px-5 py-2.5 text-[14px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
+            >
+              Znalostní báze →
+            </Link>
+          </div>
         </div>
       ) : (
         /* Projekt grid */
@@ -170,6 +202,13 @@ export default function DashboardPage() {
                     className="rounded-full border border-[#d2d2d7] bg-white px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
                   >
                     Průvodce
+                  </Link>
+                  <Link
+                    href={`/guide/canvas?projectId=${project.id}`}
+                    className="rounded-full border border-[#d2d2d7] bg-white px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
+                    title="Příprava na schůzku – celá sada PM otázek"
+                  >
+                    Canvas
                   </Link>
 
                   <button

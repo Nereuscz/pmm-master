@@ -11,25 +11,8 @@ export type AuthUser = {
   name?: string | null;
 };
 
-// Dev fallback: stejné ID jako FALLBACK_OWNER_ID v projects/route.ts
-const DEV_FALLBACK: AuthUser = {
-  id: "00000000-0000-0000-0000-000000000001",
-  role: "Admin",
-  email: "dev@pm-assistant.local",
-  name: "Dev uživatel"
-};
-
-const isDevMode = !process.env.ASANA_CLIENT_ID;
-
-/**
- * Vrátí přihlášeného uživatele nebo null.
- * V dev módu (chybí ASANA_CLIENT_ID) vrací fallback Admin uživatele.
- */
+/** Vrátí přihlášeného uživatele nebo null. */
 export async function getAuthUser(): Promise<AuthUser | null> {
-  if (isDevMode) {
-    return DEV_FALLBACK;
-  }
-
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
 

@@ -1,4 +1,4 @@
-import { getQuestionsForPhaseAndFramework } from "./anthropic";
+import { getQuestionsForPhaseAndFramework } from "./anthropic/questions";
 
 export type GuideQuestion = {
   id: string;

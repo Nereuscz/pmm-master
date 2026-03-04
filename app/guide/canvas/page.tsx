@@ -29,15 +29,17 @@ export default function CanvasPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
+    const projectIdParam = new URLSearchParams(window.location.search).get("projectId");
     fetch("/api/projects")
       .then((r) => r.json())
       .then((json) => {
         const list: Project[] = json.projects ?? [];
         setProjects(list);
-        if (list[0]) {
-          setSelectedProject(list[0]);
-          setPhase(list[0].phase ?? "Iniciace");
-          setFramework(list[0].framework as "Univerzální" | "Produktový");
+        const preselect = list.find((p) => p.id === projectIdParam) ?? list[0] ?? null;
+        if (preselect) {
+          setSelectedProject(preselect);
+          setPhase(preselect.phase ?? "Iniciace");
+          setFramework(preselect.framework as "Univerzální" | "Produktový");
         }
       })
       .catch(() => undefined);
