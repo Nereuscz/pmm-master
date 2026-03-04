@@ -23,6 +23,21 @@ function sanitizeFilename(name: string): string {
 type Session = { id: string; phase: string; ai_output: string; created_at: string };
 type ContextData = { accumulated_context: string; last_updated: string | null };
 
+/** Odstraní markdown symboly a vrátí max ~180 znaků čistého textu jako preview. */
+function getPreview(text: string): string {
+  const stripped = text
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/^[-*•]\s+/gm, "")
+    .replace(/`[^`]+`/g, "")
+    .replace(/\n+/g, " ")
+    .trim();
+  if (stripped.length <= 180) return stripped;
+  const cut = stripped.slice(0, 180).replace(/\s+\S*$/, "");
+  return cut + "…";
+}
+
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -280,50 +295,66 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </div>
         ) : (
           <div className="space-y-3">
-            {sessions.map((session) => (
-              <div key={session.id} className="overflow-hidden rounded-apple bg-white shadow-apple">
-                <button
-                  onClick={() =>
-                    setExpandedSession(expandedSession === session.id ? null : session.id)
-                  }
-                  className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-[#fafafa]"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        PHASE_COLORS[session.phase] ?? "bg-[#f2f2f7] text-[#6e6e73]"
-                      }`}
-                    >
-                      {session.phase}
-                    </span>
-                    <span className="text-[14px] text-[#6e6e73]">
-                      {new Date(session.created_at).toLocaleString("cs-CZ")}
-                    </span>
-                  </div>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`h-4 w-4 text-[#aeaeb2] transition-transform ${expandedSession === session.id ? "rotate-180" : ""}`}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            {sessions.map((session) => {
+              const isOpen = expandedSession === session.id;
+              return (
+                <div key={session.id} className="overflow-hidden rounded-apple bg-white shadow-apple">
+                  {/* Hlavička řádku */}
+                  <button
+                    onClick={() => setExpandedSession(isOpen ? null : session.id)}
+                    className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-[#fafafa]"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {expandedSession === session.id ? (
-                  <div className="border-t border-[#f2f2f7] p-6">
-                    <AiOutput
-                      content={session.ai_output}
-                      downloadFilename={`pm-vystup-${sanitizeFilename(project.name)}`}
-                      sessionId={session.id}
-                      onContentSaved={(newContent) =>
-                        setSessions((prev) =>
-                          prev.map((s) => (s.id === session.id ? { ...s, ai_output: newContent } : s))
-                        )
-                      }
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ))}
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                          PHASE_COLORS[session.phase] ?? "bg-[#f2f2f7] text-[#6e6e73]"
+                        }`}
+                      >
+                        {session.phase}
+                      </span>
+                      <span className="text-[14px] text-[#6e6e73]">
+                        {new Date(session.created_at).toLocaleString("cs-CZ")}
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {!isOpen && (
+                        <span className="text-[12px] font-medium text-brand-600">▶ Rozbalit</span>
+                      )}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`h-4 w-4 text-[#aeaeb2] transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+
+                  {/* Preview 2 řádky – pouze kdy je složeno */}
+                  {!isOpen && session.ai_output ? (
+                    <p className="line-clamp-2 border-t border-[#f2f2f7] px-6 pb-4 pt-2 text-[13px] leading-relaxed text-[#6e6e73]">
+                      {getPreview(session.ai_output)}
+                    </p>
+                  ) : null}
+
+                  {/* Plný výstup – pouze kdy je rozbaleno */}
+                  {isOpen ? (
+                    <div className="border-t border-[#f2f2f7] p-6">
+                      <AiOutput
+                        content={session.ai_output}
+                        downloadFilename={`pm-vystup-${sanitizeFilename(project.name)}`}
+                        sessionId={session.id}
+                        onContentSaved={(newContent) =>
+                          setSessions((prev) =>
+                            prev.map((s) => (s.id === session.id ? { ...s, ai_output: newContent } : s))
+                          )
+                        }
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

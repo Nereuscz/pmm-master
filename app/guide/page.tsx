@@ -81,31 +81,64 @@ function GuideChat() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col px-6 py-10" style={{ height: "100dvh" }}>
-      {/* Nadpis */}
+      {/* Nadpis / stavový bar */}
       <div className="mb-4 shrink-0">
         <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Průvodce" }]} />
-        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
-          Průvodce PM otázkami
-        </h1>
-        <p className="mt-1 text-[15px] text-[#6e6e73]">
-          Interaktivní průvodce PM dokumentací nebo příprava otázek na schůzku.
-        </p>
-        {started && totalCount != null ? (
-          <p className="mt-2 text-[13px] font-medium text-[#6e6e73]">
-            {answers.length} z {totalCount} otázek
-            {status === "awaiting_fu"
-              ? (() => {
-                  const lastFu = [...messages]
-                    .reverse()
-                    .find((m) => m.role === "ai" && m.kind === "followup" && !m.submitted);
-                  const fuFilled =
-                    lastFu && "answers" in lastFu
-                      ? Object.values(lastFu.answers).filter((v) => v?.trim()).length
-                      : 0;
-                  return ` · doplňující: ${fuFilled}/3`;
-                })()
-              : null}
-          </p>
+
+        {/* Plný titulek – jen před startem */}
+        {!started && (
+          <>
+            <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
+              Průvodce PM otázkami
+            </h1>
+            <p className="mt-1 text-[15px] text-[#6e6e73]">
+              Interaktivní průvodce PM dokumentací nebo příprava otázek na schůzku.
+            </p>
+          </>
+        )}
+
+        {/* Kompaktní info bar – zobrazí se ihned po startu a zůstane sticky */}
+        {started ? (
+          <div className="mt-2 flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-apple">
+            {selectedProject && (
+              <>
+                <span className="max-w-[200px] truncate text-[13px] font-semibold text-[#1d1d1f]">
+                  {selectedProject.name}
+                </span>
+                <span className="text-[#d2d2d7]">·</span>
+              </>
+            )}
+            <span className="shrink-0 text-[12px] text-[#6e6e73]">{phase}</span>
+            {totalCount != null && (
+              <>
+                <span className="text-[#d2d2d7]">·</span>
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                  {/* Vizuální progress bar */}
+                  <div className="h-1.5 min-w-[60px] flex-1 overflow-hidden rounded-full bg-[#f2f2f7]">
+                    <div
+                      className="h-full rounded-full bg-brand-600 transition-all duration-500"
+                      style={{ width: `${Math.min(100, (answers.length / totalCount) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="shrink-0 tabular-nums text-[12px] font-medium text-[#6e6e73]">
+                    {answers.length}/{totalCount}
+                    {status === "awaiting_fu"
+                      ? (() => {
+                          const lastFu = [...messages]
+                            .reverse()
+                            .find((m) => m.role === "ai" && m.kind === "followup" && !m.submitted);
+                          const fuFilled =
+                            lastFu && "answers" in lastFu
+                              ? Object.values(lastFu.answers).filter((v) => v?.trim()).length
+                              : 0;
+                          return ` · doplňující: ${fuFilled}/3`;
+                        })()
+                      : " otázek"}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
         ) : null}
       </div>
 
