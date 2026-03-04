@@ -4,7 +4,7 @@ import { getQuestionsForPhase } from "@/lib/guide";
 import { generateStructuredOutput } from "@/lib/anthropic";
 import { retrieveTopChunks } from "@/lib/rag";
 import { tryGetDb, requireProjectOwnership, getOrCreateProjectContext } from "@/lib/db";
-import { summarizeForContext } from "@/lib/text";
+import { extractContextSummary, buildContextBlock, mergeContextBlocks } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
 import { logAudit } from "@/lib/audit";
@@ -124,13 +124,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Aktualizuj project_context
-    const existingContext = projectContext.accumulated_context.trim();
-    const contextEntry = summarizeForContext(
-      `Datum: ${new Date().toISOString()}\nFáze: ${input.phase}\nShrnutí: ${generated.content}`
-    );
-    const newContext = summarizeForContext(
-      `${existingContext}\n\n${contextEntry}`.trim(),
-      8000
+    const summary = extractContextSummary(generated.content);
+    const block = buildContextBlock(input.phase, new Date().toISOString(), summary);
+    const newContext = mergeContextBlocks(
+      projectContext.accumulated_context,
+      block,
+      input.phase
     );
 
     await db

@@ -6,6 +6,9 @@ import {
   scoreRelevance,
   summarizeForContext,
   detectChangeSignals,
+  extractContextSummary,
+  buildContextBlock,
+  mergeContextBlocks,
 } from "./text";
 
 describe("tokenize", () => {
@@ -78,6 +81,97 @@ describe("summarizeForContext", () => {
     const result = summarizeForContext(text, 100);
     expect(result.length).toBe(100);
     expect(result.endsWith("...")).toBe(true);
+  });
+});
+
+describe("extractContextSummary", () => {
+  const sampleOutput = `### 🟨 **Problém/Potřeba**: Jaký problém řeší?
+
+Firmy nemají přístup k mentorům v regionu.
+
+### 🟨 **Hodnota produktu (Value Proposition)**: Jakou hodnotu vytváří?
+
+Propojujeme startupy s mentory z korporátního sektoru.
+
+*PM Kontext: Přechod z dřívějšího programu XY.*
+
+---
+💡 **Návrhy na zlepšení instrukcí:**
+- Doplnit sekci Rizika`;
+
+  it("extracts section names and content", () => {
+    const result = extractContextSummary(sampleOutput);
+    expect(result).toContain("Problém/Potřeba:");
+    expect(result).toContain("Hodnota produktu (Value Proposition):");
+  });
+
+  it("excludes the Návrhy meta-section", () => {
+    const result = extractContextSummary(sampleOutput);
+    expect(result).not.toContain("Návrhy");
+  });
+
+  it("excludes PM Kontext lines", () => {
+    const result = extractContextSummary(sampleOutput);
+    expect(result).not.toContain("PM Kontext");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(extractContextSummary("")).toBe("");
+  });
+});
+
+describe("buildContextBlock", () => {
+  it("includes phase and short date in header", () => {
+    const block = buildContextBlock("Iniciace", "2026-03-04T10:00:00.000Z", "summary text");
+    expect(block).toContain("--- Fáze: Iniciace | 2026-03-04 ---");
+    expect(block).toContain("summary text");
+  });
+});
+
+describe("mergeContextBlocks", () => {
+  it("appends a new phase block to empty context", () => {
+    const block = buildContextBlock("Iniciace", "2026-01-01T00:00:00Z", "content A");
+    const result = mergeContextBlocks("", block, "Iniciace");
+    expect(result).toContain("Fáze: Iniciace");
+    expect(result).toContain("content A");
+  });
+
+  it("replaces existing block for the same phase (deduplication)", () => {
+    const first = buildContextBlock("Iniciace", "2026-01-01T00:00:00Z", "old content");
+    const second = buildContextBlock("Iniciace", "2026-02-01T00:00:00Z", "new content");
+    const after1 = mergeContextBlocks("", first, "Iniciace");
+    const after2 = mergeContextBlocks(after1, second, "Iniciace");
+    expect(after2).toContain("new content");
+    expect(after2).not.toContain("old content");
+    // Only one Iniciace block
+    expect((after2.match(/--- Fáze: Iniciace/g) ?? []).length).toBe(1);
+  });
+
+  it("keeps blocks for different phases", () => {
+    const b1 = buildContextBlock("Iniciace", "2026-01-01T00:00:00Z", "iniciace content");
+    const b2 = buildContextBlock("Plánování", "2026-02-01T00:00:00Z", "planovani content");
+    const after1 = mergeContextBlocks("", b1, "Iniciace");
+    const after2 = mergeContextBlocks(after1, b2, "Plánování");
+    expect(after2).toContain("iniciace content");
+    expect(after2).toContain("planovani content");
+  });
+
+  it("drops oldest blocks when over maxChars", () => {
+    const old = buildContextBlock("Iniciace", "2026-01-01T00:00:00Z", "a".repeat(300));
+    const recent = buildContextBlock("Plánování", "2026-02-01T00:00:00Z", "b".repeat(300));
+    const after1 = mergeContextBlocks("", old, "Iniciace");
+    // Set tiny limit to force eviction of the oldest block
+    const after2 = mergeContextBlocks(after1, recent, "Plánování", 400);
+    expect(after2).toContain("bbb");
+    expect(after2).not.toContain("aaa");
+  });
+
+  it("discards legacy plain-text context and starts fresh", () => {
+    const legacy = "Datum: 2026-01-01\nFáze: Iniciace\nShrnutí: starý výstup...";
+    const newBlock = buildContextBlock("Iniciace", "2026-03-01T00:00:00Z", "nový obsah");
+    const result = mergeContextBlocks(legacy, newBlock, "Iniciace");
+    expect(result).not.toContain("starý výstup");
+    expect(result).toContain("nový obsah");
   });
 });
 

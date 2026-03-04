@@ -3,7 +3,7 @@ import { generateStructuredOutput } from "@/lib/anthropic";
 import { retrieveTopChunks } from "@/lib/rag";
 import { processTranscriptSchema } from "@/lib/schemas";
 import { ensureDb, getLastSession, getOrCreateProjectContext, requireProjectOwnership } from "@/lib/db";
-import { detectChangeSignals, summarizeForContext } from "@/lib/text";
+import { detectChangeSignals, extractContextSummary, buildContextBlock, mergeContextBlocks } from "@/lib/text";
 import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
 import { logAudit } from "@/lib/audit";
@@ -99,13 +99,13 @@ export async function POST(request: NextRequest) {
       throw new Error(`Nepodařilo se uložit session. ${sessionError?.message ?? ""}`.trim());
     }
 
-    const existingContext = projectContextRow.accumulated_context.trim();
-    const contextEntry = summarizeForContext(
-      `Datum: ${new Date().toISOString()}
-Fáze: ${input.phase}
-Shrnutí: ${aiResult.content}`
+    const summary = extractContextSummary(aiResult.content);
+    const block = buildContextBlock(input.phase, new Date().toISOString(), summary);
+    const newContext = mergeContextBlocks(
+      projectContextRow.accumulated_context,
+      block,
+      input.phase
     );
-    const newContext = summarizeForContext(`${existingContext}\n\n${contextEntry}`.trim(), 8000);
 
     await db
       .from("project_context")
