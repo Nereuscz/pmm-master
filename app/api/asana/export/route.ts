@@ -5,6 +5,7 @@ import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-gua
 import { logAudit } from "@/lib/audit";
 import { getValidAsanaToken } from "@/lib/asana-auth";
 import { createTask, createSubtask } from "@/lib/asana-api";
+import { markdownToPlainText } from "@/lib/markdown-to-plain";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +61,12 @@ export async function POST(request: NextRequest) {
 
     if (accessToken) {
       const mainNotes = input.sections
-        .map((s) => `**${s.question}**\n${s.answer}`)
-        .join("\n\n---\n\n");
+        .map((s) => {
+          const q = markdownToPlainText(s.question);
+          const a = markdownToPlainText(s.answer);
+          return `${q}\n\n${a}`;
+        })
+        .join("\n\n");
       const mainTask = await createTask(
         accessToken,
         input.asanaProjectId,
@@ -73,8 +78,8 @@ export async function POST(request: NextRequest) {
         const sub = await createSubtask(
           accessToken,
           mainTask.gid,
-          section.question,
-          section.answer
+          markdownToPlainText(section.question),
+          markdownToPlainText(section.answer)
         );
         subtaskIds.push(sub.gid);
       }
