@@ -1,12 +1,14 @@
 "use client";
 
-import { Suspense } from "react";
+import { useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { getQuestionsForPhase } from "@/lib/guide";
 import { useGuideChat } from "./hooks/useGuideChat";
 import { ResumeModal } from "./components/ResumeModal";
 import { ChatMessage } from "./components/ChatMessage";
 import { ChatInput } from "./components/ChatInput";
+import { LiveCanvas } from "./components/LiveCanvas";
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
@@ -43,6 +45,17 @@ function GuideChat() {
   } = useGuideChat(projectIdParam, modeParam);
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
+  const showLiveCanvas = started && chatMode === "guide";
+
+  // Canvas data – odvozeno z answers a otázek pro aktuální fázi
+  const canvasSections = useMemo(
+    () => Object.fromEntries(answers.map((a) => [a.questionId, a.answer])),
+    [answers]
+  );
+  const canvasQuestions = useMemo(
+    () => getQuestionsForPhase(phase, framework),
+    [phase, framework]
+  );
 
   // Follow-up stav pro progress bar
   const fuInfo = (() => {
@@ -58,7 +71,10 @@ function GuideChat() {
   })();
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col px-6 py-10" style={{ height: "100dvh" }}>
+    <main
+      className={`mx-auto flex flex-col px-6 py-10 ${showLiveCanvas ? "max-w-6xl" : "max-w-3xl"}`}
+      style={{ height: "100dvh" }}
+    >
       {/* Nadpis – jen když chat není spuštěn */}
       {!started && (
         <div className="mb-3 shrink-0">
@@ -152,32 +168,71 @@ function GuideChat() {
         />
       ) : null}
 
-      {/* Chat plocha – vždy viditelná */}
-      <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple">
-        <div className="flex-1 space-y-4 overflow-y-auto p-6">
-          {messages.map((msg) => (
-            <ChatMessage
-              key={msg.id}
-              msg={msg}
-              selectedProject={selectedProject}
-              onFollowUpAnswerChange={updateFollowUpAnswer}
-              onFollowUpContinue={handleFollowUpContinue}
-              onStartGuide={startFresh}
+      {/* Chat plocha – s live canvasem v dvoupanelovém layoutu nebo samostatně */}
+      {showLiveCanvas ? (
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr]">
+          <div className="flex min-h-0 flex-col rounded-apple bg-white shadow-apple">
+            <div className="flex-1 space-y-4 overflow-y-auto p-6">
+              {messages.map((msg) => (
+                <ChatMessage
+                  key={msg.id}
+                  msg={msg}
+                  selectedProject={selectedProject}
+                  onFollowUpAnswerChange={updateFollowUpAnswer}
+                  onFollowUpContinue={handleFollowUpContinue}
+                  onStartGuide={startFresh}
+                />
+              ))}
+              <div ref={bottomRef} />
+            </div>
+            <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-4">
+              <ChatInput
+                inputRef={inputRef}
+                inputValue={inputValue}
+                setInputValue={setInputValue}
+                onSend={handleSend}
+                status={status}
+                chatMode={chatMode}
+              />
+            </div>
+          </div>
+          <div className="min-h-[320px] lg:min-h-0">
+            <LiveCanvas
+              sections={canvasSections}
+              questions={canvasQuestions}
+              phase={phase}
+              framework={framework}
+              projectName={selectedProject?.name}
             />
-          ))}
-          <div ref={bottomRef} />
+          </div>
         </div>
-        <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-4">
-          <ChatInput
-            inputRef={inputRef}
-            inputValue={inputValue}
-            setInputValue={setInputValue}
-            onSend={handleSend}
-            status={status}
-            chatMode={chatMode}
-          />
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6">
+            {messages.map((msg) => (
+              <ChatMessage
+                key={msg.id}
+                msg={msg}
+                selectedProject={selectedProject}
+                onFollowUpAnswerChange={updateFollowUpAnswer}
+                onFollowUpContinue={handleFollowUpContinue}
+                onStartGuide={startFresh}
+              />
+            ))}
+            <div ref={bottomRef} />
+          </div>
+          <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-4">
+            <ChatInput
+              inputRef={inputRef}
+              inputValue={inputValue}
+              setInputValue={setInputValue}
+              onSend={handleSend}
+              status={status}
+              chatMode={chatMode}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </main>
   );
 }
