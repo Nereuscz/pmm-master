@@ -11,6 +11,15 @@ import ErrorMessage from "@/components/ErrorMessage";
 import { SkeletonDetail } from "@/components/LoadingState";
 
 type Project = { id: string; name: string; framework: string; phase: string; created_at: string; asana_project_id?: string | null };
+
+function sanitizeFilename(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
 type Session = { id: string; phase: string; ai_output: string; created_at: string };
 type ContextData = { accumulated_context: string; last_updated: string | null };
 
@@ -301,7 +310,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 </button>
                 {expandedSession === session.id ? (
                   <div className="border-t border-[#f2f2f7] p-6">
-                    <AiOutput content={session.ai_output} />
+                    <AiOutput
+                      content={session.ai_output}
+                      downloadFilename={`pm-vystup-${sanitizeFilename(project.name)}`}
+                    />
                   </div>
                 ) : null}
               </div>

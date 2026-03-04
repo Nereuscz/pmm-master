@@ -20,6 +20,15 @@ type Step = "confirm_context" | "idle" | "clarifying" | "answering" | "processin
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
+function sanitizeFilename(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
+
 function ProcessForm() {
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("projectId");
@@ -669,7 +678,10 @@ function ProcessForm() {
                 <span className="rounded-full bg-orange-100 px-3 py-1 text-[12px] text-orange-700">Změny v rozsahu</span>
               ) : null}
             </div>
-            <AiOutput content={result.output} />
+            <AiOutput
+              content={result.output}
+              downloadFilename={selectedProject ? `pm-vystup-${sanitizeFilename(selectedProject.name)}` : "pm-vystup"}
+            />
           </div>
         ) : (
           <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">

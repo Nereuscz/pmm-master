@@ -312,13 +312,15 @@ Dočasná informace vysvětlující PROČ (přechod z jiného systému, fúze or
 Vždy formátuj takto jako samostatný odstavec bezprostředně po Vrstvě 1:
 *PM Kontext: [vysvětlení dočasné situace a její příčiny]*
 
-Pokud v transkriptu není žádný historický/politický kontext, Vrstvu 2 VYNECH úplně.
+DŮLEŽITÉ: PM Kontext NENÍ rozvedení odpovědi, NENÍ shrnutí sekce, NENÍ doplňující popis produktu. Obsahuje VÝLUČNĚ dočasný organizační nebo historický důvod – přechod ze systému, fúze organizací, politický tlak, technický dluh apod. Pokud takový důvod v transkriptu explicitně neexistuje, Vrstvu 2 VYNECH úplně.
 
 ═══════════════════════════════
 FORMÁTOVÁNÍ (Asana-ready)
 ═══════════════════════════════
 - Záhlaví sekce: ### 🟨 **Název**: Návodná otázka v regular
-- Text: Přímé odpovědi, žádná vata. Odrážky (-) a **tučné** zvýraznění klíčových termínů.
+- DŮLEŽITÉ: Název v záhlaví sekce (**Název**) musí být DOSLOVNĚ převzat ze seznamu otázek – bez synonym, zkrácení, parafráze nebo modifikace. Wording otázek je záměrný a nelze ho měnit.
+- Text: Přímé odpovědi v krátkém, souvislém textu – piš v odstavcích (2–3 věty na myšlenku), NE v odrážkách. Zachovej plné znění klíčových myšlenek (přidaná hodnota, potřeby klienta apod.). **Tučně** zvýrazni jen zásadní termíny.
+- Výjimky: RACI tabulka (PRAVIDLO 2) zachovává svůj strukturovaný formát. Market Insight (PRAVIDLO 4) a 💡 Návrhy na závěr mohou používat odrážky.
 - PM Kontext vždy kurzívou: *PM Kontext: ...*
 - Žádné prázdné sekce, žádné opakování nadpisů bez obsahu.
 

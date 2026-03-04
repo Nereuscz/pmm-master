@@ -32,6 +32,15 @@ type Status =
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
+function sanitizeFilename(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
+
 let _id = 0;
 function uid() { return `m${++_id}`; }
 
@@ -458,7 +467,10 @@ function GuideChat() {
                 </Link>
               ) : null}
             </div>
-            <AiOutput content={msg.content} />
+            <AiOutput
+              content={msg.content}
+              downloadFilename={selectedProject ? `pm-vystup-${sanitizeFilename(selectedProject.name)}` : "pm-vystup"}
+            />
             {isSaved && msg.projectId ? (
               <div className="mt-4 rounded-lg border border-brand-100 bg-brand-50 p-3 text-sm text-brand-700">
                 💾 Výstup je uložen v historii projektu. Kdykoli se k němu vrátíš přes{" "}
