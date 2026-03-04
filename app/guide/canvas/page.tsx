@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
@@ -16,6 +17,18 @@ type CanvasQuestion = {
 };
 
 export default function CanvasPage() {
+  const router = useRouter();
+
+  // Redirect na unified chatbot s mode=canvas
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get("projectId");
+    const dest = projectId
+      ? `/guide?projectId=${projectId}&mode=canvas`
+      : "/guide?mode=canvas";
+    router.replace(dest);
+  }, [router]);
+
   const [userPrompt, setUserPrompt] = useState("");
   const [phase, setPhase] = useState("Iniciace");
   const [framework, setFramework] = useState<"Univerzální" | "Produktový">("Produktový");

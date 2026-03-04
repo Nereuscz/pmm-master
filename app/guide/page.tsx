@@ -1,54 +1,19 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useGuideChat } from "./hooks/useGuideChat";
-import { GuideConfig } from "./components/GuideConfig";
 import { ResumeModal } from "./components/ResumeModal";
 import { ChatMessage } from "./components/ChatMessage";
 import { ChatInput } from "./components/ChatInput";
 
-function ModeSelection({ onSelectGuide }: { onSelectGuide: () => void }) {
-  return (
-    <div className="mb-4 shrink-0">
-      <p className="mb-4 text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
-        Jak chceš pracovat?
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <button
-          onClick={onSelectGuide}
-          className="group flex flex-col items-start rounded-apple bg-white p-6 shadow-apple transition-all hover:-translate-y-0.5 hover:shadow-apple-lg text-left"
-        >
-          <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-50 text-xl">💬</span>
-          <span className="text-[16px] font-semibold text-[#1d1d1f] group-hover:text-brand-600">Průvodce</span>
-          <span className="mt-1.5 text-[13px] leading-relaxed text-[#6e6e73]">
-            AI klade otázky jednu po druhé, reaguje na tvoje odpovědi a na konci vygeneruje PM dokumentaci.
-          </span>
-          <span className="mt-4 text-[13px] font-medium text-brand-600">Spustit →</span>
-        </button>
-
-        <Link
-          href="/guide/canvas"
-          className="group flex flex-col items-start rounded-apple bg-white p-6 shadow-apple transition-all hover:-translate-y-0.5 hover:shadow-apple-lg"
-        >
-          <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-xl">📋</span>
-          <span className="text-[16px] font-semibold text-[#1d1d1f] group-hover:text-brand-600">Příprava na schůzku</span>
-          <span className="mt-1.5 text-[13px] leading-relaxed text-[#6e6e73]">
-            Celá sada PM otázek s doplňujícími najednou – vytiskni si je nebo si je projdi před živým rozhovorem.
-          </span>
-          <span className="mt-4 text-[13px] font-medium text-brand-600">Otevřít →</span>
-        </Link>
-      </div>
-    </div>
-  );
-}
+const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
 function GuideChat() {
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("projectId");
-  const [mode, setMode] = useState<"select" | "guide">(projectIdParam ? "guide" : "select");
+  const modeParam = searchParams.get("mode"); // "guide" | "canvas" | null
 
   const {
     projects,
@@ -58,6 +23,7 @@ function GuideChat() {
     setPhase,
     framework,
     setFramework,
+    chatMode,
     started,
     messages,
     answers,
@@ -68,96 +34,112 @@ function GuideChat() {
     pendingDraft,
     bottomRef,
     inputRef,
-    handleStart,
     startFresh,
     resumeDraft,
     handleSend,
     handleFollowUpContinue,
     updateFollowUpAnswer,
-    deleteDraft
-  } = useGuideChat(projectIdParam);
+    deleteDraft,
+    generateCanvas
+  } = useGuideChat(projectIdParam, modeParam);
 
-  const showConfig = (!started && !projectIdParam) || status === "done";
+  const showProgressBar = chatMode === "guide" && started && totalCount != null;
+
+  // Follow-up stav pro progress bar
+  const fuInfo = (() => {
+    if (status !== "awaiting_fu") return null;
+    const lastFu = [...messages]
+      .reverse()
+      .find((m) => m.role === "ai" && m.kind === "followup" && !m.submitted);
+    const fuFilled =
+      lastFu && "answers" in lastFu
+        ? Object.values(lastFu.answers).filter((v) => v?.trim()).length
+        : 0;
+    return ` · doplňující: ${fuFilled}/3`;
+  })();
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col px-6 py-10" style={{ height: "100dvh" }}>
-      {/* Nadpis / stavový bar */}
-      <div className="mb-4 shrink-0">
-        <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Průvodce" }]} />
+      {/* Nadpis – jen když chat není spuštěn */}
+      {!started && (
+        <div className="mb-3 shrink-0">
+          <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Průvodce" }]} />
+          <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
+            Průvodce PM
+          </h1>
+          <p className="mt-1 text-[15px] text-[#6e6e73]">
+            Interaktivní PM asistent – průvodce rozhovorem nebo příprava na schůzku.
+          </p>
+        </div>
+      )}
 
-        {/* Plný titulek – jen před startem */}
-        {!started && (
+      {/* Lišta kontextu – config nebo progress bar */}
+      <div className="mb-3 shrink-0 flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 shadow-apple">
+        {showProgressBar ? (
+          // Progress bar v průběhu průvodce
           <>
-            <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
-              Průvodce PM otázkami
-            </h1>
-            <p className="mt-1 text-[15px] text-[#6e6e73]">
-              Interaktivní průvodce PM dokumentací nebo příprava otázek na schůzku.
-            </p>
-          </>
-        )}
-
-        {/* Kompaktní info bar – zobrazí se ihned po startu a zůstane sticky */}
-        {started ? (
-          <div className="mt-2 flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-apple">
             {selectedProject && (
               <>
-                <span className="max-w-[200px] truncate text-[13px] font-semibold text-[#1d1d1f]">
+                <span className="max-w-[160px] truncate text-[13px] font-semibold text-[#1d1d1f]">
                   {selectedProject.name}
                 </span>
                 <span className="text-[#d2d2d7]">·</span>
               </>
             )}
             <span className="shrink-0 text-[12px] text-[#6e6e73]">{phase}</span>
-            {totalCount != null && (
-              <>
-                <span className="text-[#d2d2d7]">·</span>
-                <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                  {/* Vizuální progress bar */}
-                  <div className="h-1.5 min-w-[60px] flex-1 overflow-hidden rounded-full bg-[#f2f2f7]">
-                    <div
-                      className="h-full rounded-full bg-brand-600 transition-all duration-500"
-                      style={{ width: `${Math.min(100, (answers.length / totalCount) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="shrink-0 tabular-nums text-[12px] font-medium text-[#6e6e73]">
-                    {answers.length}/{totalCount}
-                    {status === "awaiting_fu"
-                      ? (() => {
-                          const lastFu = [...messages]
-                            .reverse()
-                            .find((m) => m.role === "ai" && m.kind === "followup" && !m.submitted);
-                          const fuFilled =
-                            lastFu && "answers" in lastFu
-                              ? Object.values(lastFu.answers).filter((v) => v?.trim()).length
-                              : 0;
-                          return ` · doplňující: ${fuFilled}/3`;
-                        })()
-                      : " otázek"}
-                  </span>
-                </div>
-              </>
-            )}
+            <span className="text-[#d2d2d7]">·</span>
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <div className="h-1.5 min-w-[60px] flex-1 overflow-hidden rounded-full bg-[#f2f2f7]">
+                <div
+                  className="h-full rounded-full bg-brand-600 transition-all duration-500"
+                  style={{ width: `${Math.min(100, (answers.length / totalCount!) * 100)}%` }}
+                />
+              </div>
+              <span className="shrink-0 tabular-nums text-[12px] font-medium text-[#6e6e73]">
+                {answers.length}/{totalCount} otázek{fuInfo}
+              </span>
+            </div>
+          </>
+        ) : (
+          // Config selektory
+          <div className="flex flex-1 flex-wrap items-center gap-2">
+            <select
+              value={selectedProject?.id ?? ""}
+              onChange={(e) => {
+                const p = projects.find((p) => p.id === e.target.value) ?? null;
+                setSelectedProject(p);
+                if (p) {
+                  setPhase(p.phase ?? "Iniciace");
+                  setFramework(p.framework as "Univerzální" | "Produktový");
+                }
+              }}
+              className="rounded-lg border border-[#d2d2d7] bg-[#fafafa] px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+            >
+              <option value="">– projekt –</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <span className="text-[#d2d2d7]">·</span>
+            <select
+              value={phase}
+              onChange={(e) => setPhase(e.target.value)}
+              className="rounded-lg border border-[#d2d2d7] bg-[#fafafa] px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+            >
+              {PHASES.map((p) => <option key={p}>{p}</option>)}
+            </select>
+            <span className="text-[#d2d2d7]">·</span>
+            <select
+              value={framework}
+              onChange={(e) => setFramework(e.target.value as "Univerzální" | "Produktový")}
+              className="rounded-lg border border-[#d2d2d7] bg-[#fafafa] px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+            >
+              <option>Univerzální</option>
+              <option>Produktový</option>
+            </select>
           </div>
-        ) : null}
+        )}
       </div>
-
-      {/* Výběr režimu nebo konfigurace */}
-      {mode === "select" && !started ? (
-        <ModeSelection onSelectGuide={() => setMode("guide")} />
-      ) : showConfig ? (
-        <GuideConfig
-          projects={projects}
-          selectedProject={selectedProject}
-          setSelectedProject={setSelectedProject}
-          phase={phase}
-          setPhase={setPhase}
-          framework={framework}
-          setFramework={setFramework}
-          onStart={status === "done" ? startFresh : handleStart}
-          isDone={status === "done"}
-        />
-      ) : null}
 
       {/* Resume modal */}
       {pendingDraft ? (
@@ -171,50 +153,32 @@ function GuideChat() {
         />
       ) : null}
 
-      {/* Loading placeholder při auto-startu z projektu */}
-      {!started && projectIdParam ? (
-        <div className="mb-4 shrink-0 rounded-apple bg-white p-5 shadow-apple">
-          <div className="flex items-center gap-3 text-[14px] text-[#6e6e73]">
-            <span className="flex gap-1">
-              {[0, 150, 300].map((delay) => (
-                <span
-                  key={delay}
-                  className="inline-block h-2 w-2 animate-bounce rounded-full bg-[#d2d2d7]"
-                  style={{ animationDelay: `${delay}ms` }}
-                />
-              ))}
-            </span>
-            Spouštím průvodce…
-          </div>
-        </div>
-      ) : null}
-
-      {/* Chat plocha */}
-      {started ? (
-        <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple">
-          <div className="flex-1 space-y-4 overflow-y-auto p-6">
-            {messages.map((msg) => (
-              <ChatMessage
-                key={msg.id}
-                msg={msg}
-                selectedProject={selectedProject}
-                onFollowUpAnswerChange={updateFollowUpAnswer}
-                onFollowUpContinue={handleFollowUpContinue}
-              />
-            ))}
-            <div ref={bottomRef} />
-          </div>
-          <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-4">
-            <ChatInput
-              inputRef={inputRef}
-              inputValue={inputValue}
-              setInputValue={setInputValue}
-              onSend={handleSend}
-              status={status}
+      {/* Chat plocha – vždy viditelná */}
+      <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple">
+        <div className="flex-1 space-y-4 overflow-y-auto p-6">
+          {messages.map((msg) => (
+            <ChatMessage
+              key={msg.id}
+              msg={msg}
+              selectedProject={selectedProject}
+              onFollowUpAnswerChange={updateFollowUpAnswer}
+              onFollowUpContinue={handleFollowUpContinue}
+              onStartGuide={startFresh}
             />
-          </div>
+          ))}
+          <div ref={bottomRef} />
         </div>
-      ) : null}
+        <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-4">
+          <ChatInput
+            inputRef={inputRef}
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            onSend={handleSend}
+            status={status}
+            chatMode={chatMode}
+          />
+        </div>
+      </div>
     </main>
   );
 }

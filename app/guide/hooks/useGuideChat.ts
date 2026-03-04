@@ -1,21 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Project, Answer, GuideQ, ChatMsg, Status, GuideDraft } from "../types";
+import type { Project, Answer, GuideQ, ChatMsg, Status, GuideDraft, ChatMode, CanvasQuestion } from "../types";
 
 let _id = 0;
 function uid() { return `m${++_id}`; }
 
-export function useGuideChat(projectIdParam: string | null) {
+export function useGuideChat(projectIdParam: string | null, modeParam: string | null) {
   // Config state
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [phase, setPhase] = useState("Iniciace");
   const [framework, setFramework] = useState<"Univerzální" | "Produktový">("Univerzální");
+
+  // Chatbot mode
+  const [chatMode, setChatMode] = useState<ChatMode>("idle");
   const [started, setStarted] = useState(false);
 
-  // Chat state
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  // Chat state – počáteční uvítací zpráva
+  const [messages, setMessages] = useState<ChatMsg[]>([
+    { id: "m0", role: "ai", kind: "greeting" }
+  ]);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [currentQ, setCurrentQ] = useState<GuideQ | null>(null);
   const [pendingMain, setPendingMain] = useState<{ q: GuideQ; answer: string } | null>(null);
@@ -48,22 +53,37 @@ export function useGuideChat(projectIdParam: string | null) {
       .catch(() => undefined);
   }, [projectIdParam]);
 
-  // ── Auto-start při příchodu z projektu ────────────────────────────────────
+  // ── Auto-start z URL ?mode= ────────────────────────────────────────────────
 
   const startFreshRef = useRef<() => void>(() => {});
   startFreshRef.current = startFresh;
 
+  const generateCanvasRef = useRef<(p: string, fw: string) => Promise<void>>(async () => {});
+  // Updated after each render
+
   useEffect(() => {
-    if (
-      projectIdParam &&
-      selectedProject?.id === projectIdParam &&
-      !started &&
-      !autoStartedRef.current
-    ) {
+    if (!selectedProject || autoStartedRef.current || !modeParam) return;
+    if (modeParam === "guide" && selectedProject.id === (projectIdParam ?? selectedProject.id)) {
       autoStartedRef.current = true;
-      startFreshRef.current();
+      // Check for existing draft first
+      fetch(
+        `/api/guide/draft?projectId=${selectedProject.id}&phase=${encodeURIComponent(phase)}&framework=${encodeURIComponent(framework)}`
+      )
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.draft && (json.draft.answers as Answer[]).length > 0) {
+            setPendingDraft(json.draft as GuideDraft);
+          } else {
+            startFreshRef.current();
+          }
+        })
+        .catch(() => startFreshRef.current());
+    } else if (modeParam === "canvas") {
+      autoStartedRef.current = true;
+      generateCanvasRef.current(phase, framework);
     }
-  }, [projectIdParam, selectedProject?.id, started]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject?.id, modeParam]);
 
   // ── Auto-scroll ───────────────────────────────────────────────────────────
 
@@ -143,6 +163,8 @@ export function useGuideChat(projectIdParam: string | null) {
         });
         deleteDraft();
         setStatus("done");
+        // Vrátit se do idle – uživatel může pokračovat v chatu
+        setChatMode("idle");
       } else {
         const q: GuideQ = json.nextQuestion;
         setCurrentQ(q);
@@ -162,32 +184,152 @@ export function useGuideChat(projectIdParam: string | null) {
     }
   }
 
-  // ── Start / Resume ────────────────────────────────────────────────────────
+  // ── Canvas generování ─────────────────────────────────────────────────────
 
-  async function handleStart() {
-    if (!selectedProject) return;
+  async function generateCanvas(resolvedPhase: string, resolvedFramework: string) {
+    setChatMode("canvas");
+    setStatus("loading_q");
+    push({ id: uid(), role: "ai", kind: "thinking", text: "Generuji sadu otázek…" });
 
     try {
-      const r = await fetch(
-        `/api/guide/draft?projectId=${selectedProject.id}&phase=${encodeURIComponent(phase)}&framework=${encodeURIComponent(framework)}`
-      );
+      const r = await fetch("/api/guide/canvas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phase: resolvedPhase,
+          framework: resolvedFramework,
+          projectId: selectedProject?.id
+        })
+      });
       const json = await r.json();
-      if (json.draft && (json.draft.answers as Answer[]).length > 0) {
-        setPendingDraft(json.draft as GuideDraft);
+      removeThinking();
+
+      if (!r.ok) throw new Error(json.error || "Chyba generování");
+
+      const questions: CanvasQuestion[] = json.questions ?? [];
+      push({
+        id: uid(),
+        role: "ai",
+        kind: "canvas",
+        questions,
+        phase: (json.phase as string) || resolvedPhase,
+        framework: (json.framework as string) || resolvedFramework
+      });
+      setStatus("idle");
+      setChatMode("idle"); // Vrátit do idle – uživatel může pokračovat
+    } catch (e) {
+      removeThinking();
+      push({
+        id: uid(),
+        role: "ai",
+        kind: "error",
+        text: e instanceof Error ? e.message : "Nepodařilo se vygenerovat canvas"
+      });
+      setStatus("idle");
+      setChatMode("idle");
+    }
+  }
+  // Aktualizuj ref na každém renderu
+  generateCanvasRef.current = generateCanvas;
+
+  // ── Routing první zprávy ──────────────────────────────────────────────────
+
+  async function handleInitialMessage(text: string) {
+    push({ id: uid(), role: "user", text });
+    setChatMode("routing");
+    setStatus("loading_q");
+    push({ id: uid(), role: "ai", kind: "thinking", text: "Rozumím požadavku…" });
+
+    try {
+      const r = await fetch("/api/guide/route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          phase,
+          framework,
+          projectName: selectedProject?.name
+        })
+      });
+      const json = await r.json();
+      removeThinking();
+
+      const intent = (json.intent as string) ?? "guide";
+      const phaseOverride = json.phaseOverride as string | null;
+      const frameworkOverride = json.frameworkOverride as string | null;
+
+      if (intent === "canvas") {
+        const resolvedPhase = phaseOverride || phase;
+        const resolvedFw = (frameworkOverride as "Univerzální" | "Produktový") || framework;
+        if (phaseOverride) setPhase(phaseOverride);
+        if (frameworkOverride) setFramework(resolvedFw);
+        await generateCanvas(resolvedPhase, resolvedFw);
         return;
       }
-    } catch {
-      // Silently ignore – proceed with fresh start
-    }
 
-    startFresh();
+      if (intent === "general") {
+        push({
+          id: uid(),
+          role: "ai",
+          kind: "clarification",
+          text: (json.response as string) || "Mohu tě provést PM průvodcem nebo připravit sadu otázek na schůzku."
+        });
+        setStatus("idle");
+        setChatMode("idle");
+        return;
+      }
+
+      // intent === "guide"
+      if (!selectedProject) {
+        push({
+          id: uid(),
+          role: "ai",
+          kind: "clarification",
+          text: "Průvodce potřebuje vybraný projekt. Vyber projekt v liště nahoře a zkus to znovu."
+        });
+        setStatus("idle");
+        setChatMode("idle");
+        return;
+      }
+
+      // Check for existing draft
+      try {
+        const draftR = await fetch(
+          `/api/guide/draft?projectId=${selectedProject.id}&phase=${encodeURIComponent(phase)}&framework=${encodeURIComponent(framework)}`
+        );
+        const draftJson = await draftR.json();
+        if (draftJson.draft && (draftJson.draft.answers as Answer[]).length > 0) {
+          setPendingDraft(draftJson.draft as GuideDraft);
+          setStatus("idle");
+          // chatMode zůstane "routing" → ResumeModal se zobrazí
+          // Po resume/start fresh se nastaví "guide"
+          return;
+        }
+      } catch {
+        // Ignore draft check errors
+      }
+
+      startFresh();
+    } catch {
+      removeThinking();
+      push({
+        id: uid(),
+        role: "ai",
+        kind: "error",
+        text: "Nepodařilo se zpracovat požadavek. Zkus to znovu."
+      });
+      setStatus("idle");
+      setChatMode("idle");
+    }
   }
+
+  // ── Start / Resume ────────────────────────────────────────────────────────
 
   function startFresh() {
     if (!selectedProject) return;
     setPendingDraft(null);
+    setChatMode("guide");
     setStarted(true);
-    setMessages([]);
     setAnswers([]);
     setCurrentQ(null);
     setPendingMain(null);
@@ -200,6 +342,7 @@ export function useGuideChat(projectIdParam: string | null) {
   function resumeDraft(draft: GuideDraft) {
     if (!selectedProject) return;
     setPendingDraft(null);
+    setChatMode("guide");
     setStarted(true);
     setMessages(draft.messages);
     setAnswers(draft.answers);
@@ -214,9 +357,20 @@ export function useGuideChat(projectIdParam: string | null) {
   // ── Odeslání odpovědi ─────────────────────────────────────────────────────
 
   async function handleSend() {
-    if (!inputValue.trim() || !currentQ || status !== "awaiting_answer") return;
+    const text = inputValue.trim();
+    if (!text) return;
 
-    const answer = inputValue.trim();
+    // Idle nebo po výstupu → routing nové zprávy
+    if (chatMode === "idle") {
+      setInputValue("");
+      await handleInitialMessage(text);
+      return;
+    }
+
+    // Guide – normální flow
+    if (chatMode !== "guide" || status !== "awaiting_answer" || !currentQ) return;
+
+    const answer = text;
     setInputValue("");
     push({ id: uid(), role: "user", text: answer });
 
@@ -347,6 +501,8 @@ export function useGuideChat(projectIdParam: string | null) {
     setPhase,
     framework,
     setFramework,
+    chatMode,
+    setChatMode,
     started,
     messages,
     answers,
@@ -359,12 +515,12 @@ export function useGuideChat(projectIdParam: string | null) {
     setPendingDraft,
     bottomRef,
     inputRef,
-    handleStart,
     startFresh,
     resumeDraft,
     handleSend,
     handleFollowUpContinue,
     updateFollowUpAnswer,
-    deleteDraft
+    deleteDraft,
+    generateCanvas
   };
 }

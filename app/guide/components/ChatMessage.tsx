@@ -1,7 +1,8 @@
+import { useState } from "react";
 import Link from "next/link";
 import AiOutput from "@/components/AiOutput";
 import { AiAvatar } from "./AiAvatar";
-import type { ChatMsg, Project } from "../types";
+import type { ChatMsg, Project, CanvasQuestion } from "../types";
 
 function sanitizeFilename(name: string): string {
   return name
@@ -12,14 +13,71 @@ function sanitizeFilename(name: string): string {
     .toLowerCase();
 }
 
+/** Inline canvas block – rozbalovací otázky s lokálním stavem */
+function CanvasBlock({ questions, phase, framework }: { questions: CanvasQuestion[]; phase: string; framework: string }) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  return (
+    <div className="mt-2 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-[13px] font-semibold text-[#1d1d1f]">📋 {framework} · {phase}</p>
+          <p className="text-[12px] text-[#aeaeb2]">{questions.length} otázek · klikni pro rozbalení</p>
+        </div>
+        <button
+          onClick={() => window.print()}
+          className="rounded-full border border-[#d2d2d7] px-3 py-1 text-[12px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7] print:hidden"
+        >
+          Tisknout / PDF
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {questions.map((q, i) => (
+          <div key={i} className="overflow-hidden rounded-xl border border-[#e8e8ed] bg-[#fafafa]">
+            <button
+              type="button"
+              onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
+              className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-[#f2f2f7]"
+            >
+              <span className="text-[13px] font-medium text-[#1d1d1f]">🟨 {q.name}</span>
+              <span className="ml-2 shrink-0 text-[11px] text-[#aeaeb2]">{expandedIndex === i ? "▲" : "▼"}</span>
+            </button>
+            {expandedIndex === i && (
+              <div className="border-t border-[#e8e8ed] bg-white px-3 py-3">
+                <p className="mb-1.5 text-[12px] text-[#6e6e73]">{q.hint}</p>
+                {q.context && (
+                  <div className="mb-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-800">
+                    💡 {q.context}
+                  </div>
+                )}
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Doplňující</p>
+                <ol className="space-y-1">
+                  {q.followUps.map((fu, j) => (
+                    <li key={j} className="flex gap-2 text-[12px] text-[#1d1d1f]">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-700">
+                        {j + 1}
+                      </span>
+                      {fu}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   msg: ChatMsg;
   selectedProject: Project | null;
   onFollowUpAnswerChange: (msgId: string, idx: number, value: string) => void;
   onFollowUpContinue: () => void;
+  onStartGuide?: () => void;
 };
 
-export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFollowUpContinue }: Props) {
+export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFollowUpContinue, onStartGuide }: Props) {
   if (msg.role === "user") {
     return (
       <div className="flex justify-end">
@@ -187,6 +245,52 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
         <AiAvatar />
         <div className="rounded-2xl rounded-tl-sm bg-[#fff2f2] px-4 py-3 text-[14px] text-[#c0392b] shadow-apple-sm">
           {msg.text}
+        </div>
+      </div>
+    );
+  }
+
+  if (msg.kind === "greeting") {
+    return (
+      <div className="flex items-start gap-3">
+        <AiAvatar />
+        <div className="max-w-[78%] space-y-2 rounded-2xl rounded-tl-sm bg-white px-4 py-4 shadow-apple-sm">
+          <p className="text-[14px] font-semibold text-[#1d1d1f]">Ahoj! Jsem tvůj PM asistent. 👋</p>
+          <p className="text-[13px] leading-relaxed text-[#6e6e73]">
+            Mohu ti pomoci dvěma způsoby:
+          </p>
+          <ul className="space-y-1.5 text-[13px] text-[#6e6e73]">
+            <li className="flex gap-2">
+              <span>💬</span>
+              <span><strong className="text-[#1d1d1f]">Průvodce</strong> – AI klade PM otázky jednu po druhé a na konci vygeneruje dokumentaci.</span>
+            </li>
+            <li className="flex gap-2">
+              <span>📋</span>
+              <span><strong className="text-[#1d1d1f]">Canvas</strong> – celá sada otázek najednou, ideální příprava před živým rozhovorem.</span>
+            </li>
+          </ul>
+          <p className="text-[12px] text-[#aeaeb2]">
+            Vyber projekt nahoře a napiš co potřebuješ – nebo rovnou: &ldquo;spusť průvodce&rdquo; nebo &ldquo;udělej canvas&rdquo;.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (msg.kind === "canvas") {
+    return (
+      <div className="flex items-start gap-3">
+        <AiAvatar />
+        <div className="flex-1 min-w-0 rounded-2xl rounded-tl-sm bg-white px-4 py-4 shadow-apple-sm">
+          <CanvasBlock questions={msg.questions} phase={msg.phase} framework={msg.framework} />
+          {onStartGuide && (
+            <button
+              onClick={onStartGuide}
+              className="mt-3 rounded-full bg-brand-600 px-4 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-brand-700"
+            >
+              Spustit průvodce →
+            </button>
+          )}
         </div>
       </div>
     );

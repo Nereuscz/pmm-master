@@ -2,12 +2,23 @@ export type Project = { id: string; name: string; framework: string; phase: stri
 export type Answer = { questionId: string; question: string; answer: string };
 export type GuideQ = { id: string; text: string; hint: string; context?: string };
 
+export type CanvasQuestion = {
+  name: string;
+  hint: string;
+  context?: string;
+  followUps: string[];
+};
+
+export type ChatMode = "idle" | "routing" | "guide" | "canvas";
+
 export type ChatMsg =
+  | { id: string; role: "ai"; kind: "greeting" }
   | { id: string; role: "ai"; kind: "question"; q: GuideQ }
   | { id: string; role: "ai"; kind: "thinking"; text: string }
   | { id: string; role: "ai"; kind: "clarification"; text: string }
   | { id: string; role: "ai"; kind: "followup"; questions: string[]; answers: Record<number, string>; submitted: boolean }
   | { id: string; role: "ai"; kind: "output"; content: string; sessionId?: string; projectId?: string; saved?: boolean }
+  | { id: string; role: "ai"; kind: "canvas"; questions: CanvasQuestion[]; phase: string; framework: string }
   | { id: string; role: "ai"; kind: "error"; text: string }
   | { id: string; role: "user"; text: string };
 

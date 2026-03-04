@@ -198,13 +198,13 @@ export default function DashboardPage() {
                     Zpracovat
                   </Link>
                   <Link
-                    href={`/guide?projectId=${project.id}`}
+                    href={`/guide?projectId=${project.id}&mode=guide`}
                     className="rounded-full border border-[#d2d2d7] bg-white px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
                   >
                     Průvodce
                   </Link>
                   <Link
-                    href={`/guide/canvas?projectId=${project.id}`}
+                    href={`/guide?projectId=${project.id}&mode=canvas`}
                     className="rounded-full border border-[#d2d2d7] bg-white px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
                     title="Příprava na schůzku – celá sada PM otázek"
                   >
