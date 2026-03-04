@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { generateClarifyingQuestions } from "@/lib/anthropic";
-import { getOrCreateProjectContext, requireProject } from "@/lib/db";
-import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { getOrCreateProjectContext, requireProjectOwnership } from "@/lib/db";
+import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 
@@ -33,7 +33,11 @@ export async function POST(request: NextRequest) {
     }
 
     const input = parsed.data;
-    await requireProject(input.projectId);
+    const ownership = await requireProjectOwnership(input.projectId, user.id, isAdmin(user));
+    if (!ownership.ok) {
+      if (ownership.status === 403) return forbidden();
+      return NextResponse.json({ error: ownership.message }, { status: 404 });
+    }
 
     const projectContext = await getOrCreateProjectContext(input.projectId);
 

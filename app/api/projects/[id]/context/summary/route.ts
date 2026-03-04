@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser, unauthorized } from "@/lib/auth-guard";
+import { getAuthUser, unauthorized, forbidden, isAdmin } from "@/lib/auth-guard";
 import { tryGetDb } from "@/lib/db";
 import { generateProjectMemorySummary } from "@/lib/anthropic";
 
@@ -16,16 +16,17 @@ export async function GET(
   }
 
   try {
-    // Načti projekt (název, framework)
+    // Načti projekt (název, framework, owner_id pro ownership check)
     const { data: project, error: projectError } = await db
       .from("projects")
-      .select("name, framework")
+      .select("name, framework, owner_id")
       .eq("id", params.id)
       .single();
 
     if (projectError || !project) {
       return NextResponse.json({ error: "Projekt nenalezen" }, { status: 404 });
     }
+    if (!isAdmin(user) && project.owner_id !== user.id) return forbidden();
 
     // Načti kontext
     const { data: context } = await db

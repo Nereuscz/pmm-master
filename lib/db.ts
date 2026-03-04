@@ -25,6 +25,35 @@ export async function requireProject(projectId: string) {
   return data;
 }
 
+export type RequireProjectOwnershipResult =
+  | { ok: true; project: Awaited<ReturnType<typeof requireProject>> }
+  | { ok: false; status: 403 }
+  | { ok: false; status: 404; message: string };
+
+/**
+ * Ověří existenci projektu a vlastnictví (owner_id === userId nebo Admin).
+ * Použij pro API route, které pracují s projektem – chrání před IDOR.
+ */
+export async function requireProjectOwnership(
+  projectId: string,
+  userId: string,
+  isAdmin: boolean
+): Promise<RequireProjectOwnershipResult> {
+  const db = ensureDb();
+  const { data, error } = await db
+    .from("projects")
+    .select("id,name,framework,phase,owner_id,created_at,updated_at")
+    .eq("id", projectId)
+    .single();
+  if (error || !data) {
+    return { ok: false, status: 404, message: "Projekt nebyl nalezen." };
+  }
+  if (!isAdmin && data.owner_id !== userId) {
+    return { ok: false, status: 403 };
+  }
+  return { ok: true, project: data };
+}
+
 export async function ensureUser(userId: string) {
   const db = ensureDb();
   const { data: existing } = await db.from("users").select("id").eq("id", userId).maybeSingle();

@@ -50,8 +50,26 @@ export async function checkAiRateLimit(identifier: string): Promise<RateLimitRes
     }
 
     return { success: true };
-  } catch {
-    // On Redis error, allow the request (fail open)
+  } catch (err) {
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction) {
+      // Fail closed v produkci – při výpadku Redis blokovat, aby nedocházelo k zneužití AI API
+      console.error("[rate-limit] Redis error, blocking request:", err);
+      return {
+        success: false,
+        response: NextResponse.json(
+          {
+            error: "Rate limit služba je dočasně nedostupná. Zkus to znovu za chvíli.",
+            retryAfter: 60,
+          },
+          {
+            status: 503,
+            headers: { "Retry-After": "60" },
+          }
+        ),
+      };
+    }
+    // Dev: fail open
     return { success: true };
   }
 }

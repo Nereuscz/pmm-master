@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { asanaExportSchema } from "@/lib/schemas";
-import { ensureDb } from "@/lib/db";
-import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { ensureDb, requireProjectOwnership } from "@/lib/db";
+import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logAudit } from "@/lib/audit";
 import { getValidAsanaToken } from "@/lib/asana-auth";
 import { createTask, createSubtask } from "@/lib/asana-api";
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     const { data: session, error: sessionError } = await db
       .from("sessions")
-      .select("id")
+      .select("id, project_id")
       .eq("id", input.sessionId)
       .maybeSingle();
     if (sessionError || !session) {
@@ -54,6 +54,11 @@ export async function POST(request: NextRequest) {
         { error: "Session pro export nebyla nalezena." },
         { status: 404 }
       );
+    }
+    const ownership = await requireProjectOwnership(session.project_id, user.id, isAdmin(user));
+    if (!ownership.ok) {
+      if (ownership.status === 403) return forbidden();
+      return NextResponse.json({ error: ownership.message }, { status: 404 });
     }
 
     const accessToken = await getValidAsanaToken(user.id);

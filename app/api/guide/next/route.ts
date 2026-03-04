@@ -3,9 +3,9 @@ import { z } from "zod";
 import { getQuestionsForPhase } from "@/lib/guide";
 import { generateStructuredOutput } from "@/lib/anthropic";
 import { retrieveTopChunks } from "@/lib/rag";
-import { tryGetDb, requireProject, getOrCreateProjectContext } from "@/lib/db";
+import { tryGetDb, requireProjectOwnership, getOrCreateProjectContext } from "@/lib/db";
 import { summarizeForContext } from "@/lib/text";
-import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
 import { logAudit } from "@/lib/audit";
 import { checkAiRateLimit } from "@/lib/rate-limit";
@@ -101,7 +101,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await requireProject(input.projectId);
+    const ownership = await requireProjectOwnership(input.projectId, user.id, isAdmin(user));
+    if (!ownership.ok) {
+      if (ownership.status === 403) return forbidden();
+      return NextResponse.json({ error: ownership.message }, { status: 404 });
+    }
 
     const { data: session, error } = await db
       .from("sessions")

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateStructuredOutput } from "@/lib/anthropic";
 import { retrieveTopChunks } from "@/lib/rag";
 import { processTranscriptSchema } from "@/lib/schemas";
-import { ensureDb, getLastSession, getOrCreateProjectContext, requireProject } from "@/lib/db";
+import { ensureDb, getLastSession, getOrCreateProjectContext, requireProjectOwnership } from "@/lib/db";
 import { detectChangeSignals, summarizeForContext } from "@/lib/text";
-import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
 import { logAudit } from "@/lib/audit";
 import { checkAiRateLimit } from "@/lib/rate-limit";
@@ -37,7 +37,11 @@ export async function POST(request: NextRequest) {
     const db = ensureDb();
     const startedAt = new Date().toISOString();
 
-    await requireProject(input.projectId);
+    const ownership = await requireProjectOwnership(input.projectId, user.id, isAdmin(user));
+    if (!ownership.ok) {
+      if (ownership.status === 403) return forbidden();
+      return NextResponse.json({ error: ownership.message }, { status: 404 });
+    }
 
     const { data: job, error: jobError } = await db
       .from("processing_jobs")
