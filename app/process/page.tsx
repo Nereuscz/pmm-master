@@ -469,7 +469,7 @@ function ProcessForm() {
                 onChange={(e) => setContextNote(e.target.value)}
                 maxLength={600}
                 className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
-                placeholder="Např. „Relevantní část od 15. minuty" nebo „Zaměř se na diskusi o cílové skupině""
+                placeholder='Např. "Relevantní část od 15. minuty" nebo "Zaměř se na diskusi o cílové skupině"'
               />
               {contextNote.length > 0 && (
                 <p className="mt-1 text-right text-[12px] text-[#aeaeb2]">{contextNote.length}/600</p>
@@ -625,7 +625,7 @@ function ProcessForm() {
                     value={refinementPrompt}
                     onChange={(e) => setRefinementPrompt(e.target.value)}
                     maxLength={1000}
-                    placeholder="Např. „Přidej sekci Rizika", „Doplň RACI pro Jana Nováka", „Přepiš Výsledky – chybí konkrétní změna u klienta""
+                    placeholder='Např. "Přidej sekci Rizika", "Doplň RACI pro Jana Nováka", "Přepiš Výsledky – chybí konkrétní změna u klienta"'
                     className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
                   />
                   {refinementError ? (

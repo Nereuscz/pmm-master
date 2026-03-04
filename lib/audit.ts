@@ -5,6 +5,8 @@ export type AuditAction =
   | "project_update"
   | "project_delete"
   | "transcript_process"
+  | "transcript_refine"
+  | "session_edit"
   | "guide_complete"
   | "asana_export"
   | "kb_upload"

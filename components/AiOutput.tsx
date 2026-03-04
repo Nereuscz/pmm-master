@@ -71,7 +71,6 @@ export default function AiOutput({
         StarterKit.configure({
           // Disable extensions that don't round-trip through tiptap-markdown cleanly
           codeBlock: false,
-          horizontalRule: true,
         }),
         Markdown.configure({
           html: false,
@@ -108,7 +107,8 @@ export default function AiOutput({
 
   const handleSave = useCallback(async () => {
     if (!editor || !sessionId) return;
-    const newMarkdown = editor.storage.markdown.getMarkdown() as string;
+    const newMarkdown =
+      (editor.storage as { markdown?: { getMarkdown(): string } }).markdown?.getMarkdown() ?? "";
     setSaving(true);
     try {
       const r = await fetch(`/api/sessions/${sessionId}`, {

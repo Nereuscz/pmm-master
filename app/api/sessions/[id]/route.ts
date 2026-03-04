@@ -24,10 +24,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const db = ensureDb();
 
-  // Fetch the session and verify ownership via the linked project
   const { data: session } = await db
     .from("sessions")
-    .select("id, project_id, projects!inner(owner_id)")
+    .select("id, project_id")
     .eq("id", params.id)
     .single();
 
@@ -35,8 +34,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Session nebyla nalezena." }, { status: 404 });
   }
 
-  const ownerId = (session.projects as { owner_id: string }).owner_id;
-  if (!isAdmin(user) && ownerId !== user.id) return forbidden();
+  const { data: project } = await db
+    .from("projects")
+    .select("owner_id")
+    .eq("id", session.project_id)
+    .single();
+
+  if (!project) return NextResponse.json({ error: "Projekt session nebyl nalezen." }, { status: 404 });
+  if (!isAdmin(user) && project.owner_id !== user.id) return forbidden();
 
   try {
     const { error } = await db
