@@ -272,3 +272,77 @@ Vygeneruj 3 doplňující otázky pro upřesnění odpovědi:`
 
   return results;
 }
+
+export async function elaborateCanvasSection(input: {
+  sectionId: string;
+  questionName: string;
+  questionHint: string;
+  currentContent: string;
+  selectedText?: string;
+  userPrompt?: string;
+  projectContext?: string;
+  framework: string;
+  phase: string;
+}): Promise<{ content: string }> {
+  if (!anthropic) return { content: input.selectedText ? input.selectedText : input.currentContent };
+  const client = anthropic;
+
+  const hasSelection = input.selectedText?.trim().length > 0;
+  const prompt =
+    input.userPrompt?.trim() ||
+    (hasSelection
+      ? "Doplň a upřesni vybranou část – zachovej kontext, rozšiř o relevantní detaily."
+      : "Doplň a upřesni tuto sekci v kontextu projektu – zachovej strukturu, rozšiř o relevantní detaily.");
+
+  const systemPrompt = hasSelection
+    ? `Jsi PM coach pro JIC. Uživatel vybral v PM canvasu konkrétní část textu a chce ji doplnit nebo přegenerovat.
+
+Tvůj úkol: Na základě vybraného textu a kontextu vygeneruj POUZE náhradu za vybranou část – ne celou sekci. Zachovej tón a smysl, rozšiř o relevantní detaily. Piš v češtině. Vrať POUZE výsledný text náhrady – žádné úvody, žádné vysvětlení, žádný okolní text.`
+    : `Jsi PM coach pro JIC. Uživatel má v PM canvasu sekci odpovědi na otázku a chce ji doplnit nebo přegenerovat.
+
+Tvůj úkol: Na základě aktuálního obsahu a uživatelova požadavku vygeneruj vylepšenou verzi textu. Zachovej tón a strukturu, rozšiř o relevantní detaily, upřesni formulace. Piš v češtině. Vrať POUZE výsledný text – žádné úvody, žádné vysvětlení.`;
+
+  const userContent = hasSelection
+    ? `Framework: ${input.framework} | Fáze: ${input.phase}${input.projectContext ? `\nKontext projektu: ${input.projectContext}` : ""}
+
+Otázka: ${input.questionName} – ${input.questionHint}
+
+Celý obsah sekce (pro kontext):
+${input.currentContent}
+
+Vybraná část k úpravě:
+"${input.selectedText}"
+
+Uživatelův požadavek: ${prompt}
+
+Vygeneruj POUZE náhradu za vybranou část (ne celou sekci):`
+    : `Framework: ${input.framework} | Fáze: ${input.phase}${input.projectContext ? `\nKontext projektu: ${input.projectContext}` : ""}
+
+Otázka: ${input.questionName} – ${input.questionHint}
+
+Aktuální obsah sekce:
+${input.currentContent}
+
+Uživatelův požadavek: ${prompt}
+
+Vygeneruj vylepšený text sekce:`;
+
+  const response = await withRetry(() =>
+    client.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: hasSelection ? 512 : 1024,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userContent }]
+    })
+  );
+
+  const text = response.content
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("\n")
+    .trim();
+
+  return {
+    content: text || (hasSelection ? input.selectedText! : input.currentContent)
+  };
+}

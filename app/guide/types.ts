@@ -20,7 +20,7 @@ export type ChatMsg =
   | { id: string; role: "ai"; kind: "output"; content: string; sessionId?: string; projectId?: string; saved?: boolean }
   | { id: string; role: "ai"; kind: "canvas"; questions: CanvasQuestion[]; phase: string; framework: string }
   | { id: string; role: "ai"; kind: "error"; text: string }
-  | { id: string; role: "user"; text: string };
+  | { id: string; role: "user"; text: string; answerToQuestionId?: string };
 
 export type Status =
   | "idle"

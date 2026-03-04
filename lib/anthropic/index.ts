@@ -7,5 +7,6 @@ export {
   generateFollowUpQuestions,
   generateClarification,
   parsePromptForExtendedCanvas,
-  generateFollowUpsForCanvas
+  generateFollowUpsForCanvas,
+  elaborateCanvasSection
 } from "./interactions";

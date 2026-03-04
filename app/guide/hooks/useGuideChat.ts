@@ -475,10 +475,63 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     const next: Answer[] = [...answers, { questionId: q.id, question: q.text, answer: combined }];
     setAnswers(next);
     setMessages((current) => {
-      saveDraft(next, current);
-      return current;
+      const updated = [...current];
+      let lastUserIdx = -1;
+      for (let i = updated.length - 1; i >= 0; i--) {
+        if (updated[i].role === "user") {
+          lastUserIdx = i;
+          break;
+        }
+      }
+      if (lastUserIdx >= 0 && updated[lastUserIdx].role === "user") {
+        updated[lastUserIdx] = { ...updated[lastUserIdx], answerToQuestionId: q.id };
+      }
+      saveDraft(next, updated);
+      return updated;
     });
     await fetchNextQuestion(next);
+  }
+
+  // ── Aktualizace odpovědi z canvasu (editace / AI doplnění) ─────────────────
+
+  function updateCanvasAnswer(questionId: string, newAnswer: string) {
+    setAnswers((prev) => {
+      const idx = prev.findIndex((a) => a.questionId === questionId);
+      if (idx < 0) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], answer: newAnswer };
+      saveDraft(next, messages);
+      return next;
+    });
+  }
+
+  // ── Editace odpovědi z chatu ──────────────────────────────────────────────
+
+  function editAnswerFromChat(questionId: string, msgId: string, newMainAnswer: string) {
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === msgId);
+      if (idx < 0) return prev;
+      const nextMsg = prev[idx + 1];
+      let combined = newMainAnswer;
+      if (nextMsg?.role === "ai" && nextMsg.kind === "followup" && nextMsg.submitted) {
+        const fuLines = Object.entries(nextMsg.answers)
+          .filter(([, v]) => v?.trim())
+          .map(([k, v]) => `(Doplněk ${Number(k) + 1}: ${String(v).trim()})`)
+          .join(" ");
+        if (fuLines) combined = `${newMainAnswer} ${fuLines}`;
+      }
+      setAnswers((a) => {
+        const ai = a.findIndex((x) => x.questionId === questionId);
+        if (ai < 0) return a;
+        const next = [...a];
+        next[ai] = { ...next[ai], answer: combined };
+        saveDraft(next, prev.map((m) => (m.id === msgId && m.role === "user" ? { ...m, text: newMainAnswer } : m)));
+        return next;
+      });
+      return prev.map((m) =>
+        m.id === msgId && m.role === "user" ? { ...m, text: newMainAnswer } : m
+      );
+    });
   }
 
   // ── Follow-up answer update ───────────────────────────────────────────────
@@ -520,6 +573,8 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     handleSend,
     handleFollowUpContinue,
     updateFollowUpAnswer,
+    updateCanvasAnswer,
+    editAnswerFromChat,
     deleteDraft,
     generateCanvas
   };

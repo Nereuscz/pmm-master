@@ -41,6 +41,8 @@ function GuideChat() {
     handleSend,
     handleFollowUpContinue,
     updateFollowUpAnswer,
+    updateCanvasAnswer,
+    editAnswerFromChat,
     deleteDraft
   } = useGuideChat(projectIdParam, modeParam);
 
@@ -181,6 +183,7 @@ function GuideChat() {
                   onFollowUpAnswerChange={updateFollowUpAnswer}
                   onFollowUpContinue={handleFollowUpContinue}
                   onStartGuide={startFresh}
+                  onEditAnswer={editAnswerFromChat}
                 />
               ))}
               <div ref={bottomRef} />
@@ -203,6 +206,8 @@ function GuideChat() {
               phase={phase}
               framework={framework}
               projectName={selectedProject?.name}
+              projectId={selectedProject?.id}
+              onSectionChange={updateCanvasAnswer}
             />
           </div>
         </div>
@@ -217,6 +222,7 @@ function GuideChat() {
                 onFollowUpAnswerChange={updateFollowUpAnswer}
                 onFollowUpContinue={handleFollowUpContinue}
                 onStartGuide={startFresh}
+                onEditAnswer={editAnswerFromChat}
               />
             ))}
             <div ref={bottomRef} />

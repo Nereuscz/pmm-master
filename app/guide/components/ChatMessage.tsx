@@ -75,14 +75,72 @@ type Props = {
   onFollowUpAnswerChange: (msgId: string, idx: number, value: string) => void;
   onFollowUpContinue: () => void;
   onStartGuide?: () => void;
+  onEditAnswer?: (questionId: string, msgId: string, newText: string) => void;
 };
 
-export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFollowUpContinue, onStartGuide }: Props) {
+export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFollowUpContinue, onStartGuide, onEditAnswer }: Props) {
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
   if (msg.role === "user") {
+    const canEdit = msg.answerToQuestionId && onEditAnswer;
+    const editing = editingMsgId === msg.id;
+
     return (
       <div className="flex justify-end">
-        <div className="max-w-[78%] rounded-2xl rounded-tr-sm bg-brand-600 px-4 py-3 text-[14px] leading-relaxed text-white shadow-apple-sm">
-          {msg.text}
+        <div className="group relative max-w-[78%] rounded-2xl rounded-tr-sm bg-brand-600 px-4 py-3 text-[14px] leading-relaxed text-white shadow-apple-sm">
+          {canEdit && editing ? (
+            <div className="space-y-2">
+              <textarea
+                value={editValue || msg.text}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="w-full min-h-[60px] resize-y rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-[14px] text-white placeholder-white/60 focus:border-white focus:outline-none"
+                placeholder="Upravit odpověď…"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = editValue || msg.text;
+                    onEditAnswer(msg.answerToQuestionId!, msg.id, v);
+                    setEditingMsgId(null);
+                    setEditValue("");
+                  }}
+                  className="rounded-lg bg-white px-3 py-1.5 text-[12px] font-medium text-brand-600"
+                >
+                  Uložit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingMsgId(null);
+                    setEditValue("");
+                  }}
+                  className="rounded-lg border border-white/50 px-3 py-1.5 text-[12px] text-white/90"
+                >
+                  Zrušit
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="whitespace-pre-wrap">{msg.text}</p>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingMsgId(msg.id);
+                    setEditValue(msg.text);
+                  }}
+                  className="absolute right-2 top-2 rounded-lg border border-white/40 bg-white/20 px-2 py-1 text-[11px] font-medium text-white/90 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/30"
+                  title="Upravit odpověď"
+                >
+                  ✏️ Upravit
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     );
