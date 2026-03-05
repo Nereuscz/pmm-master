@@ -51,7 +51,8 @@ export const createProjectSchema = z.object({
 export const updateProjectSchema = createProjectSchema
   .partial()
   .extend({
-    asana_project_id: z.string().min(1).nullable().optional()
+    asana_project_id: z.string().min(1).nullable().optional(),
+    asana_metadata: z.record(z.string(), z.string()).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, "Musíš poslat alespoň jedno pole k úpravě.");
 

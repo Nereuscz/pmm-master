@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import AiOutput from "@/components/AiOutput";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { PHASE_COLORS } from "@/lib/constants";
+import { JIC_CUSTOM_FIELDS } from "@/lib/jic-custom-fields";
 import ErrorMessage from "@/components/ErrorMessage";
 import { SkeletonDetail } from "@/components/LoadingState";
 
@@ -64,6 +65,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [loading, setLoading] = useState(true);
   const [asanaProjectIdInput, setAsanaProjectIdInput] = useState("");
   const [asanaLinkSaving, setAsanaLinkSaving] = useState(false);
+  const [metadataEditing, setMetadataEditing] = useState(false);
+  const [metadataEditValues, setMetadataEditValues] = useState<Record<string, string>>({});
+  const [metadataSaving, setMetadataSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -137,36 +141,162 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       </div>
 
       {/* Popis a metadata z Asany */}
-      {(project.description || (project.asana_metadata && Object.keys(project.asana_metadata).length > 0)) ? (
-        <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">
+      <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">
+        <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
             Metadata z Asany
           </h2>
-          {project.description ? (
-            <div className="mt-4">
-              <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
-              <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
-                {project.description}
-              </p>
-            </div>
-          ) : null}
-          {project.asana_metadata && Object.keys(project.asana_metadata).length > 0 ? (
-            <div className="mt-4">
-              <h3 className="text-caption font-semibold text-apple-text-secondary">Custom fieldy</h3>
-              <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-                {Object.entries(project.asana_metadata).map(([key, value]) => (
-                  <div key={key} className="flex flex-col gap-0.5">
-                    <dt className="text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
-                      {key}
-                    </dt>
-                    <dd className="text-body text-apple-text-primary">{value}</dd>
+          <button
+            type="button"
+            onClick={() => {
+              if (!metadataEditing) {
+                const base: Record<string, string> = { ...(project.asana_metadata ?? {}) };
+                for (const f of JIC_CUSTOM_FIELDS) {
+                  if (!(f.name in base)) base[f.name] = "";
+                }
+                setMetadataEditValues(base);
+              }
+              setMetadataEditing(!metadataEditing);
+            }}
+            className="rounded-full border border-apple-border-default px-3 py-1.5 text-[12px] font-medium text-apple-text-primary hover:bg-apple-bg-page"
+          >
+            {metadataEditing ? "Zrušit" : "Upravit přiřazení"}
+          </button>
+        </div>
+        {project.description ? (
+          <div className="mt-4">
+            <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
+            <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
+              {project.description}
+            </p>
+          </div>
+        ) : null}
+        {metadataEditing ? (
+          <div className="mt-4 space-y-4">
+            {JIC_CUSTOM_FIELDS.map((field) => (
+              <div key={field.id}>
+                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
+                  {field.name}
+                </label>
+                {field.type === "single" ? (
+                  <select
+                    value={metadataEditValues[field.name] ?? ""}
+                    onChange={(e) =>
+                      setMetadataEditValues((prev) => ({
+                        ...prev,
+                        [field.name]: e.target.value,
+                      }))
+                    }
+                    className="w-full max-w-md rounded-xl border border-apple-border-default bg-white px-4 py-2 text-body text-apple-text-primary focus:border-brand-600 focus:outline-none"
+                  >
+                    <option value="">— nevybráno —</option>
+                    {field.options.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex max-w-md flex-wrap gap-2">
+                    {field.options.map((opt) => {
+                      const current = (metadataEditValues[field.name] ?? "").split(", ").filter(Boolean);
+                      const checked = current.includes(opt);
+                      return (
+                        <label
+                          key={opt}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-apple-border-default bg-white px-3 py-2 text-caption has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              const next = e.target.checked
+                                ? [...current, opt]
+                                : current.filter((v) => v !== opt);
+                              setMetadataEditValues((prev) => ({
+                                ...prev,
+                                [field.name]: next.join(", "),
+                              }));
+                            }}
+                            className="h-4 w-4 rounded border-apple-border-default text-brand-600"
+                          />
+                          <span className="text-apple-text-primary">{opt}</span>
+                        </label>
+                      );
+                    })}
                   </div>
-                ))}
-              </dl>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              disabled={metadataSaving}
+              onClick={async () => {
+                setMetadataSaving(true);
+                try {
+                  const r = await fetch(`/api/projects/${params.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      asana_metadata: (() => {
+                        const merged = { ...project.asana_metadata, ...metadataEditValues };
+                        return Object.fromEntries(
+                          Object.entries(merged).filter(([, v]) => v != null && v !== "")
+                        );
+                      })(),
+                    }),
+                  });
+                  if (!r.ok) {
+                    const json = await r.json();
+                    throw new Error(json.error || "Uložení selhalo");
+                  }
+                  const json = await r.json();
+                  setProject((p) => (p ? { ...p, asana_metadata: json.project?.asana_metadata ?? metadataEditValues } : null));
+                  setMetadataEditing(false);
+                  toast.success("Metadata uložena.");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Chyba");
+                } finally {
+                  setMetadataSaving(false);
+                }
+              }}
+              className="rounded-full bg-brand-600 px-5 py-2 text-body font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+            >
+              {metadataSaving ? "Ukládám…" : "Uložit"}
+            </button>
+          </div>
+        ) : project.asana_metadata && Object.keys(project.asana_metadata).length > 0 ? (
+          <div className="mt-4">
+            <h3 className="text-caption font-semibold text-apple-text-secondary">Custom fieldy</h3>
+            <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+              {(() => {
+                const entries = Object.entries(project.asana_metadata);
+                const jicOrder = JIC_CUSTOM_FIELDS.map((f) => f.name);
+                const sorted = [...entries].sort(([a], [b]) => {
+                  const ai = jicOrder.indexOf(a);
+                  const bi = jicOrder.indexOf(b);
+                  if (ai >= 0 && bi >= 0) return ai - bi;
+                  if (ai >= 0) return -1;
+                  if (bi >= 0) return 1;
+                  return a.localeCompare(b);
+                });
+                return sorted;
+              })().map(([key, value]) => (
+                <div key={key} className="flex flex-col gap-0.5">
+                  <dt className="text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
+                    {key}
+                  </dt>
+                  <dd className="text-body text-apple-text-primary">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ) : (
+          <p className="mt-4 text-caption text-apple-text-tertiary">
+            Žádná metadata. Klikni „Upravit přiřazení“ pro přiřazení hodnot.
+          </p>
+        )}
+      </section>
 
       {/* Propojení s Asanou */}
       <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">

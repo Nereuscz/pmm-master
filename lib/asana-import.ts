@@ -26,6 +26,7 @@ export function mapAsanaPhaseToProjectPhase(
   const val = String(rawVal ?? "").trim().toLowerCase();
 
   const mapping: Record<string, (typeof VALID_PHASES)[number]> = {
+    ideation: "Iniciace",
     planning: "Plánování",
     plánování: "Plánování",
     planovani: "Plánování",
@@ -34,6 +35,7 @@ export function mapAsanaPhaseToProjectPhase(
     execution: "Realizace",
     realizace: "Realizace",
     closing: "Closing",
+    closed: "Closing",
     "gate 1": "Gate 1",
     "gate 2": "Gate 2",
     "gate 3": "Gate 3",
