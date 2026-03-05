@@ -296,20 +296,20 @@ function ProcessForm() {
                     ? "bg-brand-600 text-white"
                     : i === stepIndex
                       ? "bg-brand-100 text-brand-700 ring-2 ring-brand-600/30"
-                      : "bg-[#f2f2f7] text-[#aeaeb2]"
+                      : "bg-apple-bg-subtle text-apple-text-muted"
                 }`}
               >
                 {i < stepIndex ? "✓" : i + 1}
               </span>
               <span
                 className={`hidden text-[12px] font-medium sm:inline ${
-                  i <= stepIndex ? "text-[#1d1d1f]" : "text-[#aeaeb2]"
+                  i <= stepIndex ? "text-apple-text-primary" : "text-apple-text-muted"
                 }`}
               >
                 {s.label}
               </span>
               {i < steps.length - 1 ? (
-                <span className="mx-1 hidden h-px w-4 bg-[#e8e8ed] sm:block" aria-hidden />
+                <span className="mx-1 hidden h-px w-4 bg-apple-border-light sm:block" aria-hidden />
               ) : null}
             </div>
           ))}
@@ -322,11 +322,11 @@ function ProcessForm() {
               <p className="text-[13px] font-semibold uppercase tracking-wider text-brand-700">
                 Před zpracováním potřebuji potvrdit
               </p>
-              <p className="mt-2 text-[14px] text-[#1d1d1f]">
+              <p className="mt-2 text-[14px] text-apple-text-primary">
                 1) V jaké fázi PM se projekt nachází?<br />
                 2) Jaký typ frameworku použijeme? (Univerzální vs. Produktový)
               </p>
-              <p className="mt-3 text-[13px] text-[#6e6e73]">
+              <p className="mt-3 text-[13px] text-apple-text-secondary">
                 Nevytvářím dokument, dokud nepotvrdíte.
               </p>
             </div>
@@ -337,9 +337,9 @@ function ProcessForm() {
             ) : (
               <>
                 <div>
-                  <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Projekt</label>
+                  <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Projekt</label>
                   <select
-                    className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                    className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                     value={selectedProject?.id ?? ""}
                     onChange={(e) => {
                       const p = projects.find((p) => p.id === e.target.value) ?? null;
@@ -354,11 +354,11 @@ function ProcessForm() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Fáze PM</label>
+                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Fáze PM</label>
                     <select
                       value={selectedPhase}
                       onChange={(e) => setSelectedPhase(e.target.value)}
-                      className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                      className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                     >
                       {PHASES.map((p) => (
                         <option key={p}>{p}</option>
@@ -366,11 +366,11 @@ function ProcessForm() {
                     </select>
                   </div>
                   <div>
-                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Framework</label>
-                    <p className="rounded-xl border border-[#e8e8ed] bg-[#fafafa] px-4 py-2.5 text-[14px] text-[#6e6e73]">
+                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Framework</label>
+                    <p className="rounded-xl border border-apple-border-light bg-apple-bg-subtle px-4 py-2.5 text-[14px] text-apple-text-secondary">
                       {selectedProject?.framework ?? "–"}
                     </p>
-                    <p className="mt-1 text-[12px] text-[#aeaeb2]">Framework se mění v nastavení projektu</p>
+                    <p className="mt-1 text-[12px] text-apple-text-muted">Framework se mění v nastavení projektu</p>
                   </div>
                 </div>
                 <button
@@ -395,9 +395,9 @@ function ProcessForm() {
             ) : null}
 
             <div>
-              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Projekt</label>
+              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Projekt</label>
               <select
-                className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                 value={selectedProject?.id ?? ""}
                 onChange={(e) => {
                   const p = projects.find((p) => p.id === e.target.value) ?? null;
@@ -413,20 +413,20 @@ function ProcessForm() {
 
             {selectedProject ? (
               <div>
-                <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Fáze</label>
+                <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Fáze</label>
                 <select
                   value={selectedPhase}
                   onChange={(e) => setSelectedPhase(e.target.value)}
-                  className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                  className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                 >
                   {PHASES.map((p) => <option key={p}>{p}</option>)}
                 </select>
-                <p className="mt-1.5 text-[12px] text-[#aeaeb2]">Framework: {selectedProject.framework}</p>
+                <p className="mt-1.5 text-[12px] text-apple-text-muted">Framework: {selectedProject.framework}</p>
               </div>
             ) : null}
 
             <div>
-              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">Transkript</label>
+              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Transkript</label>
               <label className="mb-2 flex cursor-pointer items-center gap-1.5 text-[13px] font-medium text-brand-600 hover:text-brand-700">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
@@ -438,17 +438,17 @@ function ProcessForm() {
                 rows={12}
                 value={transcript}
                 onChange={(e) => setTranscript(e.target.value)}
-                className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                className="w-full resize-none rounded-xl border border-apple-border-default px-4 py-3 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                 placeholder="Vlož nebo nahraj transkript ze schůzky (min. 300, max. 50 000 znaků)..."
               />
               <div className="mt-1 flex items-center justify-between gap-2">
-                <span className="text-[12px] text-[#aeaeb2]">
+                <span className="text-[12px] text-apple-text-muted">
                   {fileUploadState === "loading" && "Načítám soubor…"}
                   {fileUploadState === "error" && fileUploadError && (
                     <span className="text-red-600">{fileUploadError}</span>
                   )}
                 </span>
-                <span className="text-[12px] text-[#aeaeb2]">
+                <span className="text-[12px] text-apple-text-muted">
                 {transcript.length} znaků
                 {transcript.length > 0 && (transcript.length < 300 || transcript.length > 50000) ? (
                   <span className="ml-2 text-amber-600">
@@ -460,19 +460,19 @@ function ProcessForm() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
-                Poznámka k záznamu <span className="font-normal normal-case text-[#aeaeb2]">(volitelné)</span>
+              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
+                Poznámka k záznamu <span className="font-normal normal-case text-apple-text-muted">(volitelné)</span>
               </label>
               <textarea
                 rows={2}
                 value={contextNote}
                 onChange={(e) => setContextNote(e.target.value)}
                 maxLength={600}
-                className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                className="w-full resize-none rounded-xl border border-apple-border-default px-4 py-3 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                 placeholder='Např. "Relevantní část od 15. minuty" nebo "Zaměř se na diskusi o cílové skupině"'
               />
               {contextNote.length > 0 && (
-                <p className="mt-1 text-right text-[12px] text-[#aeaeb2]">{contextNote.length}/600</p>
+                <p className="mt-1 text-right text-[12px] text-apple-text-muted">{contextNote.length}/600</p>
               )}
             </div>
 
@@ -497,8 +497,8 @@ function ProcessForm() {
         {step === "answering" ? (
           <div className="space-y-5 rounded-apple bg-white p-6 shadow-apple">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">Doplňující otázky</p>
-              <p className="mt-1 text-[14px] text-[#6e6e73]">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">Doplňující otázky</p>
+              <p className="mt-1 text-[14px] text-apple-text-secondary">
                 Odpověz nebo klikni na &ldquo;Přeskočit&rdquo; pro přímé zpracování.
               </p>
             </div>
@@ -506,7 +506,7 @@ function ProcessForm() {
             {clarifyingQuestions.length > 0 ? (
               <ol className="space-y-2">
                 {clarifyingQuestions.map((q, i) => (
-                  <li key={i} className="flex gap-2.5 text-[14px] text-[#1d1d1f]">
+                  <li key={i} className="flex gap-2.5 text-[14px] text-apple-text-primary">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">
                       {i + 1}
                     </span>
@@ -515,18 +515,18 @@ function ProcessForm() {
                 ))}
               </ol>
             ) : (
-              <p className="text-[14px] italic text-[#aeaeb2]">Transkript je dostatečně jasný.</p>
+              <p className="text-[14px] italic text-apple-text-muted">Transkript je dostatečně jasný.</p>
             )}
 
             <div>
-              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
-                Tvoje odpovědi <span className="font-normal normal-case text-[#aeaeb2]">(volitelné)</span>
+              <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
+                Tvoje odpovědi <span className="font-normal normal-case text-apple-text-muted">(volitelné)</span>
               </label>
               <textarea
                 rows={5}
                 value={clarifyingAnswers}
                 onChange={(e) => setClarifyingAnswers(e.target.value)}
-                className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                className="w-full resize-none rounded-xl border border-apple-border-default px-4 py-3 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                 placeholder="Např. 1. Jan Novák je PM projektu. 2. Cílový termín je Q3 2025…"
                 onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) onProcess(); }}
               />
@@ -554,13 +554,13 @@ function ProcessForm() {
               </button>
               <button
                 onClick={() => onProcess(true)}
-                className="rounded-full border border-[#d2d2d7] px-5 py-2.5 text-[14px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
+                className="rounded-full border border-apple-border-default px-5 py-2.5 text-[14px] font-medium text-apple-text-primary hover:bg-apple-bg-page"
               >
                 Přeskočit
               </button>
             </div>
 
-            <button onClick={resetForm} className="text-[13px] text-[#aeaeb2] hover:text-[#6e6e73]">
+            <button onClick={resetForm} className="text-[13px] text-apple-text-muted hover:text-apple-text-secondary">
               ← Zpět na formulář
             </button>
           </div>
@@ -612,21 +612,21 @@ function ProcessForm() {
                 className="flex w-full items-center justify-between px-5 py-4 text-left"
               >
                 <div>
-                  <p className="text-[14px] font-semibold text-[#1d1d1f]">✏️ Doladit výstup</p>
-                  <p className="text-[12px] text-[#6e6e73]">Doplň nebo přepiš konkrétní sekce — AI zachová zbytek</p>
+                  <p className="text-[14px] font-semibold text-apple-text-primary">✏️ Doladit výstup</p>
+                  <p className="text-[12px] text-apple-text-secondary">Doplň nebo přepiš konkrétní sekce — AI zachová zbytek</p>
                 </div>
-                <span className="text-[12px] text-[#aeaeb2]">{showRefinement ? "▲" : "▼"}</span>
+                <span className="text-[12px] text-apple-text-muted">{showRefinement ? "▲" : "▼"}</span>
               </button>
 
               {showRefinement ? (
-                <div className="border-t border-[#f2f2f7] px-5 pb-5 pt-4 space-y-3">
+                <div className="border-t border-apple-bg-subtle px-5 pb-5 pt-4 space-y-3">
                   <textarea
                     rows={3}
                     value={refinementPrompt}
                     onChange={(e) => setRefinementPrompt(e.target.value)}
                     maxLength={1000}
                     placeholder='Např. "Přidej sekci Rizika", "Doplň RACI pro Jana Nováka", "Přepiš Výsledky – chybí konkrétní změna u klienta"'
-                    className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                    className="w-full resize-none rounded-xl border border-apple-border-default px-4 py-3 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                   />
                   {refinementError ? (
                     <p className="text-[13px] text-red-600">{refinementError}</p>
@@ -671,7 +671,7 @@ function ProcessForm() {
               </div>
             ) : null}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-[#f2f2f7] px-3 py-1 text-[12px] text-[#6e6e73]">
+              <span className="rounded-full bg-apple-bg-subtle px-3 py-1 text-[12px] text-apple-text-secondary">
                 KB chunků: {result.meta.kbChunksUsed}
               </span>
               {result.meta.changeSignals.length > 0 ? (
@@ -686,7 +686,7 @@ function ProcessForm() {
           </div>
         ) : (
           <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
-            <p className="text-[14px] text-[#aeaeb2]">Výstup se zobrazí zde po zpracování</p>
+            <p className="text-[14px] text-apple-text-muted">Výstup se zobrazí zde po zpracování</p>
           </div>
         )}
       </div>
@@ -699,12 +699,12 @@ export default function ProcessPage() {
     <main className="mx-auto max-w-6xl px-8 py-10">
       <div className="mb-8">
         <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Zpracovat" }]} />
-        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Zpracovat transkript</h1>
-        <p className="mt-1 text-[15px] text-[#6e6e73]">
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-apple-text-primary">Zpracovat transkript</h1>
+        <p className="mt-1 text-[15px] text-apple-text-secondary">
           AI nejprve ověří nejasnosti, pak extrahuje strukturované PM výstupy dle zvoleného frameworku.
         </p>
       </div>
-      <Suspense fallback={<p className="text-[#6e6e73]">Načítám…</p>}>
+      <Suspense fallback={<p className="text-apple-text-secondary">Načítám…</p>}>
         <ProcessForm />
       </Suspense>
     </main>

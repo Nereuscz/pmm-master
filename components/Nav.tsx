@@ -19,12 +19,12 @@ export default function Nav() {
   if (pathname === "/signin" || pathname === "/") return null;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
+    <header className="sticky top-0 z-30 border-b border-apple-border-light bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-3">
         <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
           <span className="text-lg font-bold tracking-tight text-brand-700">PM</span>
-          <span className="text-lg font-semibold text-slate-800">Assistant</span>
-          <span className="hidden text-xs text-slate-400 sm:block">· JIC</span>
+          <span className="text-lg font-semibold text-apple-text-primary">Assistant</span>
+          <span className="hidden text-xs text-apple-text-muted sm:block">· JIC</span>
         </Link>
 
         <nav className="flex items-center gap-1 overflow-x-auto">
@@ -38,7 +38,7 @@ export default function Nav() {
                 className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   active
                     ? "bg-brand-50 text-brand-700"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    : "text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
                 }`}
               >
                 {link.label}
@@ -53,7 +53,7 @@ export default function Nav() {
             className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               pathname === "/settings"
                 ? "bg-brand-50 text-brand-700"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                : "text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
             }`}
           >
             Nastavení

@@ -98,7 +98,7 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={!isActive}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#86868b] transition-colors hover:bg-[#f2f2f7] hover:text-[#1d1d1f] disabled:opacity-40"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-apple-text-tertiary transition-colors hover:bg-apple-bg-subtle hover:text-apple-text-primary disabled:opacity-40"
             title="Přidat soubor (PDF, audio, dokument)"
             aria-label="Přidat přílohu"
           >

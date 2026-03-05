@@ -33,16 +33,16 @@ export default function ConfirmDialog({
       aria-labelledby="confirm-dialog-title"
     >
       <div className="w-full max-w-sm rounded-apple bg-white p-6 shadow-apple-lg">
-        <h2 id="confirm-dialog-title" className="text-[17px] font-semibold text-[#1d1d1f]">
+        <h2 id="confirm-dialog-title" className="text-[17px] font-semibold text-apple-text-primary">
           {title}
         </h2>
-        <p className="mt-2 text-[14px] text-[#6e6e73]">{message}</p>
+        <p className="mt-2 text-[14px] text-apple-text-secondary">{message}</p>
         <div className="mt-6 flex gap-3 justify-end">
           <button
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="rounded-full border border-[#d2d2d7] px-4 py-2 text-[14px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7] disabled:opacity-50"
+            className="rounded-full border border-apple-border-default px-4 py-2 text-[14px] font-medium text-apple-text-primary transition-colors duration-200 hover:bg-apple-bg-page active:scale-[0.98] disabled:opacity-50"
           >
             {cancelLabel}
           </button>
@@ -50,7 +50,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`rounded-full px-4 py-2 text-[14px] font-medium text-white transition-colors disabled:opacity-50 ${
+            className={`rounded-full px-4 py-2 text-[14px] font-medium text-white transition-colors duration-200 active:scale-[0.98] disabled:opacity-50 ${
               variant === "danger"
                 ? "bg-[#ff3b30] hover:bg-[#e03029]"
                 : "bg-brand-600 hover:bg-brand-700"

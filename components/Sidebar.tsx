@@ -133,14 +133,14 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
             <span className="text-[13px] font-bold text-white">PM</span>
           </div>
           <div className="leading-tight">
-            <div className="text-[15px] font-semibold text-[#1d1d1f]">PM Assistant</div>
-            <div className="text-[11px] text-[#86868b]">JIC</div>
+            <div className="text-body font-semibold text-apple-text-primary">PM Assistant</div>
+            <div className="text-footnote text-apple-text-tertiary">JIC</div>
           </div>
         </Link>
       </div>
 
       {/* Divider */}
-      <div className="mx-4 border-t border-[#f2f2f7]" />
+      <div className="mx-4 border-t border-apple-bg-subtle" />
 
       {/* Kontext projektu – na Process/Guide s projectId */}
       {currentProjectName && projectIdParam ? (
@@ -158,7 +158,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
 
       {/* Navigace */}
       <nav className="mt-2 flex-1 space-y-0.5 px-3">
-        <p className="mb-1.5 mt-3 px-2 text-[10px] font-semibold uppercase tracking-widest text-[#aeaeb2]">
+        <p className="mb-1.5 mt-3 px-2 text-footnote font-semibold uppercase tracking-widest text-apple-text-muted">
           Menu
         </p>
         {visibleLinks.map((link) => {
@@ -169,13 +169,13 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
               key={link.href}
               href={link.href}
               onClick={onDrawerClose}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-caption font-medium transition-colors duration-200 ${
                 active
                   ? "bg-brand-50 text-brand-600"
-                  : "text-[#6e6e73] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                  : "text-apple-text-secondary hover:bg-apple-bg-page hover:text-apple-text-primary"
               }`}
             >
-              <span className={active ? "text-brand-600" : "text-[#aeaeb2]"}>
+              <span className={active ? "text-brand-600" : "text-apple-text-muted"}>
                 {link.icon}
               </span>
               {link.label}
@@ -186,14 +186,14 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
 
       {/* Uživatel + odhlášení */}
       <div className="mt-auto px-5 pb-6">
-        <div className="border-t border-[#f2f2f7] pt-4">
+        <div className="border-t border-apple-bg-subtle pt-4">
           {(user.name || user.email) && (
             <div className="mb-3">
-              <p className="truncate text-[13px] font-medium text-[#1d1d1f]">
+              <p className="truncate text-caption font-medium text-apple-text-primary">
                 {user.name || user.email}
               </p>
               {user.email && user.name && (
-                <p className="truncate text-[11px] text-[#86868b]">{user.email}</p>
+                <p className="truncate text-footnote text-apple-text-tertiary">{user.email}</p>
               )}
             </div>
           )}
@@ -203,11 +203,11 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
               onDrawerClose?.();
               signOut({ callbackUrl: "/signin" });
             }}
-            className="w-full rounded-lg px-3 py-2 text-left text-[13px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+            className="w-full rounded-lg px-3 py-2 text-left text-caption font-medium text-apple-text-secondary transition-colors duration-200 hover:bg-apple-bg-page hover:text-apple-text-primary"
           >
             Odhlásit se
           </button>
-          <p className="mt-3 text-[11px] text-[#aeaeb2]">PM Assistant v1.2</p>
+          <p className="mt-3 text-footnote text-apple-text-muted">PM Assistant v1.2</p>
         </div>
       </div>
     </>
@@ -215,8 +215,8 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
 
   return (
     <>
-      {/* Desktop sidebar – skrytý na mobilu */}
-      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-60 flex-col border-r border-[#e8e8ed] bg-white md:flex">
+      {/* Desktop sidebar – skrytý na mobilu, glassmorphism */}
+      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-60 flex-col border-r border-apple-border-light bg-white/95 backdrop-blur-xl md:flex">
         {navContent}
       </aside>
 
@@ -228,7 +228,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
           aria-hidden
         />
         <aside
-          className={`fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r border-[#e8e8ed] bg-white shadow-apple-lg transition-transform duration-200 ${
+          className={`fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r border-apple-border-light bg-white shadow-apple-lg transition-transform duration-200 ${
             drawerOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >

@@ -93,19 +93,19 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       <div className="mb-6 rounded-apple bg-white p-6 shadow-apple">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-[24px] font-semibold tracking-tight text-[#1d1d1f]">{project.name}</h1>
+            <h1 className="text-[24px] font-semibold tracking-tight text-apple-text-primary">{project.name}</h1>
             <div className="mt-2 flex items-center gap-2.5">
-              <span className="text-[14px] text-[#6e6e73]">{project.framework}</span>
-              <span className="text-[#d2d2d7]">·</span>
+              <span className="text-[14px] text-apple-text-secondary">{project.framework}</span>
+              <span className="text-apple-border-default">·</span>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  PHASE_COLORS[project.phase] ?? "bg-[#f2f2f7] text-[#6e6e73]"
+                  PHASE_COLORS[project.phase] ?? "bg-apple-bg-subtle text-apple-text-secondary"
                 }`}
               >
                 {project.phase}
               </span>
-              <span className="text-[#d2d2d7]">·</span>
-              <span className="text-[13px] text-[#aeaeb2]">
+              <span className="text-apple-border-default">·</span>
+              <span className="text-[13px] text-apple-text-muted">
                 {new Date(project.created_at).toLocaleDateString("cs-CZ")}
               </span>
             </div>
@@ -113,7 +113,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <div className="flex gap-2">
             <Link
               href={`/guide?projectId=${project.id}&mode=guide`}
-              className="rounded-full border border-[#d2d2d7] bg-white px-4 py-2 text-[14px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
+              className="rounded-full border border-apple-border-default bg-white px-4 py-2 text-[14px] font-medium text-apple-text-primary transition-colors hover:bg-apple-bg-page"
             >
               💬 Průvodce
             </Link>
@@ -129,12 +129,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       {/* Propojení s Asanou */}
       <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">
-        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">
+        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
           Propojení s Asanou
         </h2>
-        <p className="mt-2 text-[14px] text-[#6e6e73]">
+        <p className="mt-2 text-[14px] text-apple-text-secondary">
           Pro export úkolů do Asany propoj tento projekt s projektem v Asaně. Asana project ID (GID) najdeš v URL projektu v Asaně – např.{" "}
-          <code className="rounded bg-[#f2f2f7] px-1.5 py-0.5 text-[12px]">app.asana.com/0/0/<strong>123456789</strong></code>
+          <code className="rounded bg-apple-bg-subtle px-1.5 py-0.5 text-[12px]">app.asana.com/0/0/<strong>123456789</strong></code>
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {project.asana_project_id ? (
@@ -163,7 +163,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     setAsanaLinkSaving(false);
                   }
                 }}
-                className="rounded-full border border-[#d2d2d7] px-4 py-2 text-[14px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7] disabled:opacity-50"
+                className="rounded-full border border-apple-border-default px-4 py-2 text-[14px] font-medium text-apple-text-primary hover:bg-apple-bg-page disabled:opacity-50"
               >
                 Odpojit
               </button>
@@ -175,7 +175,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 value={asanaProjectIdInput}
                 onChange={(e) => setAsanaProjectIdInput(e.target.value)}
                 placeholder="1234567890123456"
-                className="w-64 rounded-xl border border-[#d2d2d7] px-4 py-2 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                className="w-64 rounded-xl border border-apple-border-default px-4 py-2 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
               />
               <button
                 type="button"
@@ -218,18 +218,18 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-[#fafafa]"
           >
             <div className="flex items-center gap-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
                 Anotace projektu
               </p>
               {context.annotations_updated ? (
-                <span className="text-[11px] text-[#aeaeb2]">
+                <span className="text-[11px] text-apple-text-muted">
                   · aktualizováno {new Date(context.annotations_updated).toLocaleDateString("cs-CZ")}
                 </span>
               ) : null}
             </div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className={`h-4 w-4 text-[#aeaeb2] transition-transform ${contextExpanded ? "rotate-180" : ""}`}
+              className={`h-4 w-4 text-apple-text-muted transition-transform ${contextExpanded ? "rotate-180" : ""}`}
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -245,7 +245,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         value={annotationsEditValue}
                         onChange={(e) => setAnnotationsEditValue(e.target.value)}
                         rows={6}
-                        className="w-full resize-y rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] leading-relaxed focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                        className="w-full resize-y rounded-xl border border-apple-border-default px-4 py-3 text-[14px] leading-relaxed focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
                         placeholder="Anotace projektu…"
                       />
                       <div className="flex flex-wrap gap-2">
@@ -277,7 +277,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             setAnnotationsEditValue(context.annotations ?? "");
                             setAnnotationsEditing(false);
                           }}
-                          className="rounded-full border border-[#d2d2d7] px-4 py-2 text-[13px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
+                          className="rounded-full border border-apple-border-default px-4 py-2 text-[13px] font-medium text-apple-text-primary hover:bg-apple-bg-page"
                         >
                           Zrušit
                         </button>
@@ -295,7 +295,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             setAnnotationsEditValue(context.annotations ?? "");
                             setAnnotationsEditing(true);
                           }}
-                          className="rounded-full border border-[#d2d2d7] px-4 py-2 text-[13px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
+                          className="rounded-full border border-apple-border-default px-4 py-2 text-[13px] font-medium text-apple-text-primary hover:bg-apple-bg-page"
                         >
                           Upravit
                         </button>
@@ -328,7 +328,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 </>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-[14px] text-[#6e6e73]">
+                  <p className="text-[14px] text-apple-text-secondary">
                     Anotace zatím nebyly vygenerovány. Klikni na tlačítko pro vytvoření souhrnu projektu z nahraného kontextu.
                   </p>
                   <button
@@ -364,22 +364,22 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       {/* Historie zpracování */}
       <section>
         <div className="mb-4 flex items-center gap-3">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
             Historie zpracování
           </p>
-          <span className="rounded-full bg-[#f2f2f7] px-2.5 py-0.5 text-[12px] font-medium text-[#6e6e73]">
+          <span className="rounded-full bg-apple-bg-subtle px-2.5 py-0.5 text-[12px] font-medium text-apple-text-secondary">
             {sessions.length}
           </span>
         </div>
 
         {sessions.length === 0 ? (
           <div className="rounded-apple bg-white py-16 text-center shadow-apple">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f2f2f7]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#aeaeb2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-apple-bg-subtle">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-apple-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
             </div>
-            <p className="text-[15px] font-medium text-[#1d1d1f]">Zatím žádné zpracované transkripty</p>
+            <p className="text-[15px] font-medium text-apple-text-primary">Zatím žádné zpracované transkripty</p>
             <Link
               href={`/process?projectId=${project.id}`}
               className="mt-4 inline-block text-[14px] font-medium text-brand-600 hover:text-brand-700"
@@ -401,12 +401,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <div className="flex items-center gap-3">
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-medium ${
-                          PHASE_COLORS[session.phase] ?? "bg-[#f2f2f7] text-[#6e6e73]"
+                          PHASE_COLORS[session.phase] ?? "bg-apple-bg-subtle text-apple-text-secondary"
                         }`}
                       >
                         {session.phase}
                       </span>
-                      <span className="text-[14px] text-[#6e6e73]">
+                      <span className="text-[14px] text-apple-text-secondary">
                         {new Date(session.created_at).toLocaleString("cs-CZ")}
                       </span>
                     </div>
@@ -416,7 +416,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                       )}
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className={`h-4 w-4 text-[#aeaeb2] transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        className={`h-4 w-4 text-apple-text-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -426,7 +426,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
                   {/* Preview 2 řádky – pouze kdy je složeno */}
                   {!isOpen && session.ai_output ? (
-                    <p className="line-clamp-2 border-t border-[#f2f2f7] px-6 pb-4 pt-2 text-[13px] leading-relaxed text-[#6e6e73]">
+                    <p className="line-clamp-2 border-t border-[#f2f2f7] px-6 pb-4 pt-2 text-[13px] leading-relaxed text-apple-text-secondary">
                       {getPreview(session.ai_output)}
                     </p>
                   ) : null}

@@ -31,21 +31,21 @@ export function GuideConfig({
         <p className="text-[13px] font-semibold uppercase tracking-wider text-brand-700">
           Před zpracováním potřebuji potvrdit
         </p>
-        <p className="mt-2 text-[14px] text-[#1d1d1f]">
+        <p className="mt-2 text-[14px] text-apple-text-primary">
           1) V jaké fázi PM se projekt nachází?<br />
           2) Jaký typ frameworku použijeme? (Univerzální vs. Produktový)
         </p>
-        <p className="mt-2 text-[13px] text-[#6e6e73]">
+        <p className="mt-2 text-[13px] text-apple-text-secondary">
           Nevytvářím dokument, dokud nepotvrdíte výběrem níže.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">
+          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
             Projekt
           </label>
           <select
-            className="w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+            className="w-full rounded-xl border border-apple-border-default bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
             value={selectedProject?.id ?? ""}
             onChange={(e) => {
               const p = projects.find((p) => p.id === e.target.value) ?? null;
@@ -68,13 +68,13 @@ export function GuideConfig({
           </select>
         </div>
         <div>
-          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">
+          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
             Fáze
           </label>
           <select
             value={phase}
             onChange={(e) => setPhase(e.target.value)}
-            className="w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+            className="w-full rounded-xl border border-apple-border-default bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
           >
             {PHASES.map((p) => (
               <option key={p}>{p}</option>
@@ -82,13 +82,13 @@ export function GuideConfig({
           </select>
         </div>
         <div>
-          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">
+          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
             Framework
           </label>
           <select
             value={framework}
             onChange={(e) => setFramework(e.target.value as "Univerzální" | "Produktový")}
-            className="w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+            className="w-full rounded-xl border border-apple-border-default bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
           >
             <option>Univerzální</option>
             <option>Produktový</option>

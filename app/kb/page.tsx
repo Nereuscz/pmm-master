@@ -185,12 +185,12 @@ export default function KnowledgeBasePage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-8 py-10">
+    <main className="mx-auto max-w-6xl px-8 py-12">
       {/* Hlavička */}
       <div className="mb-8">
         <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Znalostní báze" }]} />
-        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Znalostní báze</h1>
-        <p className="mt-1 text-[15px] text-[#6e6e73]">Správa dokumentů, reindexace a SharePoint sync.</p>
+        <h1 className="mt-2 text-title font-semibold tracking-tight text-apple-text-primary">Znalostní báze</h1>
+        <p className="mt-1 text-body text-apple-text-secondary">Správa dokumentů, reindexace a SharePoint sync.</p>
       </div>
 
       {/* Chyba z načítání */}
@@ -203,9 +203,9 @@ export default function KnowledgeBasePage() {
       {/* Upload sekce */}
       <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">
         <div className="mb-5 flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">Nahrát dokument</p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">Nahrát dokument</p>
           {/* Tab přepínač */}
-          <div className="flex rounded-full border border-[#e8e8ed] bg-[#f5f5f7] p-1 text-[13px]">
+          <div className="flex rounded-full border border-apple-border-light bg-apple-bg-page p-1 text-[13px]">
             {(["file", "url", "text"] as const).map((mode) => (
               <button
                 key={mode}
@@ -213,8 +213,8 @@ export default function KnowledgeBasePage() {
                 onClick={() => setUploadMode(mode)}
                 className={`rounded-full px-4 py-1.5 font-medium transition-all ${
                   uploadMode === mode
-                    ? "bg-white text-[#1d1d1f] shadow-apple-sm"
-                    : "text-[#6e6e73] hover:text-[#1d1d1f]"
+                    ? "bg-white text-apple-text-primary shadow-apple-sm"
+                    : "text-apple-text-secondary hover:text-apple-text-primary"
                 }`}
               >
                 {mode === "file" ? "Soubor" : mode === "url" ? "URL" : "Text"}
@@ -226,47 +226,47 @@ export default function KnowledgeBasePage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">Název</label>
+              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Název</label>
               <input
                 name="title"
                 placeholder={uploadMode === "file" ? "Volitelné – bere se z názvu souboru" : "Název dokumentu"}
-                className="w-full rounded-xl border border-[#d2d2d7] px-4 py-2.5 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">Kategorie</label>
+              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Kategorie</label>
               <input
                 name="category"
                 placeholder="Např. Strategie"
-                className="w-full rounded-xl border border-[#d2d2d7] px-4 py-2.5 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
               />
             </div>
           </div>
 
           {uploadMode === "file" ? (
-            <div className="rounded-2xl border-2 border-dashed border-[#d2d2d7] px-6 py-8 text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-2 h-8 w-8 text-[#aeaeb2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className="rounded-2xl border-2 border-dashed border-apple-border-default px-6 py-8 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-2 h-8 w-8 text-apple-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
-              <p className="text-[13px] text-[#6e6e73]">PDF, DOCX, DOC, TXT, MD — max 20 MB</p>
+              <p className="text-[13px] text-apple-text-secondary">PDF, DOCX, DOC, TXT, MD — max 20 MB</p>
               <input
                 ref={fileInputRef}
                 type="file"
                 name="file"
                 accept=".pdf,.docx,.doc,.txt,.md"
-                className="mt-3 text-[13px] text-[#6e6e73]"
+                className="mt-3 text-[13px] text-apple-text-secondary"
               />
             </div>
           ) : uploadMode === "url" ? (
             <div>
-              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">URL adresa</label>
+              <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-apple-text-tertiary">URL adresa</label>
               <input
                 name="url"
                 type="url"
                 placeholder="https://example.com/clanek"
-                className="w-full rounded-xl border border-[#d2d2d7] px-4 py-2.5 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
               />
-              <p className="mt-1.5 text-[12px] text-[#86868b]">
+              <p className="mt-1.5 text-[12px] text-apple-text-tertiary">
                 Systém stáhne obsah stránky, extrahuje text a přidá ho do znalostní báze.
               </p>
             </div>
@@ -275,7 +275,7 @@ export default function KnowledgeBasePage() {
               name="content"
               rows={6}
               placeholder="Obsah dokumentu..."
-              className="w-full resize-none rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+              className="w-full resize-none rounded-xl border border-apple-border-default px-4 py-3 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
             />
           )}
 
@@ -283,7 +283,7 @@ export default function KnowledgeBasePage() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-full bg-brand-600 px-6 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+              className="rounded-full bg-brand-600 px-6 py-2.5 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? "Ukládám…" : "Uložit dokument"}
             </button>
@@ -291,7 +291,7 @@ export default function KnowledgeBasePage() {
               type="button"
               disabled={loading}
               onClick={runSimulatedSharepointSync}
-              className="rounded-full border border-[#d2d2d7] px-5 py-2.5 text-[14px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7] disabled:opacity-50"
+              className="rounded-full border border-apple-border-default px-5 py-2.5 text-[14px] font-medium text-apple-text-primary hover:bg-apple-bg-page disabled:opacity-50"
             >
               SharePoint sync
             </button>
@@ -306,14 +306,14 @@ export default function KnowledgeBasePage() {
           {initialLoading ? (
             <div className="space-y-3 py-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-14 animate-pulse rounded-lg bg-[#f5f5f7]" />
+                <div key={i} className="h-14 animate-pulse rounded-lg bg-apple-bg-page" />
               ))}
             </div>
           ) : (
           <>
           <div className="mb-4 flex flex-wrap items-center gap-3">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">Dokumenty</p>
-            <span className="rounded-full bg-[#f2f2f7] px-2.5 py-0.5 text-[12px] font-medium text-[#6e6e73]">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">Dokumenty</p>
+            <span className="rounded-full bg-apple-bg-subtle px-2.5 py-0.5 text-[12px] font-medium text-apple-text-secondary">
               {documents.length}
             </span>
             {documents.length > 0 ? (
@@ -323,12 +323,12 @@ export default function KnowledgeBasePage() {
                   placeholder="Hledat…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full min-w-[120px] max-w-[180px] rounded-lg border border-[#d2d2d7] bg-white px-3 py-1.5 text-[13px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20 sm:w-auto"
+                  className="w-full min-w-[120px] max-w-[180px] rounded-lg border border-apple-border-default bg-white px-3 py-1.5 text-[13px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2 sm:w-auto"
                 />
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="rounded-lg border border-[#d2d2d7] bg-white px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+                  className="rounded-lg border border-apple-border-default bg-white px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
                 >
                   <option value="">Všechny kategorie</option>
                   {categories.map((c) => (
@@ -338,11 +338,11 @@ export default function KnowledgeBasePage() {
               </div>
             ) : null}
           </div>
-          <div className="divide-y divide-[#f2f2f7]">
+          <div className="divide-y divide-apple-bg-subtle">
             {filteredDocuments.map((doc) => (
               <div key={doc.id} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-medium text-[#1d1d1f]">
+                  <p className="truncate text-[14px] font-medium text-apple-text-primary">
                     {doc.source === "url" && doc.source_url ? (
                       <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="hover:text-brand-600 hover:underline">
                         {doc.title}
@@ -351,7 +351,7 @@ export default function KnowledgeBasePage() {
                       doc.title
                     )}
                   </p>
-                  <p className="mt-0.5 text-[12px] text-[#86868b]">
+                  <p className="mt-0.5 text-[12px] text-apple-text-tertiary">
                     {doc.category ? `${doc.category} · ` : ""}{doc.source}
                     {doc.source === "url" && doc.source_url ? (
                       <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="ml-1 text-brand-600 hover:underline">
@@ -368,7 +368,7 @@ export default function KnowledgeBasePage() {
                       disabled={refreshingDocId === doc.id}
                       title="Obnovit z URL"
                       aria-label={`Obnovit dokument ${doc.title} z URL`}
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-apple-border-default transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                     >
                       {refreshingDocId === doc.id ? (
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
@@ -383,7 +383,7 @@ export default function KnowledgeBasePage() {
                     onClick={() => setConfirmDocId(doc.id)}
                     title="Smazat dokument"
                     aria-label={`Smazat dokument ${doc.title}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-[#d2d2d7] transition-colors hover:bg-red-50 hover:text-[#ff3b30] focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-apple-border-default transition-colors hover:bg-red-50 hover:text-[#ff3b30] focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                       <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
@@ -394,14 +394,14 @@ export default function KnowledgeBasePage() {
             ))}
             {documents.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-[14px] text-[#6e6e73]">Zatím žádné dokumenty.</p>
-                <p className="mt-1 text-[13px] text-[#aeaeb2]">
+                <p className="text-[14px] text-apple-text-secondary">Zatím žádné dokumenty.</p>
+                <p className="mt-1 text-[13px] text-apple-text-muted">
                   Bez dokumentů bude RAG prázdný a výstupy AI méně přesné. Nahrajte soubory, text nebo URL výše.
                 </p>
               </div>
             ) : filteredDocuments.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-[14px] text-[#6e6e73]">Žádný dokument neodpovídá filtru.</p>
+                <p className="text-[14px] text-apple-text-secondary">Žádný dokument neodpovídá filtru.</p>
               </div>
             ) : null}
           </div>
@@ -411,18 +411,18 @@ export default function KnowledgeBasePage() {
 
         {/* Sync log */}
         <section className="rounded-apple bg-white p-6 shadow-apple">
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">Sync log</p>
-          <div className="divide-y divide-[#f2f2f7]">
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">Sync log</p>
+          <div className="divide-y divide-apple-bg-subtle">
             {logs.map((log) => (
               <div key={log.id} className="py-3">
-                <p className="text-[14px] font-medium text-[#1d1d1f]">{log.status}</p>
-                <p className="mt-0.5 font-mono text-[12px] text-[#6e6e73]">
+                <p className="text-[14px] font-medium text-apple-text-primary">{log.status}</p>
+                <p className="mt-0.5 font-mono text-[12px] text-apple-text-secondary">
                   {log.source_path} · změny: {log.changes_detected}
                 </p>
               </div>
             ))}
             {logs.length === 0 ? (
-              <p className="py-4 text-[14px] text-[#aeaeb2]">Žádné synchronizace.</p>
+              <p className="py-4 text-[14px] text-apple-text-muted">Žádné synchronizace.</p>
             ) : null}
           </div>
         </section>

@@ -97,10 +97,10 @@ export default function CanvasPage() {
           { label: "Příprava na schůzku" }
         ]}
       />
-      <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
+      <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-apple-text-primary">
         Příprava na schůzku
       </h1>
-      <p className="mt-1 text-[15px] text-[#6e6e73]">
+      <p className="mt-1 text-[15px] text-apple-text-secondary">
         Vygeneruj sadu PM otázek s doplňujícími pro konkrétní projekt a fázi — ideální podklad před živým rozhovorem.
       </p>
 
@@ -109,8 +109,8 @@ export default function CanvasPage() {
 
         {/* Projekt */}
         <div>
-          <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
-            Projekt <span className="font-normal normal-case text-[#aeaeb2]">(volitelné – zpřesní otázky)</span>
+          <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
+            Projekt <span className="font-normal normal-case text-apple-text-muted">(volitelné – zpřesní otázky)</span>
           </label>
           <select
             value={selectedProject?.id ?? ""}
@@ -122,7 +122,7 @@ export default function CanvasPage() {
                 setFramework(p.framework as "Univerzální" | "Produktový");
               }
             }}
-            className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+            className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
           >
             <option value="">– bez projektu –</option>
             {projects.map((p) => (
@@ -130,7 +130,7 @@ export default function CanvasPage() {
             ))}
           </select>
           {selectedProject && (
-            <p className="mt-1 text-[12px] text-[#aeaeb2]">
+            <p className="mt-1 text-[12px] text-apple-text-muted">
               Framework projektu: {selectedProject.framework}
             </p>
           )}
@@ -138,13 +138,13 @@ export default function CanvasPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
+            <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
               Fáze
             </label>
             <select
               value={phase}
               onChange={(e) => setPhase(e.target.value)}
-              className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+              className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
             >
               {PHASES.map((p) => (
                 <option key={p}>{p}</option>
@@ -152,13 +152,13 @@ export default function CanvasPage() {
             </select>
           </div>
           <div>
-            <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
+            <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
               Framework
             </label>
             <select
               value={framework}
               onChange={(e) => setFramework(e.target.value as "Univerzální" | "Produktový")}
-              className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+              className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
             >
               <option>Univerzální</option>
               <option>Produktový</option>
@@ -168,15 +168,15 @@ export default function CanvasPage() {
 
         {/* Volitelný textový požadavek */}
         <div>
-          <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
-            Textový požadavek <span className="font-normal normal-case text-[#aeaeb2]">(volitelné)</span>
+          <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
+            Textový požadavek <span className="font-normal normal-case text-apple-text-muted">(volitelné)</span>
           </label>
           <input
             type="text"
             value={userPrompt}
             onChange={(e) => setUserPrompt(e.target.value)}
             placeholder="Např. Chci rozšířenou sadu otázek pro Produktový framework – Realizace"
-            className="w-full rounded-xl border border-[#d2d2d7] px-4 py-2.5 text-[14px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+            className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
           />
         </div>
 
@@ -192,7 +192,7 @@ export default function CanvasPage() {
             <button
               onClick={() => handleGenerate(true)}
               disabled={loading}
-              className="rounded-full border border-[#d2d2d7] px-5 py-2 text-[14px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7] disabled:opacity-50"
+              className="rounded-full border border-apple-border-default px-5 py-2 text-[14px] font-medium text-apple-text-primary transition-colors hover:bg-[#f5f5f7] disabled:opacity-50"
             >
               Generovat z textu
             </button>
@@ -211,17 +211,17 @@ export default function CanvasPage() {
         <div className="mt-8 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-[#1d1d1f]">
+              <h2 className="text-lg font-semibold text-apple-text-primary">
                 {selectedProject ? selectedProject.name + " – " : ""}{framework} · {phase}
               </h2>
-              <p className="text-[13px] text-[#6e6e73]">
+              <p className="text-[13px] text-apple-text-secondary">
                 {questions.length} otázek · klikni pro rozbalení doplňujících
               </p>
             </div>
             <div className="flex shrink-0 gap-2">
               <button
                 onClick={() => window.print()}
-                className="rounded-full border border-[#d2d2d7] px-4 py-1.5 text-[13px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7] print:hidden"
+                className="rounded-full border border-apple-border-default px-4 py-1.5 text-[13px] font-medium text-apple-text-primary transition-colors hover:bg-[#f5f5f7] print:hidden"
               >
                 Tisknout / PDF
               </button>
@@ -238,36 +238,36 @@ export default function CanvasPage() {
             {questions.map((q, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-[#e8e8ed] bg-[#fafafa] overflow-hidden print:border-0 print:rounded-none print:bg-white print:border-b print:border-[#e8e8ed]"
+                className="rounded-xl border border-apple-border-light bg-apple-bg-subtle overflow-hidden print:border-0 print:rounded-none print:bg-white print:border-b print:border-apple-border-light"
               >
                 <button
                   type="button"
                   onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-[#f2f2f7] print:pointer-events-none print:hover:bg-transparent"
+                  className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-apple-bg-subtle print:pointer-events-none print:hover:bg-transparent"
                 >
-                  <span className="text-[14px] font-semibold text-[#1d1d1f]">
+                  <span className="text-[14px] font-semibold text-apple-text-primary">
                     🟨 {q.name}
                   </span>
-                  <span className="text-[12px] text-[#aeaeb2] print:hidden">
+                  <span className="text-[12px] text-apple-text-muted print:hidden">
                     {expandedIndex === i ? "▲" : "▼"}
                   </span>
                 </button>
 
                 {/* Na obrazovce: rozbalitelné. Při tisku: vždy viditelné. */}
-                <div className={`border-t border-[#e8e8ed] bg-white px-4 py-4 ${expandedIndex === i ? "block" : "hidden"} print:block`}>
-                  <p className="mb-2 text-[13px] text-[#6e6e73]">{q.hint}</p>
+                <div className={`border-t border-apple-border-light bg-white px-4 py-4 ${expandedIndex === i ? "block" : "hidden"} print:block`}>
+                  <p className="mb-2 text-[13px] text-apple-text-secondary">{q.hint}</p>
                   {q.context && (
                     <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-800">
                       💡 {q.context}
                     </div>
                   )}
-                  <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-[#86868b]">
+                  <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
                     Doplňující otázky (3)
                   </p>
                   <ol className="space-y-2">
                     {q.followUps.map((fu, j) => (
-                      <li key={j} className="flex gap-2 text-[13px] text-[#1d1d1f]">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700 print:border print:border-[#d2d2d7] print:bg-white print:text-[#1d1d1f]">
+                      <li key={j} className="flex gap-2 text-[13px] text-apple-text-primary">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700 print:border print:border-apple-border-default print:bg-white print:text-apple-text-primary">
                           {j + 1}
                         </span>
                         {fu}

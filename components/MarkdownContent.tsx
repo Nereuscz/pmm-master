@@ -48,7 +48,7 @@ export default function MarkdownContent({ content, className }: Props) {
 
     if (line === "---" || line === "---\r") {
       flushBullets();
-      elements.push(<hr key={key++} className="my-4 border-[#f2f2f7]" />);
+      elements.push(<hr key={key++} className="my-4 border-apple-bg-subtle" />);
       continue;
     }
 
@@ -62,9 +62,9 @@ export default function MarkdownContent({ content, className }: Props) {
             <div className="flex items-start gap-2">
               <span className="mt-0.5 text-amber-400">🟨</span>
               <div>
-                <span className="text-[14px] font-semibold text-[#1d1d1f]">{boldMatch[1]}</span>
+                <span className="text-[14px] font-semibold text-apple-text-primary">{boldMatch[1]}</span>
                 {boldMatch[2] ? (
-                  <span className="ml-1 text-[13px] font-normal text-[#6e6e73]">{boldMatch[2]}</span>
+                  <span className="ml-1 text-[13px] font-normal text-apple-text-secondary">{boldMatch[2]}</span>
                 ) : null}
               </div>
             </div>
@@ -72,7 +72,7 @@ export default function MarkdownContent({ content, className }: Props) {
         );
       } else {
         elements.push(
-          <h3 key={key++} className="mt-5 flex items-center gap-2 text-[14px] font-semibold text-[#1d1d1f] first:mt-0">
+          <h3 key={key++} className="mt-5 flex items-center gap-2 text-[14px] font-semibold text-apple-text-primary first:mt-0">
             <span className="text-amber-400">🟨</span>
             {parseInline(inner)}
           </h3>
@@ -84,7 +84,7 @@ export default function MarkdownContent({ content, className }: Props) {
     if (line.startsWith("## ")) {
       flushBullets();
       elements.push(
-        <h2 key={key++} className="mt-5 text-[15px] font-semibold text-[#1d1d1f] first:mt-0">
+        <h2 key={key++} className="mt-5 text-[15px] font-semibold text-apple-text-primary first:mt-0">
           {parseInline(line.replace(/^##\s*/, ""))}
         </h2>
       );
@@ -106,7 +106,7 @@ export default function MarkdownContent({ content, className }: Props) {
     elements.push(
       <p
         key={key++}
-        className={`text-[14px] leading-relaxed ${isItalic ? "italic text-[#86868b]" : "text-[#3a3a3a]"}`}
+        className={`text-[14px] leading-relaxed ${isItalic ? "italic text-apple-text-tertiary" : "text-[#3a3a3a]"}`}
       >
         {parseInline(line)}
       </p>

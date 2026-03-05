@@ -108,11 +108,11 @@ export function LiveCanvas({
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-apple bg-white shadow-apple">
       {/* Sticky header */}
-      <div className="shrink-0 border-b border-[#f2f2f7] px-5 py-3">
-        <h2 className="text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
+      <div className="shrink-0 border-b border-apple-bg-subtle px-5 py-3">
+        <h2 className="text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
           PM Canvas
         </h2>
-        <p className="mt-0.5 text-[14px] font-medium text-[#1d1d1f]">
+        <p className="mt-0.5 text-[14px] font-medium text-apple-text-primary">
           {projectName ? `${projectName} – ` : ""}
           {framework} · {phase}
         </p>
@@ -130,11 +130,11 @@ export function LiveCanvas({
             return (
               <section
                 key={q.id}
-                className="rounded-xl border border-[#e8e8ed] bg-[#fafafa] overflow-hidden"
+                className="rounded-xl border border-apple-border-light bg-apple-bg-subtle overflow-hidden"
               >
-                <div className="border-b border-[#e8e8ed] bg-white px-4 py-2.5">
-                  <h3 className="text-[13px] font-semibold text-[#1d1d1f]">🟨 {q.text}</h3>
-                  <p className="mt-0.5 text-[12px] text-[#6e6e73]">{q.hint}</p>
+                <div className="border-b border-apple-border-light bg-white px-4 py-2.5">
+                  <h3 className="text-[13px] font-semibold text-apple-text-primary">🟨 {q.text}</h3>
+                  <p className="mt-0.5 text-[12px] text-apple-text-secondary">{q.hint}</p>
                 </div>
                 <div className="px-4 py-3">
                   {content ? (
@@ -146,7 +146,7 @@ export function LiveCanvas({
                         value={content}
                         onChange={(e) => onSectionChange(q.id, e.target.value)}
                         onSelect={(e) => handleSelect(q, e.currentTarget)}
-                        className="w-full min-h-[80px] resize-y rounded-lg border border-[#e8e8ed] bg-white px-3 py-2.5 text-[13px] leading-relaxed text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+                        className="w-full min-h-[80px] resize-y rounded-lg border border-apple-border-light bg-white px-3 py-2.5 text-[13px] leading-relaxed text-apple-text-primary placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
                         placeholder="Zatím prázdné – odpověz v chatu"
                         disabled={isElaborating}
                       />
@@ -158,7 +158,7 @@ export function LiveCanvas({
                         >
                           {sel ? (
                             <>
-                              <span className="text-[12px] text-[#6e6e73]">
+                              <span className="text-[12px] text-apple-text-secondary">
                                 Vybráno {sel.text.length} znaků
                               </span>
                               <button
@@ -188,7 +188,7 @@ export function LiveCanvas({
                                       setCustomPrompt((p) => ({ ...p, [q.id]: e.target.value }))
                                     }
                                     placeholder="Vlastní prompt"
-                                    className="flex-1 min-w-[140px] rounded-lg border border-[#e8e8ed] bg-white px-2.5 py-1.5 text-[12px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none"
+                                    className="flex-1 min-w-[140px] rounded-lg border border-apple-border-light bg-white px-2.5 py-1.5 text-[12px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none"
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter")
                                         handleElaborate(q, customPrompt[q.id], sel);
@@ -208,7 +208,7 @@ export function LiveCanvas({
                                 <button
                                   type="button"
                                   onClick={() => setShowPromptFor(q.id)}
-                                  className="text-[12px] text-[#6e6e73] hover:text-brand-600"
+                                  className="text-[12px] text-apple-text-secondary hover:text-brand-600"
                                 >
                                   S vlastním promptem
                                 </button>
@@ -216,7 +216,7 @@ export function LiveCanvas({
                               <button
                                 type="button"
                                 onClick={clearSelection}
-                                className="text-[12px] text-[#6e6e73] hover:text-[#1d1d1f]"
+                                className="text-[12px] text-apple-text-secondary hover:text-apple-text-primary"
                               >
                                 Zrušit výběr
                               </button>
@@ -250,7 +250,7 @@ export function LiveCanvas({
                                       setCustomPrompt((p) => ({ ...p, [q.id]: e.target.value }))
                                     }
                                     placeholder="Vlastní prompt (např. upřesni finanční část)"
-                                    className="flex-1 min-w-[180px] rounded-lg border border-[#e8e8ed] bg-white px-2.5 py-1.5 text-[12px] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none"
+                                    className="flex-1 min-w-[180px] rounded-lg border border-apple-border-light bg-white px-2.5 py-1.5 text-[12px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none"
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter") handleElaborate(q, customPrompt[q.id]);
                                       if (e.key === "Escape") setShowPromptFor(null);
@@ -267,7 +267,7 @@ export function LiveCanvas({
                                   <button
                                     type="button"
                                     onClick={() => setShowPromptFor(null)}
-                                    className="text-[12px] text-[#6e6e73] hover:text-[#1d1d1f]"
+                                    className="text-[12px] text-apple-text-secondary hover:text-apple-text-primary"
                                   >
                                     Zrušit
                                   </button>
@@ -276,7 +276,7 @@ export function LiveCanvas({
                                 <button
                                   type="button"
                                   onClick={() => setShowPromptFor(q.id)}
-                                  className="text-[12px] text-[#6e6e73] hover:text-brand-600"
+                                  className="text-[12px] text-apple-text-secondary hover:text-brand-600"
                                 >
                                   S vlastním promptem
                                 </button>
@@ -285,12 +285,12 @@ export function LiveCanvas({
                           )}
                         </div>
                       )}
-                      <p className="text-[11px] text-[#aeaeb2]">
+                      <p className="text-[11px] text-apple-text-muted">
                         Vyber část textu pro úpravu jen vybraného, nebo použij tlačítko pro celou sekci.
                       </p>
                     </div>
                   ) : (
-                    <p className="text-[12px] italic text-[#aeaeb2]">
+                    <p className="text-[12px] italic text-apple-text-muted">
                       Zatím prázdné – odpověz v chatu
                     </p>
                   )}

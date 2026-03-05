@@ -59,8 +59,8 @@ function SettingsContent() {
     <main className="mx-auto max-w-xl px-8 py-10">
       <div className="mb-6">
         <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Nastavení" }]} />
-        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Nastavení</h1>
-        <p className="mt-1 text-[15px] text-[#6e6e73]">Asana integrace pro export úkolů.</p>
+        <h1 className="mt-2 text-title font-semibold tracking-tight text-apple-text-primary">Nastavení</h1>
+        <p className="mt-1 text-body text-apple-text-secondary">Asana integrace pro export úkolů.</p>
       </div>
 
       {error ? (
@@ -70,10 +70,10 @@ function SettingsContent() {
       ) : null}
 
       <section className="rounded-apple bg-white p-6 shadow-apple">
-        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">
+        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
           Asana integrace
         </h2>
-        <p className="mt-2 text-[14px] text-[#6e6e73]">
+        <p className="mt-2 text-caption text-apple-text-secondary">
           Jste přihlášeni přes Asana. Tokeny pro export úkolů se ukládají automaticky při přihlášení.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -84,13 +84,13 @@ function SettingsContent() {
                 type="button"
                 disabled={loading}
                 onClick={handleDisconnect}
-                className="rounded-full border border-[#d2d2d7] px-5 py-2 text-[14px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7] disabled:opacity-50"
+                className="rounded-full border border-apple-border-default px-5 py-2 text-caption font-medium text-apple-text-primary transition-colors duration-200 hover:bg-apple-bg-page active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? "Odpojuji…" : "Odpojit tokeny"}
               </button>
             </>
           ) : (
-            <p className="text-[14px] text-[#6e6e73]">
+            <p className="text-caption text-apple-text-secondary">
               Pro export se znovu přihlaste přes Asana na stránce přihlášení.
             </p>
           )}

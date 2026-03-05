@@ -16,13 +16,13 @@ export default function Error({
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center px-6">
       <div className="max-w-md rounded-apple bg-white p-8 text-center shadow-apple">
-        <h2 className="text-[18px] font-semibold text-[#1d1d1f]">Něco se pokazilo</h2>
-        <p className="mt-2 text-[14px] text-[#6e6e73]">
+        <h2 className="text-headline font-semibold text-apple-text-primary">Něco se pokazilo</h2>
+        <p className="mt-2 text-caption text-apple-text-secondary">
           Došlo k neočekávané chybě. Zkus stránku obnovit.
         </p>
         <button
           onClick={reset}
-          className="mt-6 rounded-full bg-brand-600 px-6 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-brand-700"
+          className="mt-6 rounded-full bg-brand-600 px-6 py-2.5 text-caption font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"
         >
           Obnovit stránku
         </button>

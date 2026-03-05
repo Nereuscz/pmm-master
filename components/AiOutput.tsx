@@ -40,7 +40,7 @@ function ToolbarBtn({
       className={`rounded px-2 py-1 text-[12px] font-medium transition-colors focus:outline-none focus:ring-1 focus:ring-brand-400 ${
         active
           ? "bg-brand-100 text-brand-700"
-          : "text-[#6e6e73] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+          : "text-apple-text-secondary hover:bg-apple-bg-page hover:text-apple-text-primary"
       } disabled:opacity-40`}
     >
       {children}
@@ -97,7 +97,7 @@ export default function AiOutput({
       editorProps: {
         attributes: {
           class:
-            "prose prose-sm max-w-none min-h-[300px] focus:outline-none px-1 py-1 leading-relaxed text-[#1d1d1f]",
+            "prose prose-sm max-w-none min-h-[300px] focus:outline-none px-1 py-1 leading-relaxed text-apple-text-primary",
         },
       },
     },
@@ -219,8 +219,8 @@ export default function AiOutput({
   return (
     <div className="rounded-apple bg-white shadow-apple">
       {/* ── Top toolbar ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f2f2f7] px-6 py-3.5">
-        <span className="text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-apple-bg-subtle px-6 py-3.5">
+        <span className="text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
           {isEditing ? "Úprava výstupu" : "Výstup AI"}
         </span>
 
@@ -230,7 +230,7 @@ export default function AiOutput({
             <button
               type="button"
               onClick={cancelEdit}
-              className="rounded-full border border-[#d2d2d7] px-3.5 py-1.5 text-[12px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+              className="rounded-full border border-apple-border-default px-3.5 py-1.5 text-[12px] font-medium text-apple-text-secondary transition-colors hover:bg-apple-bg-page hover:text-apple-text-primary"
             >
               Zrušit
             </button>
@@ -249,27 +249,27 @@ export default function AiOutput({
             <button
               onClick={handleDownloadDocx}
               disabled={!!exporting}
-              className="rounded-full border border-[#d2d2d7] px-3.5 py-1.5 text-[12px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f] disabled:opacity-50"
+              className="rounded-full border border-apple-border-default px-3.5 py-1.5 text-[12px] font-medium text-apple-text-secondary transition-colors hover:bg-apple-bg-page hover:text-apple-text-primary disabled:opacity-50"
             >
               {exporting === "docx" ? "Generuji…" : "Stáhnout DOCX"}
             </button>
             <button
               onClick={handleDownloadPdf}
               disabled={!!exporting}
-              className="rounded-full border border-[#d2d2d7] px-3.5 py-1.5 text-[12px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f] disabled:opacity-50"
+              className="rounded-full border border-apple-border-default px-3.5 py-1.5 text-[12px] font-medium text-apple-text-secondary transition-colors hover:bg-apple-bg-page hover:text-apple-text-primary disabled:opacity-50"
             >
               {exporting === "pdf" ? "Generuji…" : "Stáhnout PDF"}
             </button>
             <button
               onClick={copy}
               aria-label={copied ? "Zkopírováno" : "Kopírovat do schránky"}
-              className="rounded-full border border-[#d2d2d7] px-3.5 py-1.5 text-[12px] font-medium text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
+              className="rounded-full border border-apple-border-default px-3.5 py-1.5 text-[12px] font-medium text-apple-text-secondary transition-colors hover:bg-apple-bg-page hover:text-apple-text-primary focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
             >
               {copied ? "✓ Zkopírováno" : "Kopírovat"}
             </button>
             {sessionId ? (
               <>
-                <span className="mx-1 text-[#d2d2d7]">|</span>
+                <span className="mx-1 text-apple-border-default">|</span>
                 <button
                   type="button"
                   onClick={() => submitFeedback(1)}
@@ -279,7 +279,7 @@ export default function AiOutput({
                   className={`rounded-full p-1.5 text-base transition-colors ${
                     feedbackRating === 1
                       ? "bg-green-100 text-green-700"
-                      : "text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                      : "text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
                   } disabled:opacity-50`}
                 >
                   👍
@@ -293,7 +293,7 @@ export default function AiOutput({
                   className={`rounded-full p-1.5 text-base transition-colors ${
                     feedbackRating === -1
                       ? "bg-red-100 text-red-700"
-                      : "text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                      : "text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
                   } disabled:opacity-50`}
                 >
                   👎
@@ -313,7 +313,7 @@ export default function AiOutput({
 
       {/* ── WYSIWYG formatting toolbar (edit mode only) ───────────────────────── */}
       {isEditing && editor ? (
-        <div className="flex flex-wrap items-center gap-1 border-b border-[#f2f2f7] px-4 py-2">
+        <div className="flex flex-wrap items-center gap-1 border-b border-apple-bg-subtle px-4 py-2">
           <ToolbarBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
@@ -328,7 +328,7 @@ export default function AiOutput({
           >
             <em>I</em>
           </ToolbarBtn>
-          <span className="mx-1 text-[#d2d2d7]">|</span>
+          <span className="mx-1 text-apple-border-default">|</span>
           <ToolbarBtn
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             active={editor.isActive("heading", { level: 2 })}
@@ -343,7 +343,7 @@ export default function AiOutput({
           >
             H3
           </ToolbarBtn>
-          <span className="mx-1 text-[#d2d2d7]">|</span>
+          <span className="mx-1 text-apple-border-default">|</span>
           <ToolbarBtn
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             active={editor.isActive("bulletList")}
@@ -358,7 +358,7 @@ export default function AiOutput({
           >
             1.
           </ToolbarBtn>
-          <span className="mx-1 text-[#d2d2d7]">|</span>
+          <span className="mx-1 text-apple-border-default">|</span>
           <ToolbarBtn
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}

@@ -36,7 +36,7 @@ function Spinner({ message }: { message?: string }) {
         aria-hidden
       />
       {message ? (
-        <p className="text-[14px] text-[#6e6e73]">{message}</p>
+        <p className="text-[14px] text-apple-text-secondary">{message}</p>
       ) : null}
     </div>
   );

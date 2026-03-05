@@ -118,10 +118,10 @@ function GuideChat() {
       {!started && (
         <div className="mb-3 shrink-0">
           <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Průvodce" }]} />
-          <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
+          <h1 className="mt-2 text-title font-semibold tracking-tight text-apple-text-primary">
             Průvodce PM
           </h1>
-          <p className="mt-1 text-[15px] text-[#6e6e73]">
+          <p className="mt-1 text-body text-apple-text-secondary">
             Interaktivní PM asistent – průvodce rozhovorem nebo příprava na schůzku.
           </p>
         </div>
@@ -134,22 +134,22 @@ function GuideChat() {
           <>
             {selectedProject && (
               <>
-                <span className="max-w-[160px] truncate text-[13px] font-semibold text-[#1d1d1f]">
+                <span className="max-w-[160px] truncate text-[13px] font-semibold text-apple-text-primary">
                   {selectedProject.name}
                 </span>
-                <span className="text-[#d2d2d7]">·</span>
+                <span className="text-apple-border-default">·</span>
               </>
             )}
-            <span className="shrink-0 text-[12px] text-[#6e6e73]">{phase}</span>
-            <span className="text-[#d2d2d7]">·</span>
+            <span className="shrink-0 text-[12px] text-apple-text-secondary">{phase}</span>
+            <span className="text-apple-border-default">·</span>
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
-              <div className="h-1.5 min-w-[60px] flex-1 overflow-hidden rounded-full bg-[#f2f2f7]">
+              <div className="h-1.5 min-w-[60px] flex-1 overflow-hidden rounded-full bg-apple-bg-subtle">
                 <div
                   className="h-full rounded-full bg-brand-600 transition-all duration-500"
                   style={{ width: `${Math.min(100, (answers.length / totalCount!) * 100)}%` }}
                 />
               </div>
-              <span className="shrink-0 tabular-nums text-[12px] font-medium text-[#6e6e73]">
+              <span className="shrink-0 tabular-nums text-[12px] font-medium text-apple-text-secondary">
                 {answers.length}/{totalCount} otázek{fuInfo}
               </span>
             </div>
@@ -167,26 +167,26 @@ function GuideChat() {
                   setFramework(p.framework as "Univerzální" | "Produktový");
                 }
               }}
-              className="rounded-lg border border-[#d2d2d7] bg-[#fafafa] px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+              className="rounded-lg border border-apple-border-default bg-apple-bg-subtle px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
             >
               <option value="">– projekt –</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-            <span className="text-[#d2d2d7]">·</span>
+            <span className="text-apple-border-default">·</span>
             <select
               value={phase}
               onChange={(e) => setPhase(e.target.value)}
-              className="rounded-lg border border-[#d2d2d7] bg-[#fafafa] px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+              className="rounded-lg border border-apple-border-default bg-apple-bg-subtle px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
             >
               {PHASES.map((p) => <option key={p}>{p}</option>)}
             </select>
-            <span className="text-[#d2d2d7]">·</span>
+            <span className="text-apple-border-default">·</span>
             <select
               value={framework}
               onChange={(e) => setFramework(e.target.value as "Univerzální" | "Produktový")}
-              className="rounded-lg border border-[#d2d2d7] bg-[#fafafa] px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/20"
+              className="rounded-lg border border-apple-border-default bg-apple-bg-subtle px-3 py-1.5 text-[13px] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
             >
               <option>Univerzální</option>
               <option>Produktový</option>
@@ -212,14 +212,14 @@ function GuideChat() {
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           {/* Chat sidebar – skládací panel vlevo */}
           <aside
-            className={`flex shrink-0 flex-col border-r border-[#e8e8ed] bg-white shadow-apple transition-all duration-300 ease-out ${
+            className={`flex shrink-0 flex-col border-r border-apple-border-light bg-white shadow-apple transition-all duration-300 ease-out ${
               chatOpen ? "w-[340px] lg:w-[380px]" : "w-0 overflow-hidden"
             }`}
           >
             <div className="flex h-full min-w-[340px] flex-col lg:min-w-[380px]">
-              <div className="flex shrink-0 flex-col gap-2 border-b border-[#f2f2f7] px-4 py-2.5">
+              <div className="flex shrink-0 flex-col gap-2 border-b border-apple-bg-subtle px-4 py-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-semibold text-[#1d1d1f]">Chat</span>
+                  <span className="text-[13px] font-semibold text-apple-text-primary">Chat</span>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -227,7 +227,7 @@ function GuideChat() {
                       className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
                         voiceMode
                           ? "bg-brand-100 text-brand-700"
-                          : "text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                          : "text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
                       }`}
                       title={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
                       aria-label={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
@@ -242,7 +242,7 @@ function GuideChat() {
                     <button
                       type="button"
                       onClick={() => setChatOpen(false)}
-                      className="rounded-lg p-1.5 text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                      className="rounded-lg p-1.5 text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
                       aria-label="Skrýt chat"
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,7 +275,7 @@ function GuideChat() {
                 ))}
                 <div ref={bottomRef} />
               </div>
-              <div className="shrink-0 space-y-2 border-t border-[#f2f2f7] bg-[#fafafa] px-4 py-3">
+              <div className="shrink-0 space-y-2 border-t border-apple-bg-subtle bg-apple-bg-subtle px-4 py-3">
                 {voiceMode && chatMode === "guide" && status === "awaiting_answer" && (
                   <RealtimeVoicePanel
                     projectId={selectedProject?.id ?? null}
@@ -313,7 +313,7 @@ function GuideChat() {
               <button
                 type="button"
                 onClick={() => setChatOpen(true)}
-                className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-xl border border-[#e8e8ed] bg-white px-4 py-2.5 text-[13px] font-medium text-[#1d1d1f] shadow-apple transition-shadow hover:shadow-apple-lg"
+                className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-xl border border-apple-border-light bg-white px-4 py-2.5 text-[13px] font-medium text-apple-text-primary shadow-apple transition-shadow hover:shadow-apple-lg"
                 aria-label="Otevřít chat"
               >
                 <span>💬</span>
@@ -335,7 +335,7 @@ function GuideChat() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple">
           {uploadedContext.trim().length > 0 && (
-            <div className="shrink-0 border-b border-[#f2f2f7] px-5 py-2">
+            <div className="shrink-0 border-b border-apple-bg-subtle px-5 py-2">
               <UploadedContextBar
                 charCount={uploadedContext.length}
                 onPrefill={prefillFromUploadedContext}
@@ -359,7 +359,7 @@ function GuideChat() {
             ))}
             <div ref={bottomRef} />
           </div>
-          <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-4">
+          <div className="shrink-0 border-t border-apple-bg-subtle bg-apple-bg-subtle px-5 py-4">
             <ChatInput
               inputRef={inputRef}
               inputValue={inputValue}
