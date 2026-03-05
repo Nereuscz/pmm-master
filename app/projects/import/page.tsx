@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorMessage from "@/components/ErrorMessage";
 
-type ImportResult = { imported: number; skipped: number; errors?: string[] };
+type ImportResult = { imported: number; updated?: number; errors?: string[] };
 
 export default function ImportFromAsanaPage() {
   const [asanaProjectId, setAsanaProjectId] = useState("");
@@ -40,7 +40,7 @@ export default function ImportFromAsanaPage() {
         body: JSON.stringify({ asanaProjectId: gid }),
       });
       const text = await r.text();
-      let json: { error?: string; imported?: number; skipped?: number; errors?: string[] };
+      let json: { error?: string; imported?: number; updated?: number; errors?: string[] };
       try {
         json = text ? JSON.parse(text) : {};
       } catch {
@@ -49,7 +49,7 @@ export default function ImportFromAsanaPage() {
       if (!r.ok) throw new Error(json.error || "Import selhal.");
       setResult({
         imported: json.imported ?? 0,
-        skipped: json.skipped ?? 0,
+        updated: json.updated ?? 0,
         errors: json.errors,
       });
       if ((json.imported ?? 0) > 0) {
@@ -149,8 +149,10 @@ export default function ImportFromAsanaPage() {
         <div className="mt-6 rounded-apple bg-white p-6 shadow-apple">
           <h2 className="text-headline font-semibold text-apple-text-primary">Výsledek importu</h2>
           <p className="mt-2 text-body text-apple-text-secondary">
-            Importováno: <strong>{result.imported}</strong> · Přeskočeno (již existují):{" "}
-            <strong>{result.skipped}</strong>
+            Importováno: <strong>{result.imported}</strong>
+            {(result.updated ?? 0) > 0 ? (
+              <> · Aktualizováno: <strong>{result.updated}</strong></>
+            ) : null}
           </p>
           {result.errors && result.errors.length > 0 ? (
             <div className="mt-4">

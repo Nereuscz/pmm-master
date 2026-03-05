@@ -2,23 +2,7 @@ import { ensureDb } from "./db";
 import { getValidAsanaToken } from "./asana-auth";
 import { getProjectSections, getTasksForProject, type AsanaTaskFull } from "./asana-api";
 import { summarizeForContext } from "./text";
-import { mapAsanaPhaseToProjectPhase } from "./asana-import";
-
-function buildAsanaMetadata(
-  customFields?: Array<{ gid: string; name?: string; display_value?: string }>
-): Record<string, string> {
-  if (!customFields?.length) return {};
-  const out: Record<string, string> = {};
-  for (const c of customFields) {
-    const name = c.name?.trim();
-    if (!name) continue;
-    const val = c.display_value;
-    if (val != null && val !== "") {
-      out[name] = typeof val === "string" ? val : String(val);
-    }
-  }
-  return out;
-}
+import { mapAsanaPhaseToProjectPhase, buildAsanaMetadata } from "./asana-import";
 
 /** Vrátí snapshot text pro projekt, nebo null pokud není k dispozici. */
 export async function getAsanaSnapshotForProject(projectId: string): Promise<string | null> {

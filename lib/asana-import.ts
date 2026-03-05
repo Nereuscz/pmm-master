@@ -14,16 +14,16 @@ export const VALID_PHASES = [
 
 /** Mapuje Asana custom field "Project Phase" na naši fázi. */
 export function mapAsanaPhaseToProjectPhase(
-  customFields?: Array<{ gid: string; name?: string; display_value?: string }>
+  customFields?: Array<Record<string, unknown>>
 ): (typeof VALID_PHASES)[number] {
-  const phaseField = customFields?.find(
-    (c) =>
-      c.display_value &&
-      (c.name?.toLowerCase().includes("phase") ||
-        c.name?.toLowerCase().includes("fáze") ||
-        c.name?.toLowerCase().includes("faze"))
-  );
-  const val = (phaseField?.display_value ?? "").trim().toLowerCase();
+  const phaseField = customFields?.find((raw) => {
+    const c = (raw.custom_field ?? raw) as Record<string, unknown>;
+    const name = (c?.name ?? raw?.name)?.toString?.()?.toLowerCase() ?? "";
+    return name.includes("phase") || name.includes("fáze") || name.includes("faze");
+  });
+  const c = phaseField ? ((phaseField.custom_field ?? phaseField) as Record<string, unknown>) : null;
+  const rawVal = c ? extractCustomFieldValue(c as Parameters<typeof extractCustomFieldValue>[0]) : "";
+  const val = String(rawVal ?? "").trim().toLowerCase();
 
   const mapping: Record<string, (typeof VALID_PHASES)[number]> = {
     planning: "Plánování",
@@ -42,19 +42,42 @@ export function mapAsanaPhaseToProjectPhase(
   return mapping[val] ?? "Iniciace";
 }
 
-/** Vytvoří objekt custom polí z Asana tasku. */
-function buildAsanaMetadata(
-  customFields?: Array<{ gid: string; name?: string; display_value?: string }>
-): Record<string, string> {
+/** Extrahuje zobrazitelnou hodnotu z custom fieldu (všechny typy). */
+export function extractCustomFieldValue(c: {
+  display_value?: string;
+  enum_value?: { name?: string };
+  multi_enum_values?: Array<{ name?: string }>;
+  people_value?: Array<{ name?: string }>;
+  text_value?: string;
+  number_value?: number;
+  date_value?: { date?: string };
+}): string | null {
+  if (c.display_value != null && c.display_value !== "") {
+    return String(c.display_value);
+  }
+  if (c.enum_value?.name) return c.enum_value.name;
+  if (c.multi_enum_values?.length) {
+    return c.multi_enum_values.map((e) => e.name ?? "").filter(Boolean).join(", ");
+  }
+  if (c.people_value?.length) {
+    return c.people_value.map((u) => u.name ?? "").filter(Boolean).join(", ");
+  }
+  if (c.text_value != null && c.text_value !== "") return String(c.text_value);
+  if (c.number_value != null) return String(c.number_value);
+  if (c.date_value?.date) return c.date_value.date;
+  return null;
+}
+
+/** Vytvoří objekt custom polí z Asana tasku (všechny typy: enum, multi_enum, people, text, number, date). */
+export function buildAsanaMetadata(customFields?: Array<Record<string, unknown>>): Record<string, string> {
   if (!customFields?.length) return {};
   const out: Record<string, string> = {};
-  for (const c of customFields) {
-    const name = c.name?.trim();
+  for (const raw of customFields) {
+    const c = (raw.custom_field ?? raw) as Record<string, unknown>;
+    const name = (c?.name ?? raw?.name)?.toString?.()?.trim();
     if (!name) continue;
-    const val = c.display_value;
-    if (val != null && val !== "") {
-      out[name] = typeof val === "string" ? val : String(val);
-    }
+    const val = extractCustomFieldValue(c as Parameters<typeof extractCustomFieldValue>[0]);
+    if (val) out[name] = val;
   }
   return out;
 }
@@ -80,6 +103,7 @@ export function formatImportContext(
 
 export type ImportResult = {
   imported: number;
+  updated: number;
   skipped: number;
   errors: string[];
 };
@@ -90,26 +114,15 @@ export async function importParentTasksFromAsana(
 ): Promise<ImportResult> {
   const token = await getValidAsanaToken(ownerId);
   if (!token) {
-    return { imported: 0, skipped: 0, errors: ["Uživatel nemá platný Asana token."] };
+    return { imported: 0, updated: 0, skipped: 0, errors: ["Uživatel nemá platný Asana token."] };
   }
 
   const tasks = await getParentTasksForProject(token, asanaProjectId);
   const db = ensureDb();
-  const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
+  const result: ImportResult = { imported: 0, updated: 0, skipped: 0, errors: [] };
 
   for (const task of tasks) {
     try {
-      const existing = await db
-        .from("projects")
-        .select("id")
-        .eq("asana_task_id", task.gid)
-        .maybeSingle();
-
-      if (existing?.data) {
-        result.skipped += 1;
-        continue;
-      }
-
       const phase = mapAsanaPhaseToProjectPhase(task.custom_fields);
       const name = task.name?.trim() || `Projekt ${task.gid}`;
       if (name.length < 3) {
@@ -119,6 +132,34 @@ export async function importParentTasksFromAsana(
 
       const description = task.notes?.trim() || null;
       const asanaMetadata = buildAsanaMetadata(task.custom_fields);
+
+      const existing = await db
+        .from("projects")
+        .select("id, description, asana_metadata")
+        .eq("asana_task_id", task.gid)
+        .maybeSingle();
+
+      if (existing?.data) {
+        const updates: Record<string, unknown> = {
+          phase,
+          description,
+          asana_metadata: asanaMetadata,
+          updated_at: new Date().toISOString(),
+        };
+        if (name.length >= 3) updates.name = name.slice(0, 140);
+
+        const { error: updateError } = await db
+          .from("projects")
+          .update(updates)
+          .eq("id", existing.data.id);
+
+        if (updateError) {
+          result.errors.push(`Task ${task.gid}: ${updateError.message}`);
+        } else {
+          result.updated += 1;
+        }
+        continue;
+      }
 
       const { data: project, error } = await db
         .from("projects")

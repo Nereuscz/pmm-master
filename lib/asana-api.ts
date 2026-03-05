@@ -4,6 +4,19 @@ export type AsanaTask = { gid: string; name: string };
 
 export type AsanaSection = { gid: string; name: string };
 
+export type AsanaCustomField = {
+  gid: string;
+  name?: string;
+  display_value?: string;
+  resource_subtype?: string;
+  enum_value?: { name?: string };
+  multi_enum_values?: Array<{ name?: string }>;
+  people_value?: Array<{ name?: string }>;
+  text_value?: string;
+  number_value?: number;
+  date_value?: { date?: string };
+};
+
 export type AsanaTaskFull = {
   gid: string;
   name: string;
@@ -12,7 +25,7 @@ export type AsanaTaskFull = {
   due_on?: string;
   parent?: { gid: string } | null;
   assignee?: { gid: string; name?: string };
-  custom_fields?: Array<{ gid: string; name?: string; display_value?: string }>;
+  custom_fields?: AsanaCustomField[];
   memberships?: Array<{ section?: { gid: string; name?: string } }>;
 };
 
@@ -42,7 +55,11 @@ export async function getProjectSections(
 }
 
 const TASK_OPT_FIELDS =
-  "name,notes,completed,due_on,parent,assignee.name,custom_fields.name,custom_fields.display_value,memberships.section.name";
+  "name,notes,completed,due_on,parent,assignee.name," +
+  "custom_fields.name,custom_fields.display_value,custom_fields.resource_subtype," +
+  "custom_fields.enum_value.name,custom_fields.multi_enum_values.name,custom_fields.people_value.name," +
+  "custom_fields.text_value,custom_fields.number_value,custom_fields.date_value," +
+  "memberships.section.name";
 
 export async function getTasksForProject(
   accessToken: string,
