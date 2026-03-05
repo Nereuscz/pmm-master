@@ -26,13 +26,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const { data: session } = await db
     .from("sessions")
-    .select("id, project_id")
+    .select("id, project_id, ai_output")
     .eq("id", params.id)
     .single();
 
   if (!session) {
     return NextResponse.json({ error: "Session nebyla nalezena." }, { status: 404 });
   }
+
+  const originalContent = session.ai_output ?? "";
 
   const { data: project } = await db
     .from("projects")
@@ -57,6 +59,17 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       resourceType: "session",
       resourceId: params.id,
     });
+
+    // Implicitní feedback: log diff pro budoucí few-shot příklady
+    const newContent = parsed.data.ai_output;
+    if (originalContent !== newContent) {
+      await db.from("session_edits").insert({
+        session_id: params.id,
+        user_id: user.id,
+        original_content: originalContent,
+        edited_content: newContent,
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {

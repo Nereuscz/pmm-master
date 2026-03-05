@@ -90,6 +90,24 @@ create table if not exists processing_jobs (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists session_feedback (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references sessions(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  rating int not null check (rating in (1, -1)),
+  created_at timestamptz not null default now(),
+  unique(session_id, user_id)
+);
+
+create table if not exists session_edits (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references sessions(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  original_content text not null,
+  edited_content text not null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists export_jobs (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references sessions(id) on delete cascade,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -61,7 +61,20 @@ export default function AiOutput({
   const [exporting, setExporting] = useState<"docx" | "pdf" | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState<1 | -1 | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Načti feedback při mountu
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch(`/api/sessions/${sessionId}/feedback`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.rating === 1 || json.rating === -1) setFeedbackRating(json.rating);
+      })
+      .catch(() => undefined);
+  }, [sessionId]);
 
   // ── TipTap editor (lazy-initialised, only mounted in edit mode) ─────────────
 
@@ -154,6 +167,31 @@ export default function AiOutput({
     }
   }
 
+  async function submitFeedback(rating: 1 | -1) {
+    if (!sessionId || feedbackLoading) return;
+    const isTogglingOff = feedbackRating === rating;
+    setFeedbackLoading(true);
+    try {
+      if (isTogglingOff) {
+        const r = await fetch(`/api/sessions/${sessionId}/feedback`, { method: "DELETE" });
+        if (!r.ok) throw new Error();
+        setFeedbackRating(null);
+      } else {
+        const r = await fetch(`/api/sessions/${sessionId}/feedback`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rating }),
+        });
+        if (!r.ok) throw new Error();
+        setFeedbackRating(rating);
+      }
+    } catch {
+      toast.error("Feedback se nepodařilo uložit.");
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }
+
   async function handleDownloadPdf() {
     if (!contentRef.current) return;
     setExporting("pdf");
@@ -230,13 +268,44 @@ export default function AiOutput({
               {copied ? "✓ Zkopírováno" : "Kopírovat"}
             </button>
             {sessionId ? (
-              <button
-                type="button"
-                onClick={enterEdit}
-                className="rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-[12px] font-medium text-brand-700 transition-colors hover:bg-brand-100"
-              >
-                ✏️ Upravit
-              </button>
+              <>
+                <span className="mx-1 text-[#d2d2d7]">|</span>
+                <button
+                  type="button"
+                  onClick={() => submitFeedback(1)}
+                  disabled={feedbackLoading}
+                  title="Bylo to užitečné"
+                  aria-label="Bylo to užitečné"
+                  className={`rounded-full p-1.5 text-base transition-colors ${
+                    feedbackRating === 1
+                      ? "bg-green-100 text-green-700"
+                      : "text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                  } disabled:opacity-50`}
+                >
+                  👍
+                </button>
+                <button
+                  type="button"
+                  onClick={() => submitFeedback(-1)}
+                  disabled={feedbackLoading}
+                  title="Nebylo to užitečné"
+                  aria-label="Nebylo to užitečné"
+                  className={`rounded-full p-1.5 text-base transition-colors ${
+                    feedbackRating === -1
+                      ? "bg-red-100 text-red-700"
+                      : "text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                  } disabled:opacity-50`}
+                >
+                  👎
+                </button>
+                <button
+                  type="button"
+                  onClick={enterEdit}
+                  className="rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-[12px] font-medium text-brand-700 transition-colors hover:bg-brand-100"
+                >
+                  Upravit
+                </button>
+              </>
             ) : null}
           </div>
         )}
