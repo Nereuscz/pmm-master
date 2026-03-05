@@ -11,11 +11,12 @@ type Props = {
   status: Status;
   chatMode: ChatMode;
   voiceMode?: boolean;
+  onVoiceModeChange?: (v: boolean) => void;
   realtimeConnected?: boolean;
   onAttachment?: (file: File) => Promise<void>;
 };
 
-export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status, chatMode, voiceMode = false, realtimeConnected = false, onAttachment }: Props) {
+export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status, chatMode, voiceMode = false, onVoiceModeChange, realtimeConnected = false, onAttachment }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { error: voiceError, startRecording, stopRecording, isRecording, isTranscribing } = useVoiceInput(
@@ -107,6 +108,25 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
             </svg>
           </button>
         </>
+      )}
+      {onVoiceModeChange && (
+        <button
+          type="button"
+          onClick={() => onVoiceModeChange(!voiceMode)}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 ${
+            voiceMode
+              ? "bg-brand-100 text-brand-700"
+              : "text-apple-text-tertiary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
+          }`}
+          title={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
+          aria-label={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+            <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
+            <path fillRule="evenodd" d="M5 9.643a.75.75 0 01-1.5 0V4.643a.75.75 0 011.5 0v5z" clipRule="evenodd" />
+            <path d="M3 8.643a.75.75 0 00-1.5 0v1a6 6 0 1012 0v-1a.75.75 0 00-1.5 0v1a4.5 4.5 0 01-9 0v-1z" />
+          </svg>
+        </button>
       )}
       {showVoiceInput && (
         <button

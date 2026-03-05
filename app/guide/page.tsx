@@ -63,33 +63,15 @@ function GuideChat() {
     handleRealtimeDone,
   } = useGuideChat(projectIdParam, modeParam);
 
-  // Auto-resolve mode when missing: preferuje Guide při voice mode, jinak draft → Canvas / Guide
+  // Auto-resolve mode when missing: vždy Guide (bez automatického Canvas)
   useEffect(() => {
     if (modeParam !== null || modeResolvedRef.current || !selectedProject) return;
     modeResolvedRef.current = true;
     const projectId = selectedProject.id;
-    const p = selectedProject.phase ?? "Iniciace";
-    const fw = selectedProject.framework ?? "Univerzální";
-    const preferVoice = typeof window !== "undefined" && localStorage.getItem(VOICE_PREF_KEY) === "true";
-    fetch(
-      `/api/guide/draft?projectId=${projectId}&phase=${encodeURIComponent(p)}&framework=${encodeURIComponent(fw)}`
-    )
-      .then((r) => r.json())
-      .then((json) => {
-        const hasDraftWithAnswers = json.draft?.answers?.length > 0;
-        // Voice mode funguje jen v Guide – při preferenci hlasu vždy Guide
-        const mode = preferVoice || !hasDraftWithAnswers ? "guide" : "canvas";
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("mode", mode);
-        if (!params.has("projectId")) params.set("projectId", projectId);
-        router.replace(`/guide?${params.toString()}`, { scroll: false });
-      })
-      .catch(() => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("mode", "guide");
-        if (!params.has("projectId")) params.set("projectId", projectId);
-        router.replace(`/guide?${params.toString()}`, { scroll: false });
-      });
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("mode", "guide");
+    if (!params.has("projectId")) params.set("projectId", projectId);
+    router.replace(`/guide?${params.toString()}`, { scroll: false });
   }, [modeParam, selectedProject, router, searchParams]);
 
   // Persistovat voice mode preference pro auto-resolve při příštím otevření
@@ -259,36 +241,16 @@ function GuideChat() {
               <div className="flex shrink-0 flex-col gap-2 border-b border-apple-bg-subtle px-4 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[13px] font-semibold text-apple-text-primary">Chat</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setVoiceMode((v) => !v)}
-                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
-                        voiceMode
-                          ? "bg-brand-100 text-brand-700"
-                          : "text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
-                      }`}
-                      title={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
-                      aria-label={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                        <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
-                        <path fillRule="evenodd" d="M5 9.643a.75.75 0 01-1.5 0V4.643a.75.75 0 011.5 0v5z" clipRule="evenodd" />
-                        <path d="M3 8.643a.75.75 0 00-1.5 0v1a6 6 0 1012 0v-1a.75.75 0 00-1.5 0v1a4.5 4.5 0 01-9 0v-1z" />
-                      </svg>
-                      {voiceMode ? "Hlas" : "Text"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setChatOpen(false)}
-                      className="rounded-lg p-1.5 text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
-                      aria-label="Skrýt chat"
-                    >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                      </svg>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setChatOpen(false)}
+                    className="rounded-lg p-1.5 text-apple-text-secondary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
+                    aria-label="Skrýt chat"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                    </svg>
+                  </button>
                 </div>
                 {uploadedContext.trim().length > 0 && (
                   <UploadedContextBar
@@ -335,6 +297,7 @@ function GuideChat() {
                   status={status}
                   chatMode={chatMode}
                   voiceMode={voiceMode}
+                  onVoiceModeChange={setVoiceMode}
                   realtimeConnected={realtimeVoice.state === "connected"}
                   onAttachment={async (file) => {
                     const ok = await uploadFile(file);
@@ -406,7 +369,8 @@ function GuideChat() {
               onSend={handleSend}
               status={status}
               chatMode={chatMode}
-              voiceMode={false}
+              voiceMode={voiceMode}
+              onVoiceModeChange={setVoiceMode}
               realtimeConnected={false}
               onAttachment={async (file) => {
                 const ok = await uploadFile(file);
