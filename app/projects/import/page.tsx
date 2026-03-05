@@ -39,7 +39,13 @@ export default function ImportFromAsanaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ asanaProjectId: gid }),
       });
-      const json = await r.json();
+      const text = await r.text();
+      let json: { error?: string; imported?: number; skipped?: number; errors?: string[] };
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error(r.ok ? "Neplatná odpověď serveru." : `Import selhal (${r.status}).`);
+      }
       if (!r.ok) throw new Error(json.error || "Import selhal.");
       setResult({
         imported: json.imported ?? 0,
