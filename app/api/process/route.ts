@@ -9,6 +9,7 @@ import { logApiError } from "@/lib/api-logger";
 import { logAudit } from "@/lib/audit";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { searchMarket, buildQueryFromTranscript } from "@/lib/tavily";
+import { getAsanaSnapshotForProject } from "@/lib/asana-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -69,8 +70,11 @@ export async function POST(request: NextRequest) {
 
     const ragContext = chunks.map((chunk) => chunk.content);
     const lowKbConfidence = ragContext.length === 0;
-    const projectContextRow = await getOrCreateProjectContext(input.projectId);
-    const lastSession = await getLastSession(input.projectId);
+    const [projectContextRow, lastSession, asanaSnapshot] = await Promise.all([
+      getOrCreateProjectContext(input.projectId),
+      getLastSession(input.projectId),
+      getAsanaSnapshotForProject(input.projectId),
+    ]);
     const changeSignals = detectChangeSignals(lastSession?.ai_output ?? "", input.transcript);
 
     const aiResult = await generateStructuredOutput({
@@ -80,7 +84,8 @@ export async function POST(request: NextRequest) {
       projectContext: projectContextRow.accumulated_context,
       ragContext: [...changeSignals, ...ragContext],
       marketInsight: marketInsight || undefined,
-      contextNote: input.contextNote || undefined
+      contextNote: input.contextNote || undefined,
+      asanaContext: asanaSnapshot ?? undefined,
     });
 
     const { data: insertedSession, error: sessionError } = await db

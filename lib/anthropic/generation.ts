@@ -11,6 +11,7 @@ export async function generateStructuredOutput(input: {
   marketInsight?: string;
   contextNote?: string;
   uploadedContext?: string;
+  asanaContext?: string;
 }) {
   if (!anthropic) {
     return {
@@ -36,6 +37,9 @@ export async function generateStructuredOutput(input: {
   }
   if (input.projectContext?.trim()) {
     parts.push(`**Projektový kontext (z předchozích schůzek):**\n${input.projectContext}`);
+  }
+  if (input.asanaContext?.trim()) {
+    parts.push(`**Aktuální stav v Asaně (týdenní snapshot):**\n${input.asanaContext}`);
   }
   if (input.ragContext.length > 0) {
     parts.push(
@@ -89,6 +93,7 @@ export async function generateRefinement(input: {
   phase: string;
   framework: string;
   projectContext: string;
+  asanaContext?: string;
 }): Promise<{ content: string }> {
   if (!anthropic) {
     return { content: input.existingOutput };
@@ -113,6 +118,7 @@ Tón: přímý, lidský, analytický – jako zkušený PM kolega.`,
           role: "user",
           content: `Framework: ${input.framework} | Fáze: ${input.phase}
 ${input.projectContext ? `Projektový kontext: ${input.projectContext}\n` : ""}
+${input.asanaContext ? `Aktuální stav v Asaně: ${input.asanaContext}\n` : ""}
 Instrukce k doladění: ${input.refinementPrompt}
 
 Stávající výstup:

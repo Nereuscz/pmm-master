@@ -10,6 +10,7 @@ import { logApiError } from "@/lib/api-logger";
 import { logAudit } from "@/lib/audit";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { searchMarket, buildQueryFromAnswers } from "@/lib/tavily";
+import { getAsanaSnapshotForProject } from "@/lib/asana-sync";
 
 const schema = z.object({
   projectId: z.string().uuid(),
@@ -70,14 +71,15 @@ export async function POST(request: NextRequest) {
     // Zkus získat projektový kontext a KB chunky (neblokující – DB může chybět)
     const db = tryGetDb();
 
-    const [projectContext, kbChunks, marketInsight] = await Promise.all([
+    const [projectContext, kbChunks, marketInsight, asanaSnapshot] = await Promise.all([
       db
         ? getOrCreateProjectContext(input.projectId)
         : Promise.resolve({ accumulated_context: "", project_id: input.projectId, last_updated: null }),
       db
         ? retrieveTopChunks({ projectId: input.projectId, queryText: transcriptFromAnswers, limit: 6 })
         : Promise.resolve([]),
-      searchMarket(marketQuery, input.framework)
+      searchMarket(marketQuery, input.framework),
+      db ? getAsanaSnapshotForProject(input.projectId) : Promise.resolve(null),
     ]);
 
     const generated = await generateStructuredOutput({
@@ -87,7 +89,8 @@ export async function POST(request: NextRequest) {
       projectContext: projectContext.accumulated_context,
       ragContext: kbChunks.map((item) => item.content),
       marketInsight: marketInsight || undefined,
-      uploadedContext: input.uploadedContext
+      uploadedContext: input.uploadedContext,
+      asanaContext: asanaSnapshot ?? undefined,
     });
 
     // ── 3. Ulož session do DB (pokud je k dispozici) ──────────────────────────

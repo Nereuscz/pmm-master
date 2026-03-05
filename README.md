@@ -18,6 +18,7 @@ Webová aplikace pro JIC – zpracování PM transkriptů s AI, RAG nad znalostn
 
 - `POST /api/process` – zpracování transkriptu
 - `POST /api/asana/export` – export do Asany (idempotence)
+- `POST /api/asana/sync` – týdenní sync z Asany (cron, CRON_SECRET)
 - `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/:id`
 - `GET/POST /api/kb/documents`, `POST /api/kb/upload`, `POST /api/kb/url`
 - `POST /api/kb/sync/sharepoint` (simulovaný)
@@ -31,7 +32,7 @@ Webová aplikace pro JIC – zpracování PM transkriptů s AI, RAG nad znalostn
 
 1. `npm install`
 2. Vytvoř `.env.local` podle `.env.example`
-3. Spusť SQL v Supabase: `db/schema.sql`, migrace `001`–`007`
+3. Spusť SQL v Supabase: `db/schema.sql`, migrace `001`–`013`
 4. `npm run dev`
 
 ## Poznámky
@@ -39,3 +40,4 @@ Webová aplikace pro JIC – zpracování PM transkriptů s AI, RAG nad znalostn
 - RAG: pgvector při `OPENAI_API_KEY`; jinak lexikální fallback
 - Rate limiting: 20 req/min (vyžaduje UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
 - Asana: simulovaný export; pro produkci napojit Asana API
+- Asana sync: `POST /api/asana/sync` s `Authorization: Bearer <CRON_SECRET>` nebo `x-cron-secret` – stáhne tasky z propojených projektů pro AI kontext

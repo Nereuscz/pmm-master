@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { generateRefinement } from "@/lib/anthropic";
 import { ensureDb, getOrCreateProjectContext, requireProjectOwnership } from "@/lib/db";
+import { getAsanaSnapshotForProject } from "@/lib/asana-sync";
 import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
 import { logAudit } from "@/lib/audit";
@@ -44,14 +45,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: ownership.message }, { status: 404 });
     }
 
-    const projectContextRow = await getOrCreateProjectContext(input.projectId);
+    const [projectContextRow, asanaSnapshot] = await Promise.all([
+      getOrCreateProjectContext(input.projectId),
+      getAsanaSnapshotForProject(input.projectId),
+    ]);
 
     const refined = await generateRefinement({
       existingOutput: input.existingOutput,
       refinementPrompt: input.refinementPrompt,
       phase: input.phase,
       framework: input.framework,
-      projectContext: projectContextRow.accumulated_context
+      projectContext: projectContextRow.accumulated_context,
+      asanaContext: asanaSnapshot ?? undefined,
     });
 
     // Aktualizuj ai_output v existující session

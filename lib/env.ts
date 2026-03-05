@@ -12,6 +12,7 @@ const envSchema = z.object({
   ASANA_CLIENT_SECRET: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+  CRON_SECRET: z.string().min(1).optional(),
 });
 
 export const env = envSchema.parse({
@@ -26,4 +27,5 @@ export const env = envSchema.parse({
   ASANA_CLIENT_SECRET: process.env.ASANA_CLIENT_SECRET,
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+  CRON_SECRET: process.env.CRON_SECRET,
 });
