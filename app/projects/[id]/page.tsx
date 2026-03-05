@@ -93,9 +93,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       <div className="mb-6 rounded-apple bg-white p-6 shadow-apple">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-[24px] font-semibold tracking-tight text-apple-text-primary">{project.name}</h1>
+            <h1 className="text-title font-semibold tracking-tight text-apple-text-primary">{project.name}</h1>
             <div className="mt-2 flex items-center gap-2.5">
-              <span className="text-[14px] text-apple-text-secondary">{project.framework}</span>
+              <span className="text-body text-apple-text-secondary">{project.framework}</span>
               <span className="text-apple-border-default">·</span>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -105,7 +105,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 {project.phase}
               </span>
               <span className="text-apple-border-default">·</span>
-              <span className="text-[13px] text-apple-text-muted">
+              <span className="text-caption text-apple-text-muted">
                 {new Date(project.created_at).toLocaleDateString("cs-CZ")}
               </span>
             </div>
@@ -113,13 +113,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <div className="flex gap-2">
             <Link
               href={`/guide?projectId=${project.id}&mode=guide`}
-              className="rounded-full border border-apple-border-default bg-white px-4 py-2 text-[14px] font-medium text-apple-text-primary transition-colors hover:bg-apple-bg-page"
+              className="rounded-full border border-apple-border-default bg-white px-4 py-2 text-body font-medium text-apple-text-primary transition-colors hover:bg-apple-bg-page"
             >
               💬 Průvodce
             </Link>
             <Link
               href={`/process?projectId=${project.id}`}
-              className="rounded-full bg-brand-600 px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-700"
+              className="rounded-full bg-brand-600 px-4 py-2 text-body font-medium text-white transition-colors hover:bg-brand-700"
             >
               + Zpracovat transkript
             </Link>

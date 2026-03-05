@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorMessage from "@/components/ErrorMessage";
+import { createProjectSchema } from "@/lib/schemas";
 
 const FRAMEWORK_INFO = {
   Produktový: "Tvorba nebo redesign konkrétní služby / produktu JIC pro klienty.",
@@ -13,24 +14,45 @@ const FRAMEWORK_INFO = {
 export default function NewProjectPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<{ name?: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [framework, setFramework] = useState<"Univerzální" | "Produktový">("Univerzální");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    setFieldError(null);
     const data = new FormData(e.currentTarget);
+    const payload = {
+      name: String(data.get("name") || "").trim(),
+      framework: String(data.get("framework") || ""),
+      phase: String(data.get("phase") || "")
+    };
+
+    const parsed = createProjectSchema.safeParse(payload);
+    if (!parsed.success) {
+      const issues = parsed.error.flatten().fieldErrors;
+      if (issues.name?.[0]) {
+        const msg = issues.name[0];
+        const friendly =
+          msg.includes("at least 3") || msg.includes("3 character")
+            ? "Název musí mít 3–140 znaků."
+            : msg.includes("at most 140") || msg.includes("140 character")
+              ? "Název může mít maximálně 140 znaků."
+              : msg;
+        setFieldError({ name: friendly });
+      } else {
+        setError(parsed.error.errors[0]?.message ?? "Neplatná data.");
+      }
+      return;
+    }
+
+    setLoading(true);
     try {
-      const payload = {
-        name: String(data.get("name") || ""),
-        framework: String(data.get("framework") || ""),
-        phase: String(data.get("phase") || "")
-      };
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(parsed.data)
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Uložení projektu selhalo.");
@@ -46,27 +68,40 @@ export default function NewProjectPage() {
     <main className="mx-auto max-w-xl px-8 py-10">
       <div className="mb-6">
         <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Nový projekt" }]} />
-        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Nový projekt</h1>
-        <p className="mt-1 text-[15px] text-[#6e6e73]">Vyplň základní informace o projektu.</p>
+        <h1 className="mt-2 text-title font-semibold tracking-tight text-apple-text-primary">Nový projekt</h1>
+        <p className="mt-1 text-body text-apple-text-secondary">Vyplň základní informace o projektu.</p>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6 rounded-apple bg-white p-8 shadow-apple">
         {/* Název */}
         <div>
-          <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
+          <label htmlFor="project-name" className="mb-2 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">
             Název projektu
           </label>
           <input
+            id="project-name"
             name="name"
             required
-            className="w-full rounded-xl border border-[#d2d2d7] px-4 py-2.5 text-[15px] text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+            minLength={3}
+            maxLength={140}
+            aria-invalid={!!fieldError?.name}
+            aria-describedby={fieldError?.name ? "project-name-error" : undefined}
+            className={`w-full rounded-xl border px-4 py-2.5 text-body text-apple-text-primary placeholder:text-apple-text-muted focus:outline-none focus:ring-2 focus:ring-brand-600/20 ${
+              fieldError?.name ? "border-[#ff3b30] focus:border-[#ff3b30]" : "border-apple-border-default focus:border-brand-600"
+            }`}
             placeholder="Např. Scale-up program 2026"
+            onChange={() => fieldError && setFieldError(null)}
           />
+          {fieldError?.name ? (
+            <p id="project-name-error" className="mt-1.5 text-caption text-[#c0392b]" role="alert">
+              {fieldError.name}
+            </p>
+          ) : null}
         </div>
 
         {/* Framework */}
         <div>
-          <label className="mb-3 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
+          <label className="mb-3 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">
             Typ frameworku
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -76,7 +111,7 @@ export default function NewProjectPage() {
                 className={`relative cursor-pointer rounded-2xl border-2 p-4 transition-all ${
                   framework === fw
                     ? "border-brand-600 bg-brand-50"
-                    : "border-[#e8e8ed] bg-[#f9f9f9] hover:border-[#d2d2d7]"
+                    : "border-apple-border-light bg-apple-bg-subtle hover:border-apple-border-default"
                 }`}
               >
                 <input
@@ -94,8 +129,8 @@ export default function NewProjectPage() {
                     </svg>
                   </span>
                 )}
-                <p className="text-[15px] font-semibold text-[#1d1d1f]">{fw}</p>
-                <p className="mt-1 text-[13px] leading-snug text-[#6e6e73]">{FRAMEWORK_INFO[fw]}</p>
+                <p className="text-body font-semibold text-apple-text-primary">{fw}</p>
+                <p className="mt-1 text-caption leading-snug text-apple-text-secondary">{FRAMEWORK_INFO[fw]}</p>
               </label>
             ))}
           </div>
@@ -103,12 +138,12 @@ export default function NewProjectPage() {
 
         {/* Fáze */}
         <div>
-          <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-[#86868b]">
+          <label className="mb-2 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">
             Počáteční fáze
           </label>
           <select
             name="phase"
-            className="w-full rounded-xl border border-[#d2d2d7] bg-white px-4 py-2.5 text-[15px] text-[#1d1d1f] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+            className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-body text-apple-text-primary focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
           >
             {["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"].map((p) => (
               <option key={p}>{p}</option>
@@ -117,13 +152,14 @@ export default function NewProjectPage() {
         </div>
 
         {error ? (
-          <ErrorMessage message={error} />
+          <ErrorMessage id="new-project-error" message={error} />
         ) : null}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-brand-600 py-3 text-[15px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+          aria-describedby={error ? "new-project-error" : undefined}
+          className="w-full rounded-full bg-brand-600 py-3 text-body font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
         >
           {loading ? "Vytvářím..." : "Vytvořit projekt"}
         </button>

@@ -13,6 +13,13 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen bg-apple-bg-page">
+      {/* Skip to content – viditelné při focusu pro klávesnicovou navigaci */}
+      <a
+        href="#main-content"
+        className="absolute -top-12 left-4 z-[100] rounded-lg bg-brand-600 px-4 py-2 text-body font-medium text-white transition-[top] duration-200 focus:top-4 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+      >
+        Přeskočit na obsah
+      </a>
       {showSidebar && (
         <>
           {/* Mobile header s hamburgerem – glassmorphism */}
@@ -44,7 +51,10 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         </>
       )}
       <main
+        id="main-content"
+        tabIndex={-1}
         className={`flex-1 min-h-screen ${showSidebar ? "md:ml-60" : ""} ${showSidebar ? "pt-14 md:pt-0" : ""}`}
+        aria-label="Hlavní obsah"
       >
         {children}
       </main>

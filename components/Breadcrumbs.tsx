@@ -7,7 +7,7 @@ type Props = { items: Crumb[] };
 export default function Breadcrumbs({ items }: Props) {
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
-      <ol className="flex flex-wrap items-center gap-1.5 text-[14px]">
+      <ol className="flex flex-wrap items-center gap-1.5 text-body">
         {items.map((item, i) => (
           <li key={i} className="flex items-center gap-1.5">
             {i > 0 ? (
