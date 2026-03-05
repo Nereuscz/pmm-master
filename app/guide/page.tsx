@@ -86,7 +86,7 @@ function GuideChat() {
   });
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
-  const showLiveCanvas = started && chatMode === "guide";
+  const showLiveCanvas = false; // Canvas skrytý – vždy jen chat
   const [chatOpen, setChatOpen] = useState(true);
 
   const { speakText } = useTTS(voiceMode);
@@ -335,9 +335,9 @@ function GuideChat() {
           </div>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple">
+        <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple overflow-hidden">
           {uploadedContext.trim().length > 0 && (
-            <div className="shrink-0 border-b border-apple-bg-subtle px-5 py-2">
+            <div className="shrink-0 border-b border-apple-border-light px-5 py-3">
               <UploadedContextBar
                 charCount={uploadedContext.length}
                 onPrefill={prefillFromUploadedContext}
@@ -347,7 +347,7 @@ function GuideChat() {
               />
             </div>
           )}
-          <div className="flex-1 space-y-4 overflow-y-auto p-6" role="log" aria-live="polite" aria-label="Zprávy chatu">
+          <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6" role="log" aria-live="polite" aria-label="Zprávy chatu">
             {messages.map((msg) => (
               <ChatMessage
                 key={msg.id}
@@ -361,7 +361,7 @@ function GuideChat() {
             ))}
             <div ref={bottomRef} />
           </div>
-          <div className="shrink-0 border-t border-apple-bg-subtle bg-apple-bg-subtle px-5 py-4">
+          <div className="shrink-0 border-t border-apple-border-light bg-white px-6 py-4">
             <ChatInput
               inputRef={inputRef}
               inputValue={inputValue}

@@ -71,14 +71,14 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
       : "Napiš zprávu… (Enter = odeslat)";
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       {voiceError && (
-        <p className="text-[12px] text-red-600">{voiceError}</p>
+        <p className="text-caption text-red-600">{voiceError}</p>
       )}
       <div
         onDrop={handleFileDrop}
         onDragOver={handleDragOver}
-        className="flex items-end gap-2 rounded-2xl border border-[#e8e8ed] bg-white p-1.5 shadow-sm transition-colors focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-500/10"
+        className="flex items-end gap-3 rounded-2xl border border-apple-border-default bg-apple-bg-subtle px-3 py-2.5 shadow-apple-sm transition-colors focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-500/20"
       >
       {onAttachment && (
         <>
@@ -99,11 +99,11 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={!isActive}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-apple-text-tertiary transition-colors hover:bg-apple-bg-subtle hover:text-apple-text-primary disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-apple-text-tertiary transition-colors hover:bg-white hover:text-brand-600 disabled:opacity-40"
             title="Přidat soubor (PDF, audio, dokument)"
             aria-label="Přidat přílohu"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-[18px] w-[18px]">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
               <path d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501-.002.002a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-4.5 4.5a2.25 2.25 0 01-3.182-3.18l.001-.001 4.5-4.5a.75.75 0 111.061 1.06l-4.5 4.5a.75.75 0 001.061 1.06l4.5-4.5a3 3 0 000-4.242z" />
             </svg>
           </button>
@@ -113,10 +113,10 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
         <button
           type="button"
           onClick={() => onVoiceModeChange(!voiceMode)}
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 ${
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 ${
             voiceMode
               ? "bg-brand-100 text-brand-700"
-              : "text-apple-text-tertiary hover:bg-apple-bg-subtle hover:text-apple-text-primary"
+              : "text-apple-text-tertiary hover:bg-white hover:text-brand-600"
           }`}
           title={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
           aria-label={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
@@ -133,7 +133,7 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
           type="button"
           onClick={isRecording ? stopRecording : startRecording}
           disabled={isTranscribing}
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 ${
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 ${
             isRecording
               ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
               : isTranscribing
@@ -170,16 +170,16 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
         rows={chatMode === "guide" && status === "awaiting_answer" ? 3 : 2}
         disabled={!isActive}
         placeholder={placeholder}
-        className="min-w-0 flex-1 resize-none rounded-xl border-0 bg-transparent px-3 py-2.5 text-[14px] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-0 disabled:opacity-40"
+        className="min-w-0 flex-1 resize-none rounded-xl border-0 bg-transparent px-3 py-2.5 text-body placeholder:text-apple-text-muted focus:outline-none focus:ring-0 disabled:opacity-40"
       />
       <button
         onClick={onSend}
         disabled={!canSend}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white transition-colors hover:bg-brand-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white transition-colors hover:bg-brand-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2"
         title="Odeslat (Enter)"
         aria-label="Odeslat zprávu"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-[18px] w-[18px]">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
           <path d="M3.105 2.289a.75.75 0 00-.826.95l1.414 4.925A1.5 1.5 0 005.135 9.25h6.115a.75.75 0 010 1.5H5.135a1.5 1.5 0 00-1.442 1.086l-1.414 4.926a.75.75 0 00.826.95 28.896 28.896 0 0015.293-7.154.75.75 0 000-1.115A28.897 28.897 0 003.105 2.289z" />
         </svg>
       </button>
