@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, Suspense } from "react";
+import { useMemo, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { getQuestionsForPhase } from "@/lib/guide";
@@ -48,6 +48,7 @@ function GuideChat() {
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
   const showLiveCanvas = started && chatMode === "guide";
+  const [chatOpen, setChatOpen] = useState(true);
 
   // Canvas data – odvozeno z answers a otázek pro aktuální fázi
   const canvasSections = useMemo(
@@ -74,7 +75,7 @@ function GuideChat() {
 
   return (
     <main
-      className={`mx-auto flex flex-col px-6 py-10 ${showLiveCanvas ? "max-w-6xl" : "max-w-3xl"}`}
+      className={`mx-auto flex flex-col ${showLiveCanvas ? "max-w-full px-4 py-6 lg:px-6" : "max-w-3xl px-6 py-10"}`}
       style={{ height: "100dvh" }}
     >
       {/* Nadpis – jen když chat není spuštěn */}
@@ -170,36 +171,70 @@ function GuideChat() {
         />
       ) : null}
 
-      {/* Chat plocha – s live canvasem v dvoupanelovém layoutu nebo samostatně */}
+      {/* Integrovaný layout: canvas hlavní, chat jako skládací sidebar */}
       {showLiveCanvas ? (
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr]">
-          <div className="flex min-h-0 flex-col rounded-apple bg-white shadow-apple">
-            <div className="flex-1 space-y-4 overflow-y-auto p-6">
-              {messages.map((msg) => (
-                <ChatMessage
-                  key={msg.id}
-                  msg={msg}
-                  selectedProject={selectedProject}
-                  onFollowUpAnswerChange={updateFollowUpAnswer}
-                  onFollowUpContinue={handleFollowUpContinue}
-                  onStartGuide={startFresh}
-                  onEditAnswer={editAnswerFromChat}
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
+          {/* Chat sidebar – skládací panel vlevo */}
+          <aside
+            className={`flex shrink-0 flex-col border-r border-[#e8e8ed] bg-white shadow-apple transition-all duration-300 ease-out ${
+              chatOpen ? "w-[340px] lg:w-[380px]" : "w-0 overflow-hidden"
+            }`}
+          >
+            <div className="flex h-full min-w-[340px] flex-col lg:min-w-[380px]">
+              <div className="flex shrink-0 items-center justify-between border-b border-[#f2f2f7] px-4 py-2.5">
+                <span className="text-[13px] font-semibold text-[#1d1d1f]">💬 Chat</span>
+                <button
+                  type="button"
+                  onClick={() => setChatOpen(false)}
+                  className="rounded-lg p-1.5 text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                  aria-label="Skrýt chat"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex-1 space-y-4 overflow-y-auto p-4">
+                {messages.map((msg) => (
+                  <ChatMessage
+                    key={msg.id}
+                    msg={msg}
+                    selectedProject={selectedProject}
+                    onFollowUpAnswerChange={updateFollowUpAnswer}
+                    onFollowUpContinue={handleFollowUpContinue}
+                    onStartGuide={startFresh}
+                    onEditAnswer={editAnswerFromChat}
+                  />
+                ))}
+                <div ref={bottomRef} />
+              </div>
+              <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-4 py-3">
+                <ChatInput
+                  inputRef={inputRef}
+                  inputValue={inputValue}
+                  setInputValue={setInputValue}
+                  onSend={handleSend}
+                  status={status}
+                  chatMode={chatMode}
                 />
-              ))}
-              <div ref={bottomRef} />
+              </div>
             </div>
-            <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-5 py-4">
-              <ChatInput
-                inputRef={inputRef}
-                inputValue={inputValue}
-                setInputValue={setInputValue}
-                onSend={handleSend}
-                status={status}
-                chatMode={chatMode}
-              />
-            </div>
-          </div>
-          <div className="min-h-[320px] lg:min-h-0">
+          </aside>
+
+          {/* Hlavní obsah – canvas */}
+          <div className="relative flex min-w-0 flex-1 flex-col">
+            {/* Tlačítko pro otevření chatu, když je zavřený */}
+            {!chatOpen && (
+              <button
+                type="button"
+                onClick={() => setChatOpen(true)}
+                className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-xl border border-[#e8e8ed] bg-white px-4 py-2.5 text-[13px] font-medium text-[#1d1d1f] shadow-apple transition-shadow hover:shadow-apple-lg"
+                aria-label="Otevřít chat"
+              >
+                <span>💬</span>
+                Chat
+              </button>
+            )}
             <LiveCanvas
               sections={canvasSections}
               questions={canvasQuestions}
