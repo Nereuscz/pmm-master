@@ -23,11 +23,22 @@ type SyncLog = {
   synced_at: string;
 };
 
+type AsanaSyncLog = {
+  id: string;
+  project_id: string;
+  project_name: string | null;
+  status: string;
+  error_message: string | null;
+  duration_ms: number | null;
+  synced_at: string;
+};
+
 type UploadMode = "text" | "file" | "url";
 
 export default function KnowledgeBasePage() {
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [logs, setLogs] = useState<SyncLog[]>([]);
+  const [asanaLogs, setAsanaLogs] = useState<AsanaSyncLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -49,11 +60,20 @@ export default function KnowledgeBasePage() {
   });
 
   async function reload() {
-    const [docsRes, logsRes] = await Promise.all([fetch("/api/kb/documents"), fetch("/api/kb/sync/logs")]);
-    const [docsJson, logsJson] = await Promise.all([docsRes.json(), logsRes.json()]);
+    const [docsRes, logsRes, asanaLogsRes] = await Promise.all([
+      fetch("/api/kb/documents"),
+      fetch("/api/kb/sync/logs"),
+      fetch("/api/asana/sync/logs"),
+    ]);
+    const [docsJson, logsJson, asanaLogsJson] = await Promise.all([
+      docsRes.json(),
+      logsRes.json(),
+      asanaLogsRes.json(),
+    ]);
     if (!docsRes.ok) throw new Error(docsJson.error || "Nepodařilo se načíst dokumenty.");
     setDocuments(docsJson.documents ?? []);
     setLogs(logsJson.logs ?? []);
+    setAsanaLogs(asanaLogsRes.ok ? (asanaLogsJson.logs ?? []) : []);
   }
 
   useEffect(() => {
@@ -476,18 +496,48 @@ export default function KnowledgeBasePage() {
         {/* Sync log */}
         <section className="rounded-apple bg-white p-6 shadow-apple">
           <p className="mb-4 text-footnote font-semibold uppercase tracking-widest text-apple-text-tertiary">Sync log</p>
-          <div className="divide-y divide-apple-bg-subtle">
-            {logs.map((log) => (
-              <div key={log.id} className="py-3">
-                <p className="text-body font-medium text-apple-text-primary">{log.status}</p>
-                <p className="mt-0.5 font-mono text-caption text-apple-text-secondary">
-                  {log.source_path} · změny: {log.changes_detected}
-                </p>
+          <div className="space-y-6">
+            {/* SharePoint sync */}
+            <div>
+              <p className="mb-2 text-caption font-medium text-apple-text-secondary">SharePoint</p>
+              <div className="divide-y divide-apple-bg-subtle">
+                {logs.map((log) => (
+                  <div key={log.id} className="py-3">
+                    <p className="text-body font-medium text-apple-text-primary">{log.status}</p>
+                    <p className="mt-0.5 font-mono text-caption text-apple-text-secondary">
+                      {log.source_path} · změny: {log.changes_detected}
+                    </p>
+                  </div>
+                ))}
+                {logs.length === 0 ? (
+                  <p className="py-3 text-caption text-apple-text-muted">Žádné synchronizace.</p>
+                ) : null}
               </div>
-            ))}
-            {logs.length === 0 ? (
-              <p className="py-4 text-body text-apple-text-muted">Žádné synchronizace.</p>
-            ) : null}
+            </div>
+            {/* Asana import (cron) */}
+            <div>
+              <p className="mb-2 text-caption font-medium text-apple-text-secondary">Asana import</p>
+              <p className="mb-2 text-footnote text-apple-text-tertiary">
+                Týdenní snapshot tasků z propojených projektů (cron job).
+              </p>
+              <div className="divide-y divide-apple-bg-subtle">
+                {asanaLogs.map((log) => (
+                  <div key={log.id} className="py-3">
+                    <p className="text-body font-medium text-apple-text-primary">
+                      {log.project_name ?? log.project_id} · {log.status === "success" ? "OK" : "Chyba"}
+                    </p>
+                    <p className="mt-0.5 font-mono text-caption text-apple-text-secondary">
+                      {new Date(log.synced_at).toLocaleString("cs-CZ")}
+                      {log.duration_ms != null ? ` · ${log.duration_ms} ms` : ""}
+                      {log.error_message ? ` · ${log.error_message}` : ""}
+                    </p>
+                  </div>
+                ))}
+                {asanaLogs.length === 0 ? (
+                  <p className="py-3 text-caption text-apple-text-muted">Žádné Asana importy.</p>
+                ) : null}
+              </div>
+            </div>
           </div>
         </section>
       </div>
