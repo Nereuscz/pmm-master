@@ -19,9 +19,10 @@ const schema = z.object({
     z.object({
       questionId: z.string().min(1),
       question: z.string().min(1),
-      answer: z.string().min(1)
+      answer: z.string()
     })
-  )
+  ),
+  uploadedContext: z.string().optional()
 });
 
 export const dynamic = "force-dynamic";
@@ -85,7 +86,8 @@ export async function POST(request: NextRequest) {
       transcript: transcriptFromAnswers,
       projectContext: projectContext.accumulated_context,
       ragContext: kbChunks.map((item) => item.content),
-      marketInsight: marketInsight || undefined
+      marketInsight: marketInsight || undefined,
+      uploadedContext: input.uploadedContext
     });
 
     // ── 3. Ulož session do DB (pokud je k dispozici) ──────────────────────────

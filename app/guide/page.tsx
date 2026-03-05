@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, Suspense, useState } from "react";
+import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { getQuestionsForPhase } from "@/lib/guide";
@@ -9,6 +10,7 @@ import { ResumeModal } from "./components/ResumeModal";
 import { ChatMessage } from "./components/ChatMessage";
 import { ChatInput } from "./components/ChatInput";
 import { LiveCanvas } from "./components/LiveCanvas";
+import { UploadZone } from "./components/UploadZone";
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
@@ -43,7 +45,12 @@ function GuideChat() {
     updateFollowUpAnswer,
     updateCanvasAnswer,
     editAnswerFromChat,
-    deleteDraft
+    deleteDraft,
+    uploadedContext,
+    addUploadedContext,
+    clearUploadedContext,
+    uploadFile,
+    prefillFromUploadedContext
   } = useGuideChat(projectIdParam, modeParam);
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
@@ -181,9 +188,10 @@ function GuideChat() {
             }`}
           >
             <div className="flex h-full min-w-[340px] flex-col lg:min-w-[380px]">
-              <div className="flex shrink-0 items-center justify-between border-b border-[#f2f2f7] px-4 py-2.5">
-                <span className="text-[13px] font-semibold text-[#1d1d1f]">💬 Chat</span>
-                <button
+              <div className="flex shrink-0 flex-col gap-2 border-b border-[#f2f2f7] px-4 py-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-semibold text-[#1d1d1f]">💬 Chat</span>
+                  <button
                   type="button"
                   onClick={() => setChatOpen(false)}
                   className="rounded-lg p-1.5 text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
@@ -193,6 +201,15 @@ function GuideChat() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                   </svg>
                 </button>
+                </div>
+                <UploadZone
+                  uploadedContext={uploadedContext}
+                  onAddContext={addUploadedContext}
+                  onClearContext={clearUploadedContext}
+                  onPrefill={prefillFromUploadedContext}
+                  isPrefilling={status === "loading_q"}
+                  disabled={status === "loading_q" || status === "loading_fu" || status === "loading_clarify"}
+                />
               </div>
               <div className="flex-1 space-y-4 overflow-y-auto p-4">
                 {messages.map((msg) => (
@@ -216,6 +233,10 @@ function GuideChat() {
                   onSend={handleSend}
                   status={status}
                   chatMode={chatMode}
+                  onAttachment={async (file) => {
+                    const ok = await uploadFile(file);
+                    if (ok) toast.success("Příloha přidána – použije se jako kontext pro AI.");
+                  }}
                 />
               </div>
             </div>
@@ -242,6 +263,7 @@ function GuideChat() {
               framework={framework}
               projectName={selectedProject?.name}
               projectId={selectedProject?.id}
+              uploadedContext={uploadedContext}
               onSectionChange={updateCanvasAnswer}
             />
           </div>

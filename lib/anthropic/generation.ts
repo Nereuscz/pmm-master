@@ -10,6 +10,7 @@ export async function generateStructuredOutput(input: {
   ragContext: string[];
   marketInsight?: string;
   contextNote?: string;
+  uploadedContext?: string;
 }) {
   if (!anthropic) {
     return {
@@ -29,6 +30,9 @@ export async function generateStructuredOutput(input: {
 
   if (input.contextNote?.trim()) {
     parts.push(`**Poznámka průvodce k záznamu:** ${input.contextNote.trim()}`);
+  }
+  if (input.uploadedContext?.trim()) {
+    parts.push(`**Dodatečný kontext z nahraných souborů (nahrávky, přílohy):**\n${input.uploadedContext.slice(0, 30000)}`);
   }
   if (input.projectContext?.trim()) {
     parts.push(`**Projektový kontext (z předchozích schůzek):**\n${input.projectContext}`);

@@ -12,6 +12,7 @@ const upsertSchema = z.object({
   framework: z.enum(["Univerzální", "Produktový"]),
   answers: z.array(z.any()),
   messages: z.array(z.any()),
+  uploadedContext: z.string().optional(),
 });
 
 const deleteSchema = z.object({
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
   const db = ensureDb();
   const { data } = await db
     .from("guide_drafts")
-    .select("id, answers, messages, updated_at")
+    .select("id, answers, messages, uploaded_context, updated_at")
     .eq("project_id", projectId)
     .eq("phase", phase)
     .eq("framework", framework)
@@ -59,7 +60,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Neplatný vstup.", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { projectId, phase, framework, answers, messages } = parsed.data;
+  const { projectId, phase, framework, answers, messages, uploadedContext } = parsed.data;
   const db = ensureDb();
 
   try {
@@ -71,6 +72,7 @@ export async function PUT(request: NextRequest) {
         owner_id: user.id,
         answers,
         messages,
+        uploaded_context: uploadedContext ?? "",
         updated_at: new Date().toISOString(),
       },
       { onConflict: "project_id,phase,framework,owner_id" }

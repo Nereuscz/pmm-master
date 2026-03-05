@@ -281,13 +281,14 @@ export async function elaborateCanvasSection(input: {
   selectedText?: string;
   userPrompt?: string;
   projectContext?: string;
+  uploadedContext?: string;
   framework: string;
   phase: string;
 }): Promise<{ content: string }> {
   if (!anthropic) return { content: input.selectedText ? input.selectedText : input.currentContent };
   const client = anthropic;
 
-  const hasSelection = input.selectedText?.trim().length > 0;
+  const hasSelection = (input.selectedText?.trim() ?? "").length > 0;
   const prompt =
     input.userPrompt?.trim() ||
     (hasSelection
@@ -302,10 +303,15 @@ Tvůj úkol: Na základě vybraného textu a kontextu vygeneruj POUZE náhradu z
 
 Tvůj úkol: Na základě aktuálního obsahu a uživatelova požadavku vygeneruj vylepšenou verzi textu. Zachovej tón a strukturu, rozšiř o relevantní detaily, upřesni formulace. Piš v češtině. Vrať POUZE výsledný text – žádné úvody, žádné vysvětlení.`;
 
-  const userContent = hasSelection
-    ? `Framework: ${input.framework} | Fáze: ${input.phase}${input.projectContext ? `\nKontext projektu: ${input.projectContext}` : ""}
+  const contextParts: string[] = [];
+  if (input.projectContext?.trim()) contextParts.push(`Kontext projektu: ${input.projectContext}`);
+  if (input.uploadedContext?.trim()) contextParts.push(`Dodatečný kontext z nahraných souborů:\n${input.uploadedContext.slice(0, 15000)}`);
+  const contextBlock = contextParts.length > 0 ? contextParts.join("\n\n") + "\n\n" : "";
 
-Otázka: ${input.questionName} – ${input.questionHint}
+  const userContent = hasSelection
+    ? `Framework: ${input.framework} | Fáze: ${input.phase}
+
+${contextBlock}Otázka: ${input.questionName} – ${input.questionHint}
 
 Celý obsah sekce (pro kontext):
 ${input.currentContent}
@@ -316,9 +322,9 @@ Vybraná část k úpravě:
 Uživatelův požadavek: ${prompt}
 
 Vygeneruj POUZE náhradu za vybranou část (ne celou sekci):`
-    : `Framework: ${input.framework} | Fáze: ${input.phase}${input.projectContext ? `\nKontext projektu: ${input.projectContext}` : ""}
+    : `Framework: ${input.framework} | Fáze: ${input.phase}
 
-Otázka: ${input.questionName} – ${input.questionHint}
+${contextBlock}Otázka: ${input.questionName} – ${input.questionHint}
 
 Aktuální obsah sekce:
 ${input.currentContent}
@@ -345,4 +351,66 @@ Vygeneruj vylepšený text sekce:`;
   return {
     content: text || (hasSelection ? input.selectedText! : input.currentContent)
   };
+}
+
+export type ExtractedAnswer = { questionId: string; answer: string };
+
+export async function extractAnswersFromContext(input: {
+  transcript: string;
+  questions: { id: string; text: string; hint: string }[];
+  phase: string;
+  framework: string;
+}): Promise<{ answers: ExtractedAnswer[] }> {
+  if (!anthropic) return { answers: [] };
+  const client = anthropic;
+
+  const questionsBlock = input.questions
+    .map((q) => `- ${q.id}: ${q.text} (${q.hint})`)
+    .join("\n");
+
+  const response = await withRetry(() =>
+    client.messages.create({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 2048,
+      system: `Jsi PM asistent pro JIC. Dostaneš text z nahrané nahrávky nebo přílohy (transkript schůzky, dokument) a seznam PM otázek.
+
+Tvůj úkol: Pro každou otázku vyhledej v kontextu relevantní informace a vygeneruj stručnou odpověď. Pokud v kontextu není nic relevantního, vrať prázdný string pro danou otázku.
+
+Formát výstupu: POUZE validní JSON objekt, kde klíče jsou questionId (např. q_0, q_1) a hodnoty jsou odpovědi. Příklad:
+{"q_0": "Odpověď na první otázku.", "q_1": "", "q_2": "Další odpověď."}
+
+Žádný jiný text, žádné úvody.`,
+      messages: [
+        {
+          role: "user",
+          content: `Framework: ${input.framework} | Fáze: ${input.phase}
+
+Otázky (id, text, hint):
+${questionsBlock}
+
+Kontext z nahraného souboru:
+${input.transcript.slice(0, 80000)}
+
+Vrať JSON s odpověďmi pro každou otázku:`
+        }
+      ]
+    })
+  );
+
+  const raw = response.content
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("")
+    .trim();
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    const answers: ExtractedAnswer[] = input.questions.map((q) => ({
+      questionId: q.id,
+      answer: typeof parsed[q.id] === "string" ? String(parsed[q.id]).trim() : ""
+    }));
+    return { answers };
+  } catch {
+    return { answers: [] };
+  }
 }

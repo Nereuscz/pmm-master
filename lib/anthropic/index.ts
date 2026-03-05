@@ -8,5 +8,6 @@ export {
   generateClarification,
   parsePromptForExtendedCanvas,
   generateFollowUpsForCanvas,
-  elaborateCanvasSection
+  elaborateCanvasSection,
+  extractAnswersFromContext
 } from "./interactions";

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { RefObject } from "react";
 import type { Status, ChatMode } from "../types";
 
@@ -8,9 +9,11 @@ type Props = {
   onSend: () => void;
   status: Status;
   chatMode: ChatMode;
+  onAttachment?: (file: File) => Promise<void>;
 };
 
-export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status, chatMode }: Props) {
+export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status, chatMode, onAttachment }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading =
     chatMode === "routing" ||
     chatMode === "canvas" ||
@@ -40,6 +43,35 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
 
   return (
     <div className="flex items-end gap-3">
+      {onAttachment && (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.doc,.txt,.md,.mp3,.wav,.m4a,.webm,.mp4,.mpeg,.ogg,audio/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                await onAttachment(file);
+                e.target.value = "";
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!isActive}
+            className="mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#e8e8ed] bg-white text-[#6e6e73] transition-colors hover:bg-[#f2f2f7] hover:text-[#1d1d1f] disabled:opacity-40"
+            title="Přidat přílohu"
+            aria-label="Přidat přílohu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+              <path d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501-.002.002a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-4.5 4.5a2.25 2.25 0 01-3.182-3.18l.001-.001 4.5-4.5a.75.75 0 111.061 1.06l-4.5 4.5a.75.75 0 001.061 1.06l4.5-4.5a3 3 0 000-4.242z" />
+            </svg>
+          </button>
+        </>
+      )}
       <textarea
         ref={inputRef}
         value={inputValue}

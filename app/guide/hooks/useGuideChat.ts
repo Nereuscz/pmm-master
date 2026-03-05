@@ -31,6 +31,9 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
   // Draft state
   const [pendingDraft, setPendingDraft] = useState<GuideDraft | null>(null);
 
+  // Nahraný kontext (transkripty, přílohy) – pro předvyplnění a AI kontext
+  const [uploadedContext, setUploadedContext] = useState("");
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const autoStartedRef = useRef(false);
@@ -103,7 +106,11 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
 
   // ── Draft ─────────────────────────────────────────────────────────────────
 
-  function saveDraft(currentAnswers: Answer[], currentMessages: ChatMsg[]) {
+  function saveDraft(
+    currentAnswers: Answer[],
+    currentMessages: ChatMsg[],
+    currentUploadedContext?: string
+  ) {
     if (!selectedProject) return;
     fetch("/api/guide/draft", {
       method: "PUT",
@@ -113,7 +120,8 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
         phase,
         framework,
         answers: currentAnswers,
-        messages: currentMessages
+        messages: currentMessages,
+        uploadedContext: currentUploadedContext ?? uploadedContext
       })
     }).catch(() => undefined);
   }
@@ -125,6 +133,85 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId: selectedProject.id, phase, framework })
     }).catch(() => undefined);
+  }
+
+  // ── Nahraný kontext (nahrávky, přílohy) ───────────────────────────────────
+
+  function addUploadedContext(text: string) {
+    const maxLen = 100_000;
+    setUploadedContext((prev) => {
+      const next = prev ? `${prev}\n\n---\n\n${text}` : text;
+      return next.length > maxLen ? next.slice(0, maxLen) : next;
+    });
+  }
+
+  function clearUploadedContext() {
+    setUploadedContext("");
+  }
+
+  async function uploadFile(file: File): Promise<boolean> {
+    const ext = file.name.toLowerCase().split(".").pop() ?? "";
+    const isAudio = ["mp3", "wav", "m4a", "webm", "mp4", "mpeg", "ogg"].includes(ext);
+    const isDoc = ["pdf", "docx", "doc", "txt", "md"].includes(ext);
+    if (!isAudio && !isDoc) return false;
+
+    const fd = new FormData();
+    fd.append("file", file);
+    const url = isAudio ? "/api/guide/transcribe" : "/api/guide/parse-attachment";
+    const r = await fetch(url, { method: "POST", body: fd });
+    const json = await r.json();
+    if (!r.ok || !json.text) return false;
+    addUploadedContext(json.text);
+    return true;
+  }
+
+  async function prefillFromUploadedContext() {
+    if (!uploadedContext.trim() || !selectedProject) return;
+    const questions = (await import("@/lib/guide")).getQuestionsForPhase(phase, framework);
+    if (questions.length === 0) return;
+
+    setStatus("loading_q");
+    push({ id: uid(), role: "ai", kind: "thinking", text: "Předvyplňuji canvas z nahraného obsahu…" });
+
+    try {
+      const r = await fetch("/api/guide/extract-answers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript: uploadedContext,
+          questions: questions.map((q) => ({ id: q.id, text: q.text, hint: q.hint })),
+          phase,
+          framework
+        })
+      });
+      const json = await r.json();
+      removeThinking();
+
+      if (!r.ok) throw new Error(json.error || "Chyba extrakce");
+      const extracted = (json.answers ?? []) as { questionId: string; answer: string }[];
+
+      setAnswers((prev) => {
+        const extractedMap = new Map(extracted.map((e) => [e.questionId, e.answer]));
+        const prevMap = new Map(prev.map((a) => [a.questionId, a]));
+        const next = questions.map((q) => {
+          const existing = prevMap.get(q.id);
+          const extractedAnswer = extractedMap.get(q.id) ?? "";
+          const answer =
+            existing?.answer?.trim() ? existing.answer : (extractedAnswer.trim() || "");
+          return { questionId: q.id, question: q.text, answer };
+        });
+        saveDraft(next, messages, uploadedContext);
+        return next;
+      });
+    } catch (e) {
+      removeThinking();
+      push({
+        id: uid(),
+        role: "ai",
+        kind: "error",
+        text: e instanceof Error ? e.message : "Nepodařilo se předvyplnit canvas."
+      });
+    }
   }
 
   // ── Načtení další otázky nebo finálního výstupu ───────────────────────────
@@ -142,7 +229,8 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
           projectId: selectedProject.id,
           phase,
           framework,
-          answers: currentAnswers
+          answers: currentAnswers,
+          uploadedContext: uploadedContext || undefined
         })
       });
       const json = await r.json();
@@ -331,6 +419,7 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     setChatMode("guide");
     setStarted(true);
     setAnswers([]);
+    setUploadedContext("");
     setCurrentQ(null);
     setPendingMain(null);
     setInputValue("");
@@ -346,6 +435,7 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     setStarted(true);
     setMessages(draft.messages);
     setAnswers(draft.answers);
+    setUploadedContext(draft.uploaded_context ?? "");
     setCurrentQ(null);
     setPendingMain(null);
     setInputValue("");
@@ -472,7 +562,11 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
       .join(" ");
 
     const combined = fuLines ? `${mainAnswer} ${fuLines}` : mainAnswer;
-    const next: Answer[] = [...answers, { questionId: q.id, question: q.text, answer: combined }];
+    const existingIdx = answers.findIndex((a) => a.questionId === q.id);
+    const next: Answer[] =
+      existingIdx >= 0
+        ? answers.map((a, i) => (i === existingIdx ? { ...a, answer: combined } : a))
+        : [...answers, { questionId: q.id, question: q.text, answer: combined }];
     setAnswers(next);
     setMessages((current) => {
       const updated = [...current];
@@ -484,7 +578,8 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
         }
       }
       if (lastUserIdx >= 0 && updated[lastUserIdx].role === "user") {
-        updated[lastUserIdx] = { ...updated[lastUserIdx], answerToQuestionId: q.id };
+        const u = updated[lastUserIdx] as { id: string; role: "user"; text: string; answerToQuestionId?: string };
+        updated[lastUserIdx] = { ...u, answerToQuestionId: q.id };
       }
       saveDraft(next, updated);
       return updated;
@@ -576,6 +671,11 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     updateCanvasAnswer,
     editAnswerFromChat,
     deleteDraft,
-    generateCanvas
+    generateCanvas,
+    uploadedContext,
+    addUploadedContext,
+    clearUploadedContext,
+    uploadFile,
+    prefillFromUploadedContext
   };
 }

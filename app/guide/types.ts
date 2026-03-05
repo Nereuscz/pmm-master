@@ -35,5 +35,6 @@ export type GuideDraft = {
   id: string;
   answers: Answer[];
   messages: ChatMsg[];
+  uploaded_context?: string;
   updated_at: string;
 };

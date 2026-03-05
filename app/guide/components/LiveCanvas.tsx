@@ -10,6 +10,7 @@ type Props = {
   framework: string;
   projectName?: string;
   projectId?: string;
+  uploadedContext?: string;
   onSectionChange: (questionId: string, newContent: string) => void;
 };
 
@@ -27,6 +28,7 @@ export function LiveCanvas({
   framework,
   projectName,
   projectId,
+  uploadedContext,
   onSectionChange
 }: Props) {
   const [elaboratingId, setElaboratingId] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export function LiveCanvas({
             selectedText: hasSelection ? selected!.text : undefined,
             userPrompt: userPrompt?.trim() || undefined,
             projectId,
+            uploadedContext,
             framework,
             phase
           })
@@ -85,7 +88,7 @@ export function LiveCanvas({
         setCustomPrompt((p) => ({ ...p, [q.id]: "" }));
       }
     },
-    [sections, projectId, framework, phase, onSectionChange]
+    [sections, projectId, framework, phase, uploadedContext, onSectionChange]
   );
 
   const handleSelect = useCallback(

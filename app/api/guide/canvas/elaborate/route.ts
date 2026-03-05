@@ -15,6 +15,7 @@ const schema = z.object({
   selectedText: z.string().optional(),
   userPrompt: z.string().optional(),
   projectId: z.string().uuid().optional(),
+  uploadedContext: z.string().optional(),
   framework: z.enum(["Univerzální", "Produktový"]),
   phase: z.string().min(1)
 });
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { sectionId, questionName, questionHint, currentContent, selectedText, userPrompt, projectId, framework, phase } =
+    const { sectionId, questionName, questionHint, currentContent, selectedText, userPrompt, projectId, uploadedContext, framework, phase } =
       parsed.data;
 
     let projectContext = "";
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
       selectedText,
       userPrompt,
       projectContext: projectContext || undefined,
+      uploadedContext,
       framework,
       phase
     });
