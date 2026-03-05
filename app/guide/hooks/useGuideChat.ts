@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Project, Answer, GuideQ, ChatMsg, Status, GuideDraft, ChatMode, CanvasQuestion } from "../types";
+import type { Project, Answer, GuideQ, ChatMsg, Status, GuideDraft, ChatMode, CanvasQuestion, CanvasSpecialSections } from "../types";
 
 let _id = 0;
 function uid() { return `m${++_id}`; }
@@ -33,6 +33,9 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
 
   // Draft state
   const [pendingDraft, setPendingDraft] = useState<GuideDraft | null>(null);
+
+  // Special sections (K dořešení, dilemata, atd.) – z extract-answers
+  const [specialSections, setSpecialSections] = useState<CanvasSpecialSections | null>(null);
 
   // Nahraný kontext (transkripty, přílohy) – pro předvyplnění a AI kontext
   const [uploadedContext, setUploadedContext] = useState("");
@@ -192,6 +195,10 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
 
       if (!r.ok) throw new Error(json.error || "Chyba extrakce");
       const extracted = (json.answers ?? []) as { questionId: string; answer: string }[];
+
+      if (json.specialSections) {
+        setSpecialSections(json.specialSections as CanvasSpecialSections);
+      }
 
       setAnswers((prev) => {
         const extractedMap = new Map(extracted.map((e) => [e.questionId, e.answer]));
@@ -708,5 +715,6 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     setVoiceMode,
     handleRealtimeNextQuestion,
     handleRealtimeDone,
+    specialSections,
   };
 }

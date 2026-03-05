@@ -61,6 +61,7 @@ function GuideChat() {
     setVoiceMode,
     handleRealtimeNextQuestion,
     handleRealtimeDone,
+    specialSections,
   } = useGuideChat(projectIdParam, modeParam);
 
   // Auto-resolve mode when missing: vždy Guide (bez automatického Canvas)
@@ -330,6 +331,7 @@ function GuideChat() {
               projectName={selectedProject?.name}
               projectId={selectedProject?.id}
               uploadedContext={uploadedContext}
+              specialSections={specialSections}
               onSectionChange={updateCanvasAnswer}
             />
           </div>

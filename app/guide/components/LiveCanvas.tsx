@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import type { GuideQ } from "../types";
+import type { GuideQ, CanvasSpecialSections } from "../types";
 
 type Props = {
   sections: Record<string, string>;
@@ -11,6 +11,7 @@ type Props = {
   projectName?: string;
   projectId?: string;
   uploadedContext?: string;
+  specialSections?: CanvasSpecialSections | null;
   onSectionChange: (questionId: string, newContent: string) => void;
 };
 
@@ -29,6 +30,7 @@ export function LiveCanvas({
   projectName,
   projectId,
   uploadedContext,
+  specialSections,
   onSectionChange
 }: Props) {
   const [elaboratingId, setElaboratingId] = useState<string | null>(null);
@@ -299,6 +301,74 @@ export function LiveCanvas({
             );
           })}
         </div>
+
+        {/* Special sections – K dořešení, dilemata, bariéry, termíny */}
+        {specialSections && (
+          specialSections.kDoreseni.length > 0 ||
+          specialSections.otevrenaDialemata ||
+          specialSections.kulturniBariety ||
+          specialSections.grantoveTerminy
+        ) && (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-px flex-1 bg-apple-border-light" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
+                Speciální situace
+              </span>
+              <div className="h-px flex-1 bg-apple-border-light" />
+            </div>
+
+            {specialSections.kDoreseni.length > 0 && (
+              <section className="rounded-xl border border-amber-100 bg-amber-50 overflow-hidden">
+                <div className="border-b border-amber-100 bg-amber-50 px-4 py-2.5">
+                  <h3 className="text-[13px] font-semibold text-amber-800">K dořešení před dalším gate</h3>
+                  <p className="mt-0.5 text-[12px] text-amber-700">Otázky nebo témata, která ještě nemají odpověď nebo vyžadují pozornost</p>
+                </div>
+                <ul className="divide-y divide-amber-100">
+                  {specialSections.kDoreseni.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2.5 px-4 py-2.5">
+                      <span className="mt-0.5 shrink-0 text-amber-500" aria-hidden>⬜</span>
+                      <span className="text-[13px] leading-relaxed text-amber-900">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {specialSections.otevrenaDialemata && (
+              <section className="rounded-xl border border-purple-100 bg-purple-50 overflow-hidden">
+                <div className="border-b border-purple-100 px-4 py-2.5">
+                  <h3 className="text-[13px] font-semibold text-purple-800">Otevřená dilemata</h3>
+                </div>
+                <p className="px-4 py-3 text-[13px] leading-relaxed text-purple-900">
+                  {specialSections.otevrenaDialemata}
+                </p>
+              </section>
+            )}
+
+            {specialSections.kulturniBariety && (
+              <section className="rounded-xl border border-rose-100 bg-rose-50 overflow-hidden">
+                <div className="border-b border-rose-100 px-4 py-2.5">
+                  <h3 className="text-[13px] font-semibold text-rose-800">Kulturní bariéry</h3>
+                </div>
+                <p className="px-4 py-3 text-[13px] leading-relaxed text-rose-900">
+                  {specialSections.kulturniBariety}
+                </p>
+              </section>
+            )}
+
+            {specialSections.grantoveTerminy && (
+              <section className="rounded-xl border border-sky-100 bg-sky-50 overflow-hidden">
+                <div className="border-b border-sky-100 px-4 py-2.5">
+                  <h3 className="text-[13px] font-semibold text-sky-800">Grantové termíny</h3>
+                </div>
+                <p className="px-4 py-3 text-[13px] leading-relaxed text-sky-900">
+                  {specialSections.grantoveTerminy}
+                </p>
+              </section>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

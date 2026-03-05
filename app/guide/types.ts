@@ -38,3 +38,10 @@ export type GuideDraft = {
   uploaded_context?: string;
   updated_at: string;
 };
+
+export type CanvasSpecialSections = {
+  kDoreseni: string[];
+  otevrenaDialemata?: string;
+  kulturniBariety?: string;
+  grantoveTerminy?: string;
+};
