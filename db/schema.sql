@@ -28,7 +28,9 @@ create table if not exists projects (
 create table if not exists project_context (
   project_id uuid primary key references projects(id) on delete cascade,
   accumulated_context text not null default '',
-  last_updated timestamptz not null default now()
+  last_updated timestamptz not null default now(),
+  annotations text,
+  annotations_updated timestamptz
 );
 
 create table if not exists sessions (

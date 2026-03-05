@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import AiOutput from "@/components/AiOutput";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import MarkdownContent from "@/components/MarkdownContent";
 import { PHASE_COLORS } from "@/lib/constants";
 import ErrorMessage from "@/components/ErrorMessage";
 import { SkeletonDetail } from "@/components/LoadingState";
@@ -21,7 +20,12 @@ function sanitizeFilename(name: string): string {
     .toLowerCase();
 }
 type Session = { id: string; phase: string; ai_output: string; created_at: string };
-type ContextData = { accumulated_context: string; last_updated: string | null };
+type ContextData = {
+  accumulated_context: string;
+  last_updated: string | null;
+  annotations: string | null;
+  annotations_updated: string | null;
+};
 
 /** Odstraní markdown symboly a vrátí max ~180 znaků čistého textu jako preview. */
 function getPreview(text: string): string {
@@ -44,8 +48,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [context, setContext] = useState<ContextData | null>(null);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [contextExpanded, setContextExpanded] = useState(false);
-  const [memorySummary, setMemorySummary] = useState<string | null>(null);
-  const [memorySummaryLoading, setMemorySummaryLoading] = useState(false);
+  const [annotationsEditing, setAnnotationsEditing] = useState(false);
+  const [annotationsEditValue, setAnnotationsEditValue] = useState("");
+  const [annotationsRegenerating, setAnnotationsRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [asanaProjectIdInput, setAsanaProjectIdInput] = useState("");
@@ -205,32 +210,20 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         </div>
       </section>
 
-      {/* Paměť projektu */}
+      {/* Anotace projektu */}
       {context?.accumulated_context ? (
         <section className="mb-6 overflow-hidden rounded-apple bg-white shadow-apple">
           <button
-            onClick={() => {
-              const next = !contextExpanded;
-              setContextExpanded(next);
-              // Lazy-load AI shrnutí při prvním rozbalení
-              if (next && memorySummary === null && !memorySummaryLoading) {
-                setMemorySummaryLoading(true);
-                fetch(`/api/projects/${params.id}/context/summary`)
-                  .then((r) => r.json())
-                  .then((json) => setMemorySummary(json.summary ?? null))
-                  .catch(() => setMemorySummary(null))
-                  .finally(() => setMemorySummaryLoading(false));
-              }
-            }}
+            onClick={() => setContextExpanded(!contextExpanded)}
             className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-[#fafafa]"
           >
             <div className="flex items-center gap-2.5">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-[#86868b]">
-                Paměť projektu
+                Anotace projektu
               </p>
-              {context.last_updated ? (
+              {context.annotations_updated ? (
                 <span className="text-[11px] text-[#aeaeb2]">
-                  · aktualizováno {new Date(context.last_updated).toLocaleDateString("cs-CZ")}
+                  · aktualizováno {new Date(context.annotations_updated).toLocaleDateString("cs-CZ")}
                 </span>
               ) : null}
             </div>
@@ -244,23 +237,124 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </button>
           {contextExpanded ? (
             <div className="border-t border-[#f2f2f7] px-6 py-5">
-              {memorySummaryLoading ? (
-                <div className="flex items-center gap-2 text-[13px] text-[#aeaeb2]">
-                  <span className="flex gap-1">
-                    {[0, 150, 300].map((delay) => (
-                      <span
-                        key={delay}
-                        className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-[#d2d2d7]"
-                        style={{ animationDelay: `${delay}ms` }}
+              {context.annotations ? (
+                <>
+                  {annotationsEditing ? (
+                    <div className="space-y-3">
+                      <textarea
+                        value={annotationsEditValue}
+                        onChange={(e) => setAnnotationsEditValue(e.target.value)}
+                        rows={6}
+                        className="w-full resize-y rounded-xl border border-[#d2d2d7] px-4 py-3 text-[14px] leading-relaxed focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+                        placeholder="Anotace projektu…"
                       />
-                    ))}
-                  </span>
-                  AI generuje shrnutí…
-                </div>
-              ) : memorySummary ? (
-                <p className="text-[14px] leading-relaxed text-[#3a3a3a]">{memorySummary}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const r = await fetch(`/api/projects/${params.id}/context/annotations`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ annotations: annotationsEditValue })
+                              });
+                              const json = await r.json();
+                              if (!r.ok) throw new Error(json.error || "Chyba ukládání");
+                              setContext((c) => c ? { ...c, annotations: annotationsEditValue, annotations_updated: json.annotations_updated } : null);
+                              setAnnotationsEditing(false);
+                              toast.success("Anotace uloženy.");
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : "Chyba");
+                            }
+                          }}
+                          className="rounded-full bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700"
+                        >
+                          Uložit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAnnotationsEditValue(context.annotations ?? "");
+                            setAnnotationsEditing(false);
+                          }}
+                          className="rounded-full border border-[#d2d2d7] px-4 py-2 text-[13px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
+                        >
+                          Zrušit
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#3a3a3a]">
+                        {context.annotations}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAnnotationsEditValue(context.annotations ?? "");
+                            setAnnotationsEditing(true);
+                          }}
+                          className="rounded-full border border-[#d2d2d7] px-4 py-2 text-[13px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
+                        >
+                          Upravit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={annotationsRegenerating}
+                          onClick={async () => {
+                            setAnnotationsRegenerating(true);
+                            try {
+                              const r = await fetch(`/api/projects/${params.id}/context/annotations`, {
+                                method: "POST"
+                              });
+                              const json = await r.json();
+                              if (!r.ok) throw new Error(json.error || "Chyba generování");
+                              setContext((c) => c ? { ...c, annotations: json.annotations, annotations_updated: json.annotations_updated } : null);
+                              toast.success("Anotace přegenerovány.");
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : "Chyba");
+                            } finally {
+                              setAnnotationsRegenerating(false);
+                            }
+                          }}
+                          className="rounded-full bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                        >
+                          {annotationsRegenerating ? "Generuji…" : "Regenerovat"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
-                <MarkdownContent content={context.accumulated_context} />
+                <div className="space-y-4">
+                  <p className="text-[14px] text-[#6e6e73]">
+                    Anotace zatím nebyly vygenerovány. Klikni na tlačítko pro vytvoření souhrnu projektu z nahraného kontextu.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={annotationsRegenerating}
+                    onClick={async () => {
+                      setAnnotationsRegenerating(true);
+                      try {
+                        const r = await fetch(`/api/projects/${params.id}/context/annotations`, {
+                          method: "POST"
+                        });
+                        const json = await r.json();
+                        if (!r.ok) throw new Error(json.error || "Chyba generování");
+                        setContext((c) => c ? { ...c, annotations: json.annotations, annotations_updated: json.annotations_updated } : null);
+                        toast.success("Anotace vygenerovány.");
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : "Chyba");
+                      } finally {
+                        setAnnotationsRegenerating(false);
+                      }
+                    }}
+                    className="rounded-full bg-brand-600 px-5 py-2.5 text-[14px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    {annotationsRegenerating ? "Generuji…" : "Vygenerovat anotace"}
+                  </button>
+                </div>
               )}
             </div>
           ) : null}

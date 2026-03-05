@@ -1,16 +1,17 @@
 "use client";
 
-import { useMemo, Suspense, useState } from "react";
+import { useMemo, Suspense, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { getQuestionsForPhase } from "@/lib/guide";
 import { useGuideChat } from "./hooks/useGuideChat";
+import { useTTS } from "./hooks/useTTS";
 import { ResumeModal } from "./components/ResumeModal";
 import { ChatMessage } from "./components/ChatMessage";
 import { ChatInput } from "./components/ChatInput";
 import { LiveCanvas } from "./components/LiveCanvas";
-import { UploadZone } from "./components/UploadZone";
+import { UploadedContextBar } from "./components/UploadedContextBar";
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
 
@@ -47,15 +48,34 @@ function GuideChat() {
     editAnswerFromChat,
     deleteDraft,
     uploadedContext,
-    addUploadedContext,
     clearUploadedContext,
     uploadFile,
-    prefillFromUploadedContext
+    prefillFromUploadedContext,
+    voiceMode,
+    setVoiceMode
   } = useGuideChat(projectIdParam, modeParam);
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
   const showLiveCanvas = started && chatMode === "guide";
   const [chatOpen, setChatOpen] = useState(true);
+
+  const { speakText } = useTTS(voiceMode);
+
+  // TTS: když přijde nová otázka, clarification nebo follow-up, přečti ji nahlas
+  useEffect(() => {
+    if (!voiceMode || messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.role !== "ai") return;
+    if (last.kind === "question") {
+      speakText(`${last.q.text}. ${last.q.hint}`);
+    } else if (last.kind === "clarification") {
+      speakText(last.text);
+    } else if (last.kind === "followup") {
+      const intro = "Doplňující otázky. ";
+      const qs = last.questions.map((q, i) => `${i + 1}. ${q}`).join(" ");
+      speakText(intro + qs);
+    }
+  }, [messages, voiceMode, speakText]);
 
   // Canvas data – odvozeno z answers a otázek pro aktuální fázi
   const canvasSections = useMemo(
@@ -189,27 +209,48 @@ function GuideChat() {
           >
             <div className="flex h-full min-w-[340px] flex-col lg:min-w-[380px]">
               <div className="flex shrink-0 flex-col gap-2 border-b border-[#f2f2f7] px-4 py-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-[#1d1d1f]">💬 Chat</span>
-                  <button
-                  type="button"
-                  onClick={() => setChatOpen(false)}
-                  className="rounded-lg p-1.5 text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
-                  aria-label="Skrýt chat"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  </svg>
-                </button>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-semibold text-[#1d1d1f]">Chat</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setVoiceMode((v) => !v)}
+                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
+                        voiceMode
+                          ? "bg-brand-100 text-brand-700"
+                          : "text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                      }`}
+                      title={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
+                      aria-label={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                        <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
+                        <path fillRule="evenodd" d="M5 9.643a.75.75 0 01-1.5 0V4.643a.75.75 0 011.5 0v5z" clipRule="evenodd" />
+                        <path d="M3 8.643a.75.75 0 00-1.5 0v1a6 6 0 1012 0v-1a.75.75 0 00-1.5 0v1a4.5 4.5 0 01-9 0v-1z" />
+                      </svg>
+                      {voiceMode ? "Hlas" : "Text"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChatOpen(false)}
+                      className="rounded-lg p-1.5 text-[#6e6e73] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
+                      aria-label="Skrýt chat"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <UploadZone
-                  uploadedContext={uploadedContext}
-                  onAddContext={addUploadedContext}
-                  onClearContext={clearUploadedContext}
-                  onPrefill={prefillFromUploadedContext}
-                  isPrefilling={status === "loading_q"}
-                  disabled={status === "loading_q" || status === "loading_fu" || status === "loading_clarify"}
-                />
+                {uploadedContext.trim().length > 0 && (
+                  <UploadedContextBar
+                    charCount={uploadedContext.length}
+                    onPrefill={prefillFromUploadedContext}
+                    onClear={clearUploadedContext}
+                    isPrefilling={status === "loading_q"}
+                    disabled={status === "loading_q" || status === "loading_fu" || status === "loading_clarify"}
+                  />
+                )}
               </div>
               <div className="flex-1 space-y-4 overflow-y-auto p-4">
                 {messages.map((msg) => (
@@ -233,6 +274,7 @@ function GuideChat() {
                   onSend={handleSend}
                   status={status}
                   chatMode={chatMode}
+                  voiceMode={voiceMode}
                   onAttachment={async (file) => {
                     const ok = await uploadFile(file);
                     if (ok) toast.success("Příloha přidána – použije se jako kontext pro AI.");
@@ -270,6 +312,17 @@ function GuideChat() {
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple">
+          {uploadedContext.trim().length > 0 && (
+            <div className="shrink-0 border-b border-[#f2f2f7] px-5 py-2">
+              <UploadedContextBar
+                charCount={uploadedContext.length}
+                onPrefill={prefillFromUploadedContext}
+                onClear={clearUploadedContext}
+                isPrefilling={status === "loading_q"}
+                disabled={status === "loading_q" || status === "loading_fu" || status === "loading_clarify"}
+              />
+            </div>
+          )}
           <div className="flex-1 space-y-4 overflow-y-auto p-6">
             {messages.map((msg) => (
               <ChatMessage
@@ -292,6 +345,11 @@ function GuideChat() {
               onSend={handleSend}
               status={status}
               chatMode={chatMode}
+              voiceMode={false}
+              onAttachment={async (file) => {
+                const ok = await uploadFile(file);
+                if (ok) toast.success("Příloha přidána – použije se jako kontext pro AI.");
+              }}
             />
           </div>
         </div>

@@ -20,7 +20,7 @@ export async function GET(_: NextRequest, { params }: Params) {
   if (!isAdmin(user) && project.owner_id !== user.id) return forbidden();
   const { data, error } = await db
     .from("project_context")
-    .select("project_id,accumulated_context,last_updated")
+    .select("project_id,accumulated_context,last_updated,annotations,annotations_updated")
     .eq("project_id", params.id)
     .maybeSingle();
 
@@ -32,7 +32,9 @@ export async function GET(_: NextRequest, { params }: Params) {
     context: data ?? {
       project_id: params.id,
       accumulated_context: "",
-      last_updated: null
+      last_updated: null,
+      annotations: null,
+      annotations_updated: null
     }
   });
 }

@@ -16,6 +16,7 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
   // Chatbot mode
   const [chatMode, setChatMode] = useState<ChatMode>("idle");
   const [started, setStarted] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
 
   // Chat state – počáteční uvítací zpráva
   const [messages, setMessages] = useState<ChatMsg[]>([
@@ -676,6 +677,8 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     addUploadedContext,
     clearUploadedContext,
     uploadFile,
-    prefillFromUploadedContext
+    prefillFromUploadedContext,
+    voiceMode,
+    setVoiceMode
   };
 }
