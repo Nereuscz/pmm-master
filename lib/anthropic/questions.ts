@@ -129,6 +129,10 @@ const UNIVERSAL: Record<string, Question[]> = {
     {
       name: "Poptávka",
       hint: "Kdo to chce? Koho to bude bolet, když tenhle projekt neuděláme?"
+    },
+    {
+      name: "Vazba na portfolio",
+      hint: "Jak tento projekt souvisí s jinými běžícími nebo plánovanými projekty JIC? Hrozí duplicita nebo konflikt zdrojů?"
     }
   ],
   Plánování: [

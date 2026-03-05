@@ -9,5 +9,7 @@ export {
   parsePromptForExtendedCanvas,
   generateFollowUpsForCanvas,
   elaborateCanvasSection,
-  extractAnswersFromContext
+  extractAnswersFromContext,
+  generateCanvasSpecialSections
 } from "./interactions";
+export type { ExtractedAnswer, CanvasSpecialSections } from "./interactions";

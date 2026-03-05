@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PHASE_COLORS } from "@/lib/constants";
-import Breadcrumbs from "@/components/Breadcrumbs";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorMessage from "@/components/ErrorMessage";
 import { SkeletonGrid } from "@/components/LoadingState";
@@ -16,6 +15,15 @@ type Project = {
   framework: string;
   created_at: string;
 };
+
+function relativeDate(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diff / 86_400_000);
+  if (days === 0) return "Dnes";
+  if (days === 1) return "Včera";
+  if (days < 7) return `Před ${days} dny`;
+  return new Date(iso).toLocaleDateString("cs-CZ", { day: "numeric", month: "short" });
+}
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -67,12 +75,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-8 py-12">
+    <main className="animate-page-in mx-auto max-w-5xl px-8 py-12">
       {/* Hlavička */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <Breadcrumbs items={[{ label: "Projekty" }]} />
-          <h1 className="mt-2 text-title font-semibold tracking-tight text-apple-text-primary">Projekty</h1>
+          <h1 className="text-title font-semibold tracking-tight text-apple-text-primary">Projekty</h1>
           <p className="mt-1 text-body text-apple-text-secondary">Přehled všech PM projektů</p>
         </div>
         <div className="flex gap-2">
@@ -93,14 +100,29 @@ export default function DashboardPage() {
 
       {/* Vyhledávání */}
       {!loading && projects.length > 0 ? (
-        <div className="mb-4">
-          <input
-            type="search"
-            placeholder="Hledat projekty (název, fáze, framework)…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full max-w-md rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-caption placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-          />
+        <div className="mb-5">
+          <div className="relative w-full max-w-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="15"
+              height="15"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-apple-text-muted"
+              aria-hidden
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              type="search"
+              placeholder="Hledat projekty…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-full border border-apple-border-default bg-white py-2 pl-9 pr-4 text-caption placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+            />
+          </div>
         </div>
       ) : null}
 
@@ -190,7 +212,7 @@ export default function DashboardPage() {
                 <div className="mt-1.5 flex items-center gap-2 text-caption text-apple-text-tertiary">
                   <span>{project.framework}</span>
                   <span>·</span>
-                  <span>{new Date(project.created_at).toLocaleDateString("cs-CZ")}</span>
+                  <span title={new Date(project.created_at).toLocaleDateString("cs-CZ")}>{relativeDate(project.created_at)}</span>
                 </div>
               </div>
 
@@ -198,7 +220,7 @@ export default function DashboardPage() {
               <div className="relative z-10 mt-4 flex items-center justify-between">
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    PHASE_COLORS[project.phase] ?? "bg-apple-bg-subtle text-apple-text-secondary"
+                    PHASE_COLORS[project.phase] ?? "bg-apple-bg-subtle text-apple-text-secondary ring-1 ring-apple-border-light"
                   }`}
                 >
                   {project.phase}
@@ -208,7 +230,7 @@ export default function DashboardPage() {
                   onClick={() => setConfirmId(project.id)}
                   title="Smazat projekt"
                   aria-label={`Smazat projekt ${project.name}`}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-apple-border-default transition-colors duration-200 hover:bg-red-50 hover:text-[#ff3b30] focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-apple-text-muted opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-[#ff3b30] focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2 group-hover:opacity-100"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                     <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
@@ -230,7 +252,7 @@ export default function DashboardPage() {
         title="Smazat projekt?"
         message={
           confirmId
-            ? `Projekt „${projects.find((p) => p.id === confirmId)?.name ?? ""}“ bude trvale smazán včetně všech transkriptů a kontextu.`
+            ? `Projekt „${projects.find((p) => p.id === confirmId)?.name ?? ""}" bude trvale smazán včetně všech transkriptů a kontextu.`
             : ""
         }
         confirmLabel="Smazat"

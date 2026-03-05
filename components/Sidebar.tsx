@@ -82,6 +82,15 @@ const links: Array<{
 
 type UserInfo = { role: UserRole | null; name?: string | null; email?: string | null };
 
+function UserAvatar({ name, email }: { name?: string | null; email?: string | null }) {
+  const initial = ((name || email || "?")[0] ?? "?").toUpperCase();
+  return (
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 shadow-sm">
+      <span className="text-[11px] font-semibold text-white">{initial}</span>
+    </div>
+  );
+}
+
 export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -129,8 +138,8 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
       {/* Logo */}
       <div className="px-5 pb-4 pt-6">
         <Link href="/dashboard" onClick={onDrawerClose} className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
-            <span className="text-[13px] font-bold text-white">PM</span>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 shadow-sm">
+            <span className="text-[13px] font-semibold text-white">PM</span>
           </div>
           <div className="leading-tight">
             <div className="text-body font-semibold text-apple-text-primary">PM Assistant</div>
@@ -157,10 +166,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
       ) : null}
 
       {/* Navigace */}
-      <nav className="mt-2 flex-1 space-y-0.5 px-3">
-        <p className="mb-1.5 mt-3 px-2 text-footnote font-semibold uppercase tracking-widest text-apple-text-muted">
-          Menu
-        </p>
+      <nav className="mt-2 flex-1 space-y-0.5 px-2.5">
         {visibleLinks.map((link) => {
           const active =
             pathname === link.href || pathname.startsWith(link.href + "/");
@@ -169,11 +175,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
               key={link.href}
               href={link.href}
               onClick={onDrawerClose}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-caption font-medium transition-colors duration-200 ${
-                active
-                  ? "bg-brand-50 text-brand-600"
-                  : "text-apple-text-secondary hover:bg-apple-bg-page hover:text-apple-text-primary"
-              }`}
+              className={`nav-item${active ? " active" : ""}`}
             >
               <span className={active ? "text-brand-600" : "text-apple-text-muted"}>
                 {link.icon}
@@ -185,16 +187,19 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
       </nav>
 
       {/* Uživatel + odhlášení */}
-      <div className="mt-auto px-5 pb-6">
+      <div className="mt-auto px-4 pb-6">
         <div className="border-t border-apple-bg-subtle pt-4">
           {(user.name || user.email) && (
-            <div className="mb-3">
-              <p className="truncate text-caption font-medium text-apple-text-primary">
-                {user.name || user.email}
-              </p>
-              {user.email && user.name && (
-                <p className="truncate text-footnote text-apple-text-tertiary">{user.email}</p>
-              )}
+            <div className="mb-3 flex items-center gap-2.5">
+              <UserAvatar name={user.name} email={user.email} />
+              <div className="min-w-0">
+                <p className="truncate text-caption font-medium text-apple-text-primary">
+                  {user.name || user.email}
+                </p>
+                {user.email && user.name && (
+                  <p className="truncate text-footnote text-apple-text-tertiary">{user.email}</p>
+                )}
+              </div>
             </div>
           )}
           <button
@@ -203,7 +208,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
               onDrawerClose?.();
               signOut({ callbackUrl: "/signin" });
             }}
-            className="w-full rounded-lg px-3 py-2 text-left text-caption font-medium text-apple-text-secondary transition-colors duration-200 hover:bg-apple-bg-page hover:text-apple-text-primary"
+            className="w-full rounded-lg px-3 py-2 text-left text-caption font-medium text-apple-text-secondary transition-colors duration-150 hover:bg-apple-bg-subtle hover:text-apple-text-primary"
           >
             Odhlásit se
           </button>
@@ -215,12 +220,12 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
 
   return (
     <>
-      {/* Desktop sidebar – skrytý na mobilu, glassmorphism */}
-      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-60 flex-col border-r border-apple-border-light bg-white/95 backdrop-blur-xl md:flex">
+      {/* Desktop sidebar */}
+      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-64 flex-col border-r border-apple-border-light bg-white/95 backdrop-blur-xl md:flex">
         {navContent}
       </aside>
 
-      {/* Mobile overlay + drawer – skrytý na desktopu */}
+      {/* Mobile overlay + drawer */}
       <div className="md:hidden">
         <div
           className={`fixed inset-0 z-40 bg-black/40 transition-opacity ${drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
@@ -228,7 +233,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
           aria-hidden
         />
         <aside
-          className={`fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r border-apple-border-light bg-white shadow-apple-lg transition-transform duration-200 ${
+          className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-apple-border-light bg-white shadow-apple-lg transition-transform duration-200 ${
             drawerOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
