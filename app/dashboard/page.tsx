@@ -75,12 +75,20 @@ export default function DashboardPage() {
           <h1 className="mt-2 text-title font-semibold tracking-tight text-apple-text-primary">Projekty</h1>
           <p className="mt-1 text-body text-apple-text-secondary">Přehled všech PM projektů</p>
         </div>
-        <Link
-          href="/projects/new"
-          className="rounded-full bg-brand-600 px-5 py-2 text-body font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"
-        >
-          + Nový projekt
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/projects/import"
+            className="rounded-full border border-apple-border-default px-4 py-2 text-body font-medium text-apple-text-primary transition-colors duration-200 hover:bg-apple-bg-page active:scale-[0.98]"
+          >
+            Import z Asany
+          </Link>
+          <Link
+            href="/projects/new"
+            className="rounded-full bg-brand-600 px-5 py-2 text-body font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"
+          >
+            + Nový projekt
+          </Link>
+        </div>
       </div>
 
       {/* Vyhledávání */}
@@ -142,12 +150,18 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-          <div className="mt-6 flex items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href="/projects/new"
               className="rounded-full bg-brand-600 px-6 py-2.5 text-caption font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"
             >
               + Vytvořit první projekt
+            </Link>
+            <Link
+              href="/projects/import"
+              className="rounded-full border border-apple-border-default px-5 py-2.5 text-caption font-medium text-apple-text-primary transition-colors duration-200 hover:bg-apple-bg-page active:scale-[0.98]"
+            >
+              Import z Asany
             </Link>
             <Link
               href="/kb"

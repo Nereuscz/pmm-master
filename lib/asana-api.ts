@@ -10,6 +10,7 @@ export type AsanaTaskFull = {
   notes?: string;
   completed?: boolean;
   due_on?: string;
+  parent?: { gid: string } | null;
   assignee?: { gid: string; name?: string };
   custom_fields?: Array<{ gid: string; name?: string; display_value?: string }>;
   memberships?: Array<{ section?: { gid: string; name?: string } }>;
@@ -41,7 +42,7 @@ export async function getProjectSections(
 }
 
 const TASK_OPT_FIELDS =
-  "name,notes,completed,due_on,assignee.name,custom_fields.name,custom_fields.display_value,memberships.section.name";
+  "name,notes,completed,due_on,parent,assignee.name,custom_fields.name,custom_fields.display_value,memberships.section.name";
 
 export async function getTasksForProject(
   accessToken: string,
@@ -75,6 +76,16 @@ export async function getTasksForProject(
   } while (offset && tasks.length < limit);
 
   return tasks;
+}
+
+/** Vrátí jen parent tasky (bez rodiče) z projektu – pro import portfolia. */
+export async function getParentTasksForProject(
+  accessToken: string,
+  projectGid: string,
+  limit = 500
+): Promise<AsanaTaskFull[]> {
+  const all = await getTasksForProject(accessToken, projectGid, limit);
+  return all.filter((t) => !t.parent);
 }
 
 export async function createTask(

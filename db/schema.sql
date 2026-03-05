@@ -21,6 +21,7 @@ create table if not exists projects (
   phase text not null,
   owner_id uuid not null references users(id) on delete cascade,
   asana_project_id text,
+  asana_task_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

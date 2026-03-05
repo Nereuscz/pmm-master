@@ -16,6 +16,10 @@ export const processTranscriptSchema = z.object({
   contextNote: z.string().max(600).optional()
 });
 
+export const asanaImportSchema = z.object({
+  asanaProjectId: z.string().min(1, "Asana project ID je povinné"),
+});
+
 export const asanaExportSchema = z.object({
   sessionId: z.string().uuid(),
   asanaProjectId: z.string().min(1),

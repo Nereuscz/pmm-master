@@ -1,5 +1,8 @@
 import { ensureDb } from "./db";
 import { getValidAsanaToken } from "./asana-auth";
+import { getProjectSections, getTasksForProject, type AsanaTaskFull } from "./asana-api";
+import { summarizeForContext } from "./text";
+import { mapAsanaPhaseToProjectPhase } from "./asana-import";
 
 /** Vrátí snapshot text pro projekt, nebo null pokud není k dispozici. */
 export async function getAsanaSnapshotForProject(projectId: string): Promise<string | null> {
@@ -11,8 +14,6 @@ export async function getAsanaSnapshotForProject(projectId: string): Promise<str
     .maybeSingle();
   return data?.snapshot_text?.trim() ?? null;
 }
-import { getProjectSections, getTasksForProject, type AsanaTaskFull } from "./asana-api";
-import { summarizeForContext } from "./text";
 
 const MAX_SNAPSHOT_CHARS = 18_000;
 
@@ -30,7 +31,7 @@ export async function syncProjectAsanaSnapshot(projectId: string): Promise<SyncR
 
   const { data: project, error: projectError } = await db
     .from("projects")
-    .select("id, owner_id, asana_project_id")
+    .select("id, owner_id, asana_project_id, asana_task_id, phase")
     .eq("id", projectId)
     .maybeSingle();
 
@@ -50,6 +51,20 @@ export async function syncProjectAsanaSnapshot(projectId: string): Promise<SyncR
     ]);
 
     const snapshotText = formatSnapshotForAi(sections, tasks);
+
+    // Aktualizace fáze u importovaných projektů (asana_task_id)
+    if (project.asana_task_id) {
+      const sourceTask = tasks.find((t) => t.gid === project.asana_task_id);
+      if (sourceTask) {
+        const newPhase = mapAsanaPhaseToProjectPhase(sourceTask.custom_fields);
+        if (newPhase !== project.phase) {
+          await db
+            .from("projects")
+            .update({ phase: newPhase, updated_at: new Date().toISOString() })
+            .eq("id", projectId);
+        }
+      }
+    }
 
     await db
       .from("asana_sync_snapshot")
