@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, Suspense, useState, useEffect } from "react";
+import { useMemo, Suspense, useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -16,11 +17,14 @@ import { LiveCanvas } from "./components/LiveCanvas";
 import { UploadedContextBar } from "./components/UploadedContextBar";
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
+const VOICE_PREF_KEY = "pm-assistant-voice-pref";
 
 function GuideChat() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("projectId");
   const modeParam = searchParams.get("mode"); // "guide" | "canvas" | null
+  const modeResolvedRef = useRef(false);
 
   const {
     projects,
@@ -58,6 +62,41 @@ function GuideChat() {
     handleRealtimeNextQuestion,
     handleRealtimeDone,
   } = useGuideChat(projectIdParam, modeParam);
+
+  // Auto-resolve mode when missing: preferuje Guide při voice mode, jinak draft → Canvas / Guide
+  useEffect(() => {
+    if (modeParam !== null || modeResolvedRef.current || !selectedProject) return;
+    modeResolvedRef.current = true;
+    const projectId = selectedProject.id;
+    const p = selectedProject.phase ?? "Iniciace";
+    const fw = selectedProject.framework ?? "Univerzální";
+    const preferVoice = typeof window !== "undefined" && localStorage.getItem(VOICE_PREF_KEY) === "true";
+    fetch(
+      `/api/guide/draft?projectId=${projectId}&phase=${encodeURIComponent(p)}&framework=${encodeURIComponent(fw)}`
+    )
+      .then((r) => r.json())
+      .then((json) => {
+        const hasDraftWithAnswers = json.draft?.answers?.length > 0;
+        // Voice mode funguje jen v Guide – při preferenci hlasu vždy Guide
+        const mode = preferVoice || !hasDraftWithAnswers ? "guide" : "canvas";
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("mode", mode);
+        if (!params.has("projectId")) params.set("projectId", projectId);
+        router.replace(`/guide?${params.toString()}`, { scroll: false });
+      })
+      .catch(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("mode", "guide");
+        if (!params.has("projectId")) params.set("projectId", projectId);
+        router.replace(`/guide?${params.toString()}`, { scroll: false });
+      });
+  }, [modeParam, selectedProject, router, searchParams]);
+
+  // Persistovat voice mode preference pro auto-resolve při příštím otevření
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(VOICE_PREF_KEY, voiceMode ? "true" : "false");
+  }, [voiceMode]);
 
   const realtimeVoice = useRealtimeVoice({
     onNextQuestion: handleRealtimeNextQuestion,

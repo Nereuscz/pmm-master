@@ -16,7 +16,9 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
   // Chatbot mode
   const [chatMode, setChatMode] = useState<ChatMode>("idle");
   const [started, setStarted] = useState(false);
-  const [voiceMode, setVoiceMode] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(() =>
+    typeof window !== "undefined" && localStorage.getItem("pm-assistant-voice-pref") === "true"
+  );
 
   // Chat state – počáteční uvítací zpráva
   const [messages, setMessages] = useState<ChatMsg[]>([

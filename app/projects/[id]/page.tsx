@@ -112,7 +112,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </div>
           <div className="flex gap-2">
             <Link
-              href={`/guide?projectId=${project.id}&mode=guide`}
+              href={`/guide?projectId=${project.id}`}
               className="rounded-full border border-apple-border-default bg-white px-4 py-2 text-body font-medium text-apple-text-primary transition-colors hover:bg-apple-bg-page"
             >
               💬 Průvodce
