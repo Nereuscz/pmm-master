@@ -11,7 +11,8 @@ export async function upsertDocumentWithChunks(input: {
   sharepointId?: string;
   sourceUrl?: string;
   uploadedBy?: string;
-  visibility: "global" | "team";
+  visibility: "global" | "team" | "project";
+  projectId?: string;
   filePath?: string;
   fileSize?: number;
   mimeType?: string;
@@ -32,6 +33,7 @@ export async function upsertDocumentWithChunks(input: {
         uploaded_by: input.uploadedBy ?? null,
         source_text: input.content,
         visibility: input.visibility,
+        project_id: input.projectId ?? null,
         file_path: input.filePath ?? null,
         file_size: input.fileSize ?? null,
         mime_type: input.mimeType ?? null,
@@ -52,7 +54,8 @@ export async function upsertDocumentWithChunks(input: {
         source_text: input.content,
         sharepoint_id: input.sharepointId ?? null,
         source_url: input.sourceUrl ?? null,
-        visibility: input.visibility
+        visibility: input.visibility,
+        project_id: input.projectId ?? null
       })
       .eq("id", documentId);
     if (error) {

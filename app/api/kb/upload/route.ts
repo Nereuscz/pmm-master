@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
   const file = formData.get("file");
   const title = formData.get("title")?.toString().trim();
   const category = formData.get("category")?.toString().trim() ?? "general";
-  const visibility = (formData.get("visibility")?.toString() ?? "global") as "global" | "team";
+  const visibility = (formData.get("visibility")?.toString() ?? "global") as "global" | "team" | "project";
+  const projectId = formData.get("projectId")?.toString() || undefined;
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Chybí soubor." }, { status: 400 });
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
       content: extractedText,
       uploadedBy: user.id,
       visibility,
+      projectId,
       filePath: uploadError ? undefined : storagePath,
       fileSize: file.size,
       mimeType

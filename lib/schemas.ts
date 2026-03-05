@@ -63,14 +63,16 @@ export const kbDocumentCreateSchema = z.object({
   content: z.string().min(20),
   sharepointId: z.string().optional(),
   uploadedBy: z.string().uuid().optional(),
-  visibility: z.enum(["global", "team"]).default("global")
+  visibility: z.enum(["global", "team", "project"]).default("global"),
+  projectId: z.string().uuid().optional()
 });
 
 export const kbDocumentUpdateSchema = z
   .object({
     title: z.string().min(3).max(200).optional(),
     category: z.string().min(2).max(60).optional(),
-    visibility: z.enum(["global", "team"]).optional(),
+    visibility: z.enum(["global", "team", "project"]).optional(),
+    projectId: z.string().uuid().optional(),
     content: z.string().min(20).optional()
   })
   .refine((value) => Object.keys(value).length > 0, "Chybí data pro update.");

@@ -30,6 +30,7 @@ function sanitizeFilename(name: string): string {
     .toLowerCase();
 }
 type Session = { id: string; phase: string; ai_output: string; created_at: string };
+type KbDoc = { id: string; title: string; category: string; created_at: string; visibility: string; project_id: string | null };
 type ContextData = {
   accumulated_context: string;
   last_updated: string | null;
@@ -68,23 +69,79 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [metadataEditing, setMetadataEditing] = useState(false);
   const [metadataEditValues, setMetadataEditValues] = useState<Record<string, string>>({});
   const [metadataSaving, setMetadataSaving] = useState(false);
+  const [projectKbDocs, setProjectKbDocs] = useState<KbDoc[]>([]);
+  const [kbUploading, setKbUploading] = useState(false);
+  const [kbDeletingId, setKbDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/projects/${params.id}`).then((r) => r.json()),
       fetch(`/api/projects/${params.id}/sessions`).then((r) => r.json()),
-      fetch(`/api/projects/${params.id}/context`).then((r) => r.json())
+      fetch(`/api/projects/${params.id}/context`).then((r) => r.json()),
+      fetch(`/api/kb/documents?projectId=${params.id}`).then((r) => r.json())
     ])
-      .then(([projectJson, sessionsJson, contextJson]) => {
+      .then(([projectJson, sessionsJson, contextJson, kbJson]) => {
         if (projectJson.error) throw new Error(projectJson.error);
         setProject(projectJson.project);
         setSessions(sessionsJson.sessions ?? []);
         setContext(contextJson.context ?? null);
         if (sessionsJson.sessions?.[0]) setExpandedSession(sessionsJson.sessions[0].id);
+        setProjectKbDocs(
+          (kbJson.documents ?? []).filter(
+            (d: KbDoc) => d.visibility === "project" && d.project_id === params.id
+          )
+        );
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Chyba načítání"))
       .finally(() => setLoading(false));
   }, [params.id]);
+
+  async function uploadKbFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setKbUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      formData.set("title", file.name.replace(/\.[^.]+$/, ""));
+      formData.set("category", "Projektová KB");
+      formData.set("visibility", "project");
+      formData.set("projectId", params.id);
+      const r = await fetch("/api/kb/upload", { method: "POST", body: formData });
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || "Upload selhal");
+      const docsRes = await fetch(`/api/kb/documents?projectId=${params.id}`);
+      const docsJson = await docsRes.json();
+      setProjectKbDocs(
+        (docsJson.documents ?? []).filter(
+          (d: KbDoc) => d.visibility === "project" && d.project_id === params.id
+        )
+      );
+      toast.success("Dokument nahrán do projektové KB.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Chyba uploadu");
+    } finally {
+      setKbUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function deleteKbDoc(id: string) {
+    setKbDeletingId(id);
+    try {
+      const r = await fetch(`/api/kb/documents/${id}`, { method: "DELETE" });
+      if (!r.ok) {
+        const json = await r.json();
+        throw new Error(json.error || "Smazání selhalo");
+      }
+      setProjectKbDocs((prev) => prev.filter((d) => d.id !== id));
+      toast.success("Dokument smazán.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Chyba");
+    } finally {
+      setKbDeletingId(null);
+    }
+  }
 
   if (loading) return (
     <main className="mx-auto max-w-5xl px-8 py-10">
@@ -551,6 +608,61 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           ) : null}
         </section>
       ) : null}
+
+      {/* Projektová KB */}
+      <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
+              Projektová znalostní báze
+            </h2>
+            {projectKbDocs.length > 0 && (
+              <span className="rounded-full bg-apple-bg-subtle px-2 py-0.5 text-[11px] font-medium text-apple-text-secondary">
+                {projectKbDocs.length}
+              </span>
+            )}
+          </div>
+          <label className={`cursor-pointer rounded-full bg-brand-600 px-4 py-2 text-caption font-medium text-white transition-colors hover:bg-brand-700 ${kbUploading ? "opacity-50 pointer-events-none" : ""}`}>
+            {kbUploading ? "Nahrávám…" : "+ Přidat dokument"}
+            <input
+              type="file"
+              accept=".pdf,.docx,.doc,.txt,.md"
+              onChange={uploadKbFile}
+              className="sr-only"
+            />
+          </label>
+        </div>
+        <p className="mt-1.5 text-caption text-apple-text-tertiary">
+          Dokumenty specifické pro tento projekt – AI je použije jako dodatečný kontext při zpracování a průvodci.
+        </p>
+        {projectKbDocs.length === 0 ? (
+          <p className="mt-4 text-caption text-apple-text-muted">Zatím žádné dokumenty. Nahraj PDF, DOCX, TXT nebo MD.</p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {projectKbDocs.map((doc) => (
+              <li key={doc.id} className="group flex items-center justify-between rounded-xl border border-apple-border-light bg-apple-bg-subtle px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-caption font-medium text-apple-text-primary">{doc.title}</p>
+                  <p className="mt-0.5 text-footnote text-apple-text-tertiary">
+                    {new Date(doc.created_at).toLocaleDateString("cs-CZ")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteKbDoc(doc.id)}
+                  disabled={kbDeletingId === doc.id}
+                  aria-label={`Smazat ${doc.title}`}
+                  className="ml-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-apple-text-muted opacity-0 transition-all duration-150 hover:bg-red-50 hover:text-red-500 focus:opacity-100 focus:outline-none group-hover:opacity-100 disabled:opacity-40"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+                    <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* Historie zpracování */}
       <section>

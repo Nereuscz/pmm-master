@@ -6,17 +6,26 @@ export const dynamic = "force-dynamic";
 import { upsertDocumentWithChunks } from "@/lib/kb";
 import { getAuthUser, unauthorized, canReadKb, canManageKb, forbidden } from "@/lib/auth-guard";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
   if (!canReadKb(user)) return forbidden();
 
+  const { searchParams } = new URL(request.url);
+  const projectId = searchParams.get("projectId");
+
   const db = ensureDb();
-  const { data, error } = await db
+  let query = db
     .from("kb_documents")
-    .select("id,title,category,source,source_url,sharepoint_id,visibility,created_at,deleted_at")
+    .select("id,title,category,source,source_url,sharepoint_id,visibility,project_id,created_at,deleted_at")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
+
+  if (projectId) {
+    query = query.or(`visibility.in.(global,team),and(visibility.eq.project,project_id.eq.${projectId})`);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: "Nepodařilo se načíst dokumenty." }, { status: 500 });
@@ -41,7 +50,8 @@ export async function POST(request: NextRequest) {
   try {
     const result = await upsertDocumentWithChunks({
       ...parsed.data,
-      sharepointId: parsed.data.sharepointId
+      sharepointId: parsed.data.sharepointId,
+      projectId: parsed.data.projectId
     });
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
