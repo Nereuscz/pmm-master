@@ -11,10 +11,11 @@ type Props = {
   status: Status;
   chatMode: ChatMode;
   voiceMode?: boolean;
+  realtimeConnected?: boolean;
   onAttachment?: (file: File) => Promise<void>;
 };
 
-export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status, chatMode, voiceMode = false, onAttachment }: Props) {
+export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status, chatMode, voiceMode = false, realtimeConnected = false, onAttachment }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { error: voiceError, startRecording, stopRecording, isRecording, isTranscribing } = useVoiceInput(
@@ -61,7 +62,7 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
   }
 
   const canSend = isActive && inputValue.trim().length > 0;
-  const showVoiceInput = voiceMode && chatMode === "guide" && status === "awaiting_answer";
+  const showVoiceInput = voiceMode && chatMode === "guide" && status === "awaiting_answer" && !realtimeConnected;
 
   const placeholder =
     chatMode === "guide" && status === "awaiting_answer"

@@ -7,9 +7,11 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { getQuestionsForPhase } from "@/lib/guide";
 import { useGuideChat } from "./hooks/useGuideChat";
 import { useTTS } from "./hooks/useTTS";
+import { useRealtimeVoice } from "./hooks/useRealtimeVoice";
 import { ResumeModal } from "./components/ResumeModal";
 import { ChatMessage } from "./components/ChatMessage";
 import { ChatInput } from "./components/ChatInput";
+import { RealtimeVoicePanel } from "./components/RealtimeVoicePanel";
 import { LiveCanvas } from "./components/LiveCanvas";
 import { UploadedContextBar } from "./components/UploadedContextBar";
 
@@ -52,8 +54,15 @@ function GuideChat() {
     uploadFile,
     prefillFromUploadedContext,
     voiceMode,
-    setVoiceMode
+    setVoiceMode,
+    handleRealtimeNextQuestion,
+    handleRealtimeDone,
   } = useGuideChat(projectIdParam, modeParam);
+
+  const realtimeVoice = useRealtimeVoice({
+    onNextQuestion: handleRealtimeNextQuestion,
+    onDone: handleRealtimeDone,
+  });
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
   const showLiveCanvas = started && chatMode === "guide";
@@ -266,7 +275,19 @@ function GuideChat() {
                 ))}
                 <div ref={bottomRef} />
               </div>
-              <div className="shrink-0 border-t border-[#f2f2f7] bg-[#fafafa] px-4 py-3">
+              <div className="shrink-0 space-y-2 border-t border-[#f2f2f7] bg-[#fafafa] px-4 py-3">
+                {voiceMode && chatMode === "guide" && status === "awaiting_answer" && (
+                  <RealtimeVoicePanel
+                    projectId={selectedProject?.id ?? null}
+                    state={realtimeVoice.state}
+                    error={realtimeVoice.error}
+                    onConnect={() => {
+                      if (selectedProject)
+                        realtimeVoice.connect(selectedProject.id, phase, framework, answers);
+                    }}
+                    onDisconnect={realtimeVoice.disconnect}
+                  />
+                )}
                 <ChatInput
                   inputRef={inputRef}
                   inputValue={inputValue}
@@ -275,6 +296,7 @@ function GuideChat() {
                   status={status}
                   chatMode={chatMode}
                   voiceMode={voiceMode}
+                  realtimeConnected={realtimeVoice.state === "connected"}
                   onAttachment={async (file) => {
                     const ok = await uploadFile(file);
                     if (ok) toast.success("Příloha přidána – použije se jako kontext pro AI.");
@@ -346,6 +368,7 @@ function GuideChat() {
               status={status}
               chatMode={chatMode}
               voiceMode={false}
+              realtimeConnected={false}
               onAttachment={async (file) => {
                 const ok = await uploadFile(file);
                 if (ok) toast.success("Příloha přidána – použije se jako kontext pro AI.");

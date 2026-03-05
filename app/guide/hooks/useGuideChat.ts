@@ -273,6 +273,30 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     }
   }
 
+  // ── Realtime voice – callbacks pro useRealtimeVoice ───────────────────────
+
+  function handleRealtimeNextQuestion(q: GuideQ) {
+    setCurrentQ(q);
+    push({ id: uid(), role: "ai", kind: "question", q });
+    setStatus("awaiting_answer");
+    setTimeout(() => inputRef.current?.focus(), 80);
+  }
+
+  function handleRealtimeDone(output: string, sessionId?: string, projectId?: string) {
+    push({
+      id: uid(),
+      role: "ai",
+      kind: "output",
+      content: output,
+      sessionId,
+      projectId: projectId ?? selectedProject?.id,
+      saved: true,
+    });
+    deleteDraft();
+    setStatus("done");
+    setChatMode("idle");
+  }
+
   // ── Canvas generování ─────────────────────────────────────────────────────
 
   async function generateCanvas(resolvedPhase: string, resolvedFramework: string) {
@@ -679,6 +703,8 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     uploadFile,
     prefillFromUploadedContext,
     voiceMode,
-    setVoiceMode
+    setVoiceMode,
+    handleRealtimeNextQuestion,
+    handleRealtimeDone,
   };
 }
