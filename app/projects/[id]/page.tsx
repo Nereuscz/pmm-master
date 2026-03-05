@@ -163,14 +163,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             {metadataEditing ? "Zrušit" : "Upravit přiřazení"}
           </button>
         </div>
-        {project.description ? (
-          <div className="mt-4">
-            <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
-            <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
-              {project.description}
-            </p>
-          </div>
-        ) : null}
         {metadataEditing ? (
           <div className="mt-4 space-y-4">
             {JIC_CUSTOM_FIELDS.map((field) => (
@@ -264,37 +256,65 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             >
               {metadataSaving ? "Ukládám…" : "Uložit"}
             </button>
+            {project.description ? (
+              <div className="mt-6">
+                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
+                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
+                  {project.description}
+                </p>
+              </div>
+            ) : null}
           </div>
         ) : project.asana_metadata && Object.keys(project.asana_metadata).length > 0 ? (
-          <div className="mt-4">
-            <h3 className="text-caption font-semibold text-apple-text-secondary">Custom fieldy</h3>
-            <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-              {(() => {
-                const entries = Object.entries(project.asana_metadata);
-                const jicOrder = JIC_CUSTOM_FIELDS.map((f) => f.name);
-                const sorted = [...entries].sort(([a], [b]) => {
-                  const ai = jicOrder.indexOf(a);
-                  const bi = jicOrder.indexOf(b);
-                  if (ai >= 0 && bi >= 0) return ai - bi;
-                  if (ai >= 0) return -1;
-                  if (bi >= 0) return 1;
-                  return a.localeCompare(b);
-                });
-                return sorted;
-              })().map(([key, value]) => (
-                <div key={key} className="flex flex-col gap-0.5">
-                  <dt className="text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
-                    {key}
-                  </dt>
-                  <dd className="text-body text-apple-text-primary">{value}</dd>
-                </div>
-              ))}
-            </dl>
+          <div className="mt-4 space-y-6">
+            <div>
+              <h3 className="text-caption font-semibold text-apple-text-secondary">Custom fieldy</h3>
+              <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                {(() => {
+                  const entries = Object.entries(project.asana_metadata);
+                  const jicOrder = JIC_CUSTOM_FIELDS.map((f) => f.name);
+                  const sorted = [...entries].sort(([a], [b]) => {
+                    const ai = jicOrder.indexOf(a);
+                    const bi = jicOrder.indexOf(b);
+                    if (ai >= 0 && bi >= 0) return ai - bi;
+                    if (ai >= 0) return -1;
+                    if (bi >= 0) return 1;
+                    return a.localeCompare(b);
+                  });
+                  return sorted;
+                })().map(([key, value]) => (
+                  <div key={key} className="flex flex-col gap-0.5">
+                    <dt className="text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
+                      {key}
+                    </dt>
+                    <dd className="text-body text-apple-text-primary">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+            {project.description ? (
+              <div>
+                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
+                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
+                  {project.description}
+                </p>
+              </div>
+            ) : null}
           </div>
         ) : (
-          <p className="mt-4 text-caption text-apple-text-tertiary">
-            Žádná metadata. Klikni „Upravit přiřazení“ pro přiřazení hodnot.
-          </p>
+          <div className="mt-4 space-y-6">
+            <p className="text-caption text-apple-text-tertiary">
+              Žádná metadata. Klikni „Upravit přiřazení“ pro přiřazení hodnot.
+            </p>
+            {project.description ? (
+              <div>
+                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
+                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
+                  {project.description}
+                </p>
+              </div>
+            ) : null}
+          </div>
         )}
       </section>
 
