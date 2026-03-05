@@ -12,7 +12,7 @@ async function resolveProject(projectId: string) {
   const db = ensureDb();
   const { data, error } = await db
     .from("projects")
-    .select("id,name,framework,phase,owner_id,asana_project_id,created_at,updated_at")
+    .select("id,name,framework,phase,owner_id,asana_project_id,asana_task_id,description,asana_metadata,created_at,updated_at")
     .eq("id", projectId)
     .single();
   if (error || !data) return null;
@@ -53,7 +53,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     .from("projects")
     .update(updateData)
     .eq("id", params.id)
-    .select("id,name,framework,phase,owner_id,asana_project_id,created_at,updated_at")
+    .select("id,name,framework,phase,owner_id,asana_project_id,asana_task_id,description,asana_metadata,created_at,updated_at")
     .single();
 
   if (error || !data) {

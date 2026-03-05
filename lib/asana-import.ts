@@ -42,6 +42,42 @@ export function mapAsanaPhaseToProjectPhase(
   return mapping[val] ?? "Iniciace";
 }
 
+/** Vytvoří objekt custom polí z Asana tasku. */
+function buildAsanaMetadata(
+  customFields?: Array<{ gid: string; name?: string; display_value?: string }>
+): Record<string, string> {
+  if (!customFields?.length) return {};
+  const out: Record<string, string> = {};
+  for (const c of customFields) {
+    const name = c.name?.trim();
+    if (!name) continue;
+    const val = c.display_value;
+    if (val != null && val !== "") {
+      out[name] = typeof val === "string" ? val : String(val);
+    }
+  }
+  return out;
+}
+
+export function formatImportContext(
+  description: string | null,
+  metadata: Record<string, string>
+): string {
+  const parts: string[] = [];
+  if (description?.trim()) {
+    parts.push("## Popis\n\n" + description.trim());
+  }
+  if (Object.keys(metadata).length > 0) {
+    parts.push(
+      "## Metadata z Asany\n\n" +
+        Object.entries(metadata)
+          .map(([k, v]) => `- **${k}:** ${v}`)
+          .join("\n")
+    );
+  }
+  return parts.join("\n\n") || "";
+}
+
 export type ImportResult = {
   imported: number;
   skipped: number;
@@ -81,6 +117,9 @@ export async function importParentTasksFromAsana(
         continue;
       }
 
+      const description = task.notes?.trim() || null;
+      const asanaMetadata = buildAsanaMetadata(task.custom_fields);
+
       const { data: project, error } = await db
         .from("projects")
         .insert({
@@ -90,6 +129,8 @@ export async function importParentTasksFromAsana(
           owner_id: ownerId,
           asana_project_id: asanaProjectId,
           asana_task_id: task.gid,
+          description,
+          asana_metadata: Object.keys(asanaMetadata).length > 0 ? asanaMetadata : {},
         })
         .select("id")
         .single();
@@ -99,9 +140,10 @@ export async function importParentTasksFromAsana(
         continue;
       }
 
+      const importContext = formatImportContext(description, asanaMetadata);
       await db.from("project_context").upsert({
         project_id: project.id,
-        accumulated_context: "",
+        accumulated_context: importContext,
         last_updated: new Date().toISOString(),
       });
 

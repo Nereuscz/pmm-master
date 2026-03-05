@@ -22,6 +22,8 @@ create table if not exists projects (
   owner_id uuid not null references users(id) on delete cascade,
   asana_project_id text,
   asana_task_id text,
+  description text,
+  asana_metadata jsonb default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

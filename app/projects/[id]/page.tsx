@@ -9,7 +9,16 @@ import { PHASE_COLORS } from "@/lib/constants";
 import ErrorMessage from "@/components/ErrorMessage";
 import { SkeletonDetail } from "@/components/LoadingState";
 
-type Project = { id: string; name: string; framework: string; phase: string; created_at: string; asana_project_id?: string | null };
+type Project = {
+  id: string;
+  name: string;
+  framework: string;
+  phase: string;
+  created_at: string;
+  asana_project_id?: string | null;
+  description?: string | null;
+  asana_metadata?: Record<string, string> | null;
+};
 
 function sanitizeFilename(name: string): string {
   return name
@@ -126,6 +135,38 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </div>
         </div>
       </div>
+
+      {/* Popis a metadata z Asany */}
+      {(project.description || (project.asana_metadata && Object.keys(project.asana_metadata).length > 0)) ? (
+        <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">
+          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
+            Metadata z Asany
+          </h2>
+          {project.description ? (
+            <div className="mt-4">
+              <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
+              <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
+                {project.description}
+              </p>
+            </div>
+          ) : null}
+          {project.asana_metadata && Object.keys(project.asana_metadata).length > 0 ? (
+            <div className="mt-4">
+              <h3 className="text-caption font-semibold text-apple-text-secondary">Custom fieldy</h3>
+              <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                {Object.entries(project.asana_metadata).map(([key, value]) => (
+                  <div key={key} className="flex flex-col gap-0.5">
+                    <dt className="text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
+                      {key}
+                    </dt>
+                    <dd className="text-body text-apple-text-primary">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {/* Propojení s Asanou */}
       <section className="mb-6 rounded-apple bg-white p-6 shadow-apple">

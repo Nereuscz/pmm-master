@@ -4,6 +4,22 @@ import { getProjectSections, getTasksForProject, type AsanaTaskFull } from "./as
 import { summarizeForContext } from "./text";
 import { mapAsanaPhaseToProjectPhase } from "./asana-import";
 
+function buildAsanaMetadata(
+  customFields?: Array<{ gid: string; name?: string; display_value?: string }>
+): Record<string, string> {
+  if (!customFields?.length) return {};
+  const out: Record<string, string> = {};
+  for (const c of customFields) {
+    const name = c.name?.trim();
+    if (!name) continue;
+    const val = c.display_value;
+    if (val != null && val !== "") {
+      out[name] = typeof val === "string" ? val : String(val);
+    }
+  }
+  return out;
+}
+
 /** Vrátí snapshot text pro projekt, nebo null pokud není k dispozici. */
 export async function getAsanaSnapshotForProject(projectId: string): Promise<string | null> {
   const db = ensureDb();
@@ -52,17 +68,21 @@ export async function syncProjectAsanaSnapshot(projectId: string): Promise<SyncR
 
     const snapshotText = formatSnapshotForAi(sections, tasks);
 
-    // Aktualizace fáze u importovaných projektů (asana_task_id)
+    // Aktualizace fáze, popisu a metadat u importovaných projektů (asana_task_id)
     if (project.asana_task_id) {
       const sourceTask = tasks.find((t) => t.gid === project.asana_task_id);
       if (sourceTask) {
         const newPhase = mapAsanaPhaseToProjectPhase(sourceTask.custom_fields);
-        if (newPhase !== project.phase) {
-          await db
-            .from("projects")
-            .update({ phase: newPhase, updated_at: new Date().toISOString() })
-            .eq("id", projectId);
-        }
+        const newDescription = sourceTask.notes?.trim() || null;
+        const newMetadata = buildAsanaMetadata(sourceTask.custom_fields);
+
+        const updates: Record<string, unknown> = {
+          phase: newPhase,
+          description: newDescription,
+          asana_metadata: newMetadata,
+          updated_at: new Date().toISOString(),
+        };
+        await db.from("projects").update(updates).eq("id", projectId);
       }
     }
 
