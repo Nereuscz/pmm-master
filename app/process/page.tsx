@@ -8,6 +8,7 @@ import AiOutput from "@/components/AiOutput";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Spinner } from "@/components/LoadingState";
 import { parsePmOutputIntoSections } from "@/lib/pm-output-parser";
+import { sanitizeFilename } from "@/lib/filename";
 
 type ProcessResponse = {
   sessionId: string;
@@ -16,24 +17,15 @@ type ProcessResponse = {
 };
 type Project = { id: string; name: string; framework: string; phase: string; asana_project_id?: string | null };
 
-type Step = "confirm_context" | "idle" | "clarifying" | "answering" | "processing" | "done";
+type Step = "idle" | "clarifying" | "answering" | "processing" | "done";
 
 const PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"];
-
-function sanitizeFilename(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-}
 
 function ProcessForm() {
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("projectId");
 
-  const [step, setStep] = useState<Step>("confirm_context");
+  const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProcessResponse | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -75,17 +67,6 @@ function ProcessForm() {
       })
       .catch(() => undefined);
   }, [projectIdParam]);
-
-  // Přeskočit krok "Ověření kontextu" při příchodu z detailu projektu (projectId v URL)
-  useEffect(() => {
-    if (
-      projectIdParam &&
-      selectedProject?.id === projectIdParam &&
-      projects.length > 0
-    ) {
-      setStep((s) => (s === "confirm_context" ? "idle" : s));
-    }
-  }, [projectIdParam, selectedProject?.id, projects.length]);
 
   useEffect(() => {
     fetch("/api/settings/asana-token")
@@ -196,7 +177,7 @@ function ProcessForm() {
   }
 
   function resetForm() {
-    setStep("confirm_context");
+    setStep("idle");
     setResult(null);
     setError(null);
     setClarifyingQuestions([]);
@@ -206,11 +187,6 @@ function ProcessForm() {
     setRefinementError(null);
     setShowRefinement(false);
     pendingPayloadRef.current = null;
-  }
-
-  function onConfirmContext() {
-    if (!selectedProject) return;
-    setStep("idle");
   }
 
   async function handleExportToAsana() {
@@ -269,18 +245,16 @@ function ProcessForm() {
   }
 
   const steps = [
-    { label: "Ověření kontextu", key: "confirm_context" as const },
     { label: "Transkript", key: "idle" as const },
     { label: "Doplňující otázky", key: "answering" as const },
     { label: "Zpracování", key: "processing" as const },
     { label: "Hotovo", key: "done" as const },
   ];
   const stepIndex =
-    step === "confirm_context" ? 0
-    : step === "idle" ? 1
-    : step === "clarifying" || step === "answering" ? 2
-    : step === "processing" ? 3
-    : 4;
+    step === "idle" ? 0
+    : step === "clarifying" || step === "answering" ? 1
+    : step === "processing" ? 2
+    : 3;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
@@ -314,76 +288,6 @@ function ProcessForm() {
             </div>
           ))}
         </div>
-
-        {/* Krok 0: Kontextové ověření */}
-        {step === "confirm_context" ? (
-          <div className="space-y-5 rounded-apple bg-white p-6 shadow-apple">
-            <div className="rounded-xl border border-brand-100 bg-brand-50 p-4">
-              <p className="text-[13px] font-semibold uppercase tracking-wider text-brand-700">
-                Před zpracováním potřebuji potvrdit
-              </p>
-              <p className="mt-2 text-[14px] text-apple-text-primary">
-                1) V jaké fázi PM se projekt nachází?<br />
-                2) Jaký typ frameworku použijeme? (Univerzální vs. Produktový)
-              </p>
-              <p className="mt-3 text-[13px] text-apple-text-secondary">
-                Nevytvářím dokument, dokud nepotvrdíte.
-              </p>
-            </div>
-            {projects.length === 0 ? (
-              <div className="rounded-xl bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
-                Nejdřív vytvoř projekt v sekci Projekty.
-              </div>
-            ) : (
-              <>
-                <div>
-                  <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Projekt</label>
-                  <select
-                    className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-                    value={selectedProject?.id ?? ""}
-                    onChange={(e) => {
-                      const p = projects.find((p) => p.id === e.target.value) ?? null;
-                      setSelectedProject(p);
-                      if (p) setSelectedPhase(p.phase ?? PHASES[0]);
-                    }}
-                  >
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Fáze PM</label>
-                    <select
-                      value={selectedPhase}
-                      onChange={(e) => setSelectedPhase(e.target.value)}
-                      className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-                    >
-                      {PHASES.map((p) => (
-                        <option key={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Framework</label>
-                    <p className="rounded-xl border border-apple-border-light bg-apple-bg-subtle px-4 py-2.5 text-[14px] text-apple-text-secondary">
-                      {selectedProject?.framework ?? "–"}
-                    </p>
-                    <p className="mt-1 text-[12px] text-apple-text-muted">Framework se mění v nastavení projektu</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={onConfirmContext}
-                  className="w-full rounded-full bg-brand-600 py-3 text-[15px] font-medium text-white transition-colors hover:bg-brand-700"
-                >
-                  Potvrdit a pokračovat →
-                </button>
-              </>
-            )}
-          </div>
-        ) : null}
 
         {/* Krok 1: Formulář */}
         {step === "idle" ? (
@@ -594,12 +498,12 @@ function ProcessForm() {
                     {exporting ? "Exportuji…" : "Exportovat do Asany"}
                   </button>
                 ) : hasAsanaToken && selectedProject ? (
-                  <a
+                  <Link
                     href={`/projects/${selectedProject.id}`}
                     className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
                   >
                     Propojit projekt s Asanou →
-                  </a>
+                  </Link>
                 ) : null}
               </div>
             </div>

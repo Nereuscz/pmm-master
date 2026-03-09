@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useState, Suspense } from "react";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 const HIDE_SIDEBAR = ["/", "/signin"];
@@ -34,12 +35,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <a href="/dashboard" className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600">
                 <span className="text-[11px] font-bold text-white">PM</span>
               </div>
               <span className="text-body font-semibold text-apple-text-primary">PM Assistant</span>
-            </a>
+            </Link>
           </header>
 
           <Suspense fallback={null}>

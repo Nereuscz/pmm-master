@@ -70,6 +70,13 @@ export async function POST(request: NextRequest) {
 
     // Zkus získat projektový kontext a KB chunky (neblokující – DB může chybět)
     const db = tryGetDb();
+    if (db) {
+      const ownership = await requireProjectOwnership(input.projectId, user.id, isAdmin(user));
+      if (!ownership.ok) {
+        if (ownership.status === 403) return forbidden();
+        return NextResponse.json({ error: ownership.message }, { status: 404 });
+      }
+    }
 
     const [projectContext, kbChunks, marketInsight, asanaSnapshot] = await Promise.all([
       db
@@ -104,12 +111,6 @@ export async function POST(request: NextRequest) {
         saved: false,
         totalCount: questions.length
       });
-    }
-
-    const ownership = await requireProjectOwnership(input.projectId, user.id, isAdmin(user));
-    if (!ownership.ok) {
-      if (ownership.status === 403) return forbidden();
-      return NextResponse.json({ error: ownership.message }, { status: 404 });
     }
 
     const { data: session, error } = await db

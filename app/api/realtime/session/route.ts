@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { env } from "@/lib/env";
+import { requireProjectOwnership, tryGetDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,20 @@ export async function POST(request: NextRequest) {
       { error: "Chybí projectId v query parametrech." },
       { status: 400 }
     );
+  }
+
+  const db = tryGetDb();
+  if (!db) {
+    return NextResponse.json(
+      { error: "Databáze není dostupná, nelze ověřit přístup k projektu." },
+      { status: 503 }
+    );
+  }
+
+  const ownership = await requireProjectOwnership(projectId, user.id, isAdmin(user));
+  if (!ownership.ok) {
+    if (ownership.status === 403) return forbidden();
+    return NextResponse.json({ error: ownership.message }, { status: 404 });
   }
 
   let sdpOffer: string;

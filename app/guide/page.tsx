@@ -87,7 +87,6 @@ function GuideChat() {
   });
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
-  const showLiveCanvas = false; // Canvas skrytý – vždy jen chat
   const [chatOpen, setChatOpen] = useState(true);
 
   const { speakText } = useTTS(voiceMode);
@@ -130,6 +129,7 @@ function GuideChat() {
         : 0;
     return ` · doplňující: ${fuFilled}/3`;
   })();
+  const showLiveCanvas = chatMode === "canvas" && started;
 
   return (
     <main
@@ -278,7 +278,7 @@ function GuideChat() {
                 <div ref={bottomRef} />
               </div>
               <div className="shrink-0 space-y-2 border-t border-apple-bg-subtle bg-apple-bg-subtle px-4 py-3">
-                {voiceMode && chatMode === "guide" && status === "awaiting_answer" && (
+                {voiceMode && status === "awaiting_answer" && (
                   <RealtimeVoicePanel
                     projectId={selectedProject?.id ?? null}
                     state={realtimeVoice.state}

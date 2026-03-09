@@ -32,7 +32,7 @@ Webová aplikace pro JIC – zpracování PM transkriptů s AI, RAG nad znalostn
 
 1. `npm install`
 2. Vytvoř `.env.local` podle `.env.example`
-3. Spusť SQL v Supabase: `db/schema.sql`, migrace `001`–`013`
+3. Spusť SQL v Supabase: `db/schema.sql`, migrace `001`–`016`
 4. `npm run dev`
 
 ## Poznámky

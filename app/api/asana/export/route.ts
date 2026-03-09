@@ -28,22 +28,6 @@ export async function POST(request: NextRequest) {
     const input = parsed.data;
     const db = ensureDb();
 
-    const { data: existingJob } = await db
-      .from("export_jobs")
-      .select("id,idempotency_key,status,created_objects_json")
-      .eq("idempotency_key", input.idempotencyKey)
-      .maybeSingle();
-
-    if (existingJob) {
-      return NextResponse.json({
-        exportJobId: existingJob.id,
-        idempotencyKey: existingJob.idempotency_key,
-        status: existingJob.status,
-        created: existingJob.created_objects_json,
-        idempotentHit: true
-      });
-    }
-
     const { data: session, error: sessionError } = await db
       .from("sessions")
       .select("id, project_id")
@@ -59,6 +43,28 @@ export async function POST(request: NextRequest) {
     if (!ownership.ok) {
       if (ownership.status === 403) return forbidden();
       return NextResponse.json({ error: ownership.message }, { status: 404 });
+    }
+
+    const { data: existingJob } = await db
+      .from("export_jobs")
+      .select("id,session_id,idempotency_key,status,created_objects_json")
+      .eq("idempotency_key", input.idempotencyKey)
+      .maybeSingle();
+
+    if (existingJob) {
+      if (existingJob.session_id !== input.sessionId) {
+        return NextResponse.json(
+          { error: "Idempotency key už byl použit pro jiný export." },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json({
+        exportJobId: existingJob.id,
+        idempotencyKey: existingJob.idempotency_key,
+        status: existingJob.status,
+        created: existingJob.created_objects_json,
+        idempotentHit: true
+      });
     }
 
     const accessToken = await getValidAsanaToken(user.id);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureDb } from "@/lib/db";
 import { kbDocumentCreateSchema } from "@/lib/schemas";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 import { upsertDocumentWithChunks } from "@/lib/kb";
@@ -15,17 +16,43 @@ export async function GET(request: NextRequest) {
   const projectId = searchParams.get("projectId");
 
   const db = ensureDb();
-  let query = db
+
+  if (projectId) {
+    const parsedProjectId = z.string().uuid().safeParse(projectId);
+    if (!parsedProjectId.success) {
+      return NextResponse.json({ error: "Neplatný projectId." }, { status: 400 });
+    }
+
+    const [sharedRes, projectRes] = await Promise.all([
+      db
+        .from("kb_documents")
+        .select("id,title,category,source,source_url,sharepoint_id,visibility,project_id,created_at,deleted_at")
+        .is("deleted_at", null)
+        .in("visibility", ["global", "team"])
+        .order("created_at", { ascending: false }),
+      db
+        .from("kb_documents")
+        .select("id,title,category,source,source_url,sharepoint_id,visibility,project_id,created_at,deleted_at")
+        .is("deleted_at", null)
+        .eq("visibility", "project")
+        .eq("project_id", parsedProjectId.data)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    if (sharedRes.error || projectRes.error) {
+      return NextResponse.json({ error: "Nepodařilo se načíst dokumenty." }, { status: 500 });
+    }
+
+    const merged = [...(sharedRes.data ?? []), ...(projectRes.data ?? [])];
+    merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return NextResponse.json({ documents: merged });
+  }
+
+  const { data, error } = await db
     .from("kb_documents")
     .select("id,title,category,source,source_url,sharepoint_id,visibility,project_id,created_at,deleted_at")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
-
-  if (projectId) {
-    query = query.or(`visibility.in.(global,team),and(visibility.eq.project,project_id.eq.${projectId})`);
-  }
-
-  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: "Nepodařilo se načíst dokumenty." }, { status: 500 });

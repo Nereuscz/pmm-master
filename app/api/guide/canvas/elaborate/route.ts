@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { elaborateCanvasSection } from "@/lib/anthropic";
-import { getAuthUser, unauthorized, canProcess, forbidden } from "@/lib/auth-guard";
+import { getAuthUser, unauthorized, canProcess, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
 import { checkAiRateLimit } from "@/lib/rate-limit";
-import { tryGetDb, getOrCreateProjectContext } from "@/lib/db";
+import { tryGetDb, getOrCreateProjectContext, requireProjectOwnership } from "@/lib/db";
 import { retrieveTopChunks } from "@/lib/rag";
 
 const schema = z.object({
@@ -40,23 +40,34 @@ export async function POST(request: NextRequest) {
     const { sectionId, questionName, questionHint, currentContent, selectedText, userPrompt, projectId, uploadedContext, framework, phase } =
       parsed.data;
 
+    const db = tryGetDb();
     let projectContext = "";
     if (projectId) {
-      const db = tryGetDb();
-      if (db) {
-        const [contextRow, kbChunks] = await Promise.all([
-          getOrCreateProjectContext(projectId),
-          retrieveTopChunks({ projectId, queryText: `${phase} ${framework} ${questionName}`, limit: 4 })
-        ]);
-        const kbSummary = kbChunks.map((c) => c.content).join("\n").slice(0, 1200);
-        projectContext = [
-          contextRow.accumulated_context,
-          kbSummary ? `Znalostní báze:\n${kbSummary}` : ""
-        ]
-          .filter(Boolean)
-          .join("\n\n")
-          .trim();
+      if (!db) {
+        return NextResponse.json(
+          { error: "Databáze není dostupná, nelze ověřit přístup k projektu." },
+          { status: 503 }
+        );
       }
+
+      const ownership = await requireProjectOwnership(projectId, user.id, isAdmin(user));
+      if (!ownership.ok) {
+        if (ownership.status === 403) return forbidden();
+        return NextResponse.json({ error: ownership.message }, { status: 404 });
+      }
+
+      const [contextRow, kbChunks] = await Promise.all([
+        getOrCreateProjectContext(projectId),
+        retrieveTopChunks({ projectId, queryText: `${phase} ${framework} ${questionName}`, limit: 4 })
+      ]);
+      const kbSummary = kbChunks.map((c) => c.content).join("\n").slice(0, 1200);
+      projectContext = [
+        contextRow.accumulated_context,
+        kbSummary ? `Znalostní báze:\n${kbSummary}` : ""
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+        .trim();
     }
 
     const result = await elaborateCanvasSection({

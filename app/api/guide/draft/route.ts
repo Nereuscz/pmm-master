@@ -6,18 +6,66 @@ import { logApiError } from "@/lib/api-logger";
 
 export const dynamic = "force-dynamic";
 
+const answerSchema = z.object({
+  questionId: z.string().min(1).max(200),
+  question: z.string().min(1).max(4000),
+  answer: z.string().max(20000),
+});
+
+const questionSchema = z.object({
+  id: z.string().min(1).max(200),
+  text: z.string().min(1).max(4000),
+  hint: z.string().max(4000),
+  context: z.string().max(8000).optional(),
+});
+
+const chatMessageSchema = z
+  .object({
+    id: z.string().min(1).max(120),
+    role: z.enum(["ai", "user"]),
+    kind: z.string().max(40).optional(),
+    text: z.string().max(20000).optional(),
+    answerToQuestionId: z.string().max(200).optional(),
+    q: questionSchema.optional(),
+    questions: z.array(z.string().max(4000)).max(40).optional(),
+    answers: z.record(z.string().max(20000)).optional(),
+    submitted: z.boolean().optional(),
+    content: z.string().max(120000).optional(),
+    phase: z.string().max(100).optional(),
+    framework: z.enum(["Univerzální", "Produktový"]).optional(),
+    sessionId: z.string().uuid().optional(),
+    projectId: z.string().uuid().optional(),
+    saved: z.boolean().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.role === "ai" && !value.kind) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["kind"],
+        message: "AI zpráva musí obsahovat 'kind'.",
+      });
+    }
+    if (value.role === "user" && !value.text) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["text"],
+        message: "User zpráva musí obsahovat 'text'.",
+      });
+    }
+  });
+
 const upsertSchema = z.object({
   projectId: z.string().uuid(),
-  phase: z.string().min(1),
+  phase: z.string().min(1).max(100),
   framework: z.enum(["Univerzální", "Produktový"]),
-  answers: z.array(z.any()),
-  messages: z.array(z.any()),
-  uploadedContext: z.string().optional(),
+  answers: z.array(answerSchema).max(300),
+  messages: z.array(chatMessageSchema).max(600),
+  uploadedContext: z.string().max(300000).optional(),
 });
 
 const deleteSchema = z.object({
   projectId: z.string().uuid(),
-  phase: z.string().min(1),
+  phase: z.string().min(1).max(100),
   framework: z.enum(["Univerzální", "Produktový"]),
 });
 

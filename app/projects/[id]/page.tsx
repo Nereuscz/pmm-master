@@ -9,6 +9,7 @@ import { PHASE_COLORS } from "@/lib/constants";
 import { JIC_CUSTOM_FIELDS } from "@/lib/jic-custom-fields";
 import ErrorMessage from "@/components/ErrorMessage";
 import { SkeletonDetail } from "@/components/LoadingState";
+import { sanitizeFilename } from "@/lib/filename";
 
 type Project = {
   id: string;
@@ -21,14 +22,6 @@ type Project = {
   asana_metadata?: Record<string, string> | null;
 };
 
-function sanitizeFilename(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-}
 type Session = { id: string; phase: string; ai_output: string; created_at: string };
 type KbDoc = { id: string; title: string; category: string; created_at: string; visibility: string; project_id: string | null };
 type ContextData = {

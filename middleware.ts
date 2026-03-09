@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
 
-// Pokud chybí ASANA_CLIENT_ID nebo NEXTAUTH_SECRET, jedeme v dev/bypass módu –
-// middleware prostě propustí všechny requesty a auth řeší auth-guard.ts uvnitř API.
-const isAuthEnabled =
-  !!process.env.ASANA_CLIENT_ID && !!process.env.NEXTAUTH_SECRET;
+const isProduction = process.env.NODE_ENV === "production";
+const hasAuthConfig =
+  !!process.env.ASANA_CLIENT_ID &&
+  !!process.env.ASANA_CLIENT_SECRET &&
+  !!process.env.NEXTAUTH_SECRET;
 
 // Stránky, které vyžadují přihlášení
 const PROTECTED_PATHS = ["/dashboard", "/projects", "/process", "/guide", "/kb", "/settings", "/admin"];
@@ -24,9 +25,23 @@ const authMiddleware = withAuth({
 });
 
 export function middleware(req: NextRequest) {
-  if (!isAuthEnabled || !isProtected(req.nextUrl.pathname)) {
+  if (!isProtected(req.nextUrl.pathname)) {
     return NextResponse.next();
   }
+
+  // Dev: explicitní bypass pro lokální vývoj bez OAuth konfigurace.
+  if (!hasAuthConfig && !isProduction) {
+    return bypassMiddleware(req);
+  }
+
+  // Prod: fail closed, aby chybějící env nevypnuly ochranu privátních stránek.
+  if (!hasAuthConfig && isProduction) {
+    return NextResponse.json(
+      { error: "Auth není správně nakonfigurovaná (missing env)." },
+      { status: 503 }
+    );
+  }
+
   // @ts-expect-error withAuth signature
   return authMiddleware(req);
 }

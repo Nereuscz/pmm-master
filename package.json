@@ -12,7 +12,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:api": "vitest run app/api/**/*.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

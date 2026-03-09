@@ -1,6 +1,6 @@
 -- PM Assistant – kompletní SQL pro Supabase
 -- Spusť v Supabase Dashboard → SQL Editor → New query
--- Pořadí: 1) schema, 2) migrace 001–005
+-- Pořadí: 1) schema + tento setup skript (obsahuje 001–008), 2) migrace 009–016 ze složky db/migrations
 
 -- ═══════════════════════════════════════════════════════════════════
 -- 1. ZÁKLADNÍ SCHEMA (db/schema.sql)
@@ -195,11 +195,10 @@ ALTER TABLE kb_documents ADD CONSTRAINT kb_documents_source_check
   CHECK (source IN ('upload', 'sharepoint', 'url'));
 
 -- ═══════════════════════════════════════════════════════════════════
--- 9. DEV FALLBACK USER (pro lokální vývoj bez Asana)
+-- 9. DEV USER SEED
 -- ═══════════════════════════════════════════════════════════════════
-insert into users (id, email, role)
-values ('00000000-0000-0000-0000-000000000001', 'dev@pm-assistant.local', 'Admin')
-on conflict (email) do nothing;
+-- Z bezpečnostních důvodů zde NENÍ automatický seed admin účtu.
+-- Pokud potřebuješ lokální seed, proveď ho ručně mimo produkční SQL skripty.
 
 -- ═══════════════════════════════════════════════════════════════════
 -- 10. MIGRACE 008 (RLS – Row Level Security)
