@@ -34,7 +34,7 @@ export default function MarkdownContent({ content, className }: Props) {
     elements.push(
       <ul key={key++} className="my-2 space-y-1 pl-5">
         {bulletBuffer.map((item, i) => (
-          <li key={i} className="list-disc text-[14px] text-[#3a3a3a]">
+          <li key={i} className="list-disc text-[14px] text-apple-text-primary">
             {parseInline(item)}
           </li>
         ))}
@@ -106,7 +106,7 @@ export default function MarkdownContent({ content, className }: Props) {
     elements.push(
       <p
         key={key++}
-        className={`text-[14px] leading-relaxed ${isItalic ? "italic text-apple-text-tertiary" : "text-[#3a3a3a]"}`}
+        className={`text-[14px] leading-relaxed ${isItalic ? "italic text-apple-text-tertiary" : "text-apple-text-primary"}`}
       >
         {parseInline(line)}
       </p>

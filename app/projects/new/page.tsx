@@ -72,7 +72,7 @@ export default function NewProjectPage() {
         <p className="mt-1 text-body text-apple-text-secondary">Vyplň základní informace o projektu.</p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-6 rounded-apple bg-white p-8 shadow-apple">
+      <form onSubmit={onSubmit} className="space-y-6 rounded-apple bg-apple-bg-card p-8 shadow-apple">
         {/* Název */}
         <div>
           <label htmlFor="project-name" className="mb-2 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">
@@ -143,7 +143,7 @@ export default function NewProjectPage() {
           </label>
           <select
             name="phase"
-            className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-body text-apple-text-primary focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+            className="w-full rounded-xl border border-apple-border-default bg-apple-bg-card px-4 py-2.5 text-body text-apple-text-primary focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
           >
             {["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"].map((p) => (
               <option key={p}>{p}</option>

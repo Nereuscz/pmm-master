@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { PHASE_COLORS } from "@/lib/constants";
-import ConfirmDialog from "@/components/ConfirmDialog";
-import ErrorMessage from "@/components/ErrorMessage";
-import { SkeletonGrid } from "@/components/LoadingState";
 
 type Project = {
   id: string;
@@ -15,6 +12,13 @@ type Project = {
   framework: string;
   created_at: string;
 };
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "Dobré ráno";
+  if (h >= 12 && h < 18) return "Dobré odpoledne";
+  return "Dobrý večer";
+}
 
 function relativeDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -25,241 +29,131 @@ function relativeDate(iso: string): string {
   return new Date(iso).toLocaleDateString("cs-CZ", { day: "numeric", month: "short" });
 }
 
-export default function DashboardPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+const quickActions = [
+  { label: "Zpracovat transkript", href: "/process", icon: "📝" },
+  { label: "Průvodce schůzkou", href: "/guide", icon: "💬" },
+  { label: "Nový projekt", href: "/projects/new", icon: "📁" },
+  { label: "Znalostní báze", href: "/kb", icon: "📚" },
+];
 
-  const filteredProjects = projects.filter((p) => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      p.name.toLowerCase().includes(q) ||
-      p.phase.toLowerCase().includes(q) ||
-      p.framework.toLowerCase().includes(q)
-    );
-  });
+export default function DashboardPage() {
+  const router = useRouter();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
     fetch("/api/projects")
       .then((r) => r.json())
       .then((json) => {
-        if (json.error) throw new Error(json.error);
-        setProjects(json.projects ?? []);
+        if (!json.error) setProjects(json.projects ?? []);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "Chyba načítání"))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  async function deleteProject(id: string) {
-    setDeletingId(id);
-    setConfirmId(null);
-    try {
-      const r = await fetch(`/api/projects/${id}`, { method: "DELETE" });
-      if (!r.ok) {
-        const json = await r.json();
-        throw new Error(json.error || "Smazání selhalo");
-      }
-      setProjects((prev) => prev.filter((p) => p.id !== id));
-      toast.success("Projekt smazán.");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Smazání selhalo";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setDeletingId(null);
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const msg = inputValue.trim();
+    if (msg) {
+      router.push(`/guide?message=${encodeURIComponent(msg)}`);
+    } else {
+      router.push("/guide");
     }
   }
 
   return (
-    <main className="animate-page-in mx-auto max-w-5xl px-8 py-12">
-      {/* Hlavička */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-title font-semibold tracking-tight text-apple-text-primary">Projekty</h1>
-          <p className="mt-1 text-body text-apple-text-secondary">Přehled všech PM projektů</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/projects/import"
-            className="rounded-full border border-apple-border-default px-4 py-2 text-body font-medium text-apple-text-primary transition-colors duration-200 hover:bg-apple-bg-page active:scale-[0.98]"
-          >
-            Import z Asany
-          </Link>
-          <Link
-            href="/projects/new"
-            className="rounded-full bg-brand-600 px-5 py-2 text-body font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"
-          >
-            + Nový projekt
-          </Link>
+    <main className="animate-page-in flex min-h-[calc(100vh-56px)] flex-col md:min-h-screen">
+      {/* ── Hero: centered greeting + input ──────────────────────────── */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 pb-8">
+        <h1 className="mb-8 text-center text-[28px] font-semibold tracking-tight text-apple-text-primary md:text-[32px]">
+          <span className="mr-2 inline-block text-gold-400">✺</span>
+          {getGreeting()}
+        </h1>
+
+        {/* Chat input */}
+        <form onSubmit={handleSubmit} className="w-full max-w-[640px]">
+          <div className="relative rounded-2xl border border-apple-border-default bg-apple-bg-card shadow-apple transition-shadow focus-within:border-brand-400 focus-within:shadow-apple-lg">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Na čem dnes pracuješ?"
+              className="w-full rounded-2xl bg-transparent px-5 pb-14 pt-4 text-[15px] text-apple-text-primary placeholder:text-apple-text-muted focus:outline-none"
+            />
+            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+              <Link
+                href="/process"
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] text-apple-text-muted transition-colors hover:bg-apple-bg-subtle hover:text-apple-text-secondary"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                </svg>
+              </Link>
+              <button
+                type="submit"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white transition-colors hover:bg-brand-700"
+                aria-label="Odeslat"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M3.105 2.29a.75.75 0 00-.826.95l1.414 4.925A1.5 1.5 0 005.135 9.25h6.115a.75.75 0 010 1.5H5.135a1.5 1.5 0 00-1.442 1.086l-1.414 4.926a.75.75 0 00.826.95 28.896 28.896 0 0015.293-7.154.75.75 0 000-1.115A28.897 28.897 0 003.105 2.289z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {/* Quick action chips */}
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          {quickActions.map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="flex items-center gap-1.5 rounded-full border border-apple-border-light bg-apple-bg-card px-4 py-2 text-[13px] font-medium text-apple-text-secondary transition-colors hover:border-apple-border-default hover:text-apple-text-primary"
+            >
+              <span>{a.icon}</span>
+              {a.label}
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Vyhledávání */}
+      {/* ── Recent projects (below hero) ─────────────────────────────── */}
       {!loading && projects.length > 0 ? (
-        <div className="mb-5">
-          <div className="relative w-full max-w-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="15"
-              height="15"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-apple-text-muted"
-              aria-hidden
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
-            <input
-              type="search"
-              placeholder="Hledat projekty…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-full border border-apple-border-default bg-white py-2 pl-9 pr-4 text-caption placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-            />
+        <div className="mx-auto w-full max-w-[640px] px-6 pb-10">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
+              Nedávné projekty
+            </p>
+            <Link href="/projects/new" className="text-[12px] font-medium text-brand-600 hover:text-brand-700">
+              + Nový projekt
+            </Link>
           </div>
-        </div>
-      ) : null}
-
-      {/* Chyba */}
-      {error ? (
-        <div className="mb-6">
-          <ErrorMessage message={error} />
-        </div>
-      ) : null}
-
-      {/* Skeleton */}
-      {loading ? (
-        <SkeletonGrid count={4} />
-      ) : projects.length === 0 ? (
-        /* Empty state + onboarding */
-        <div className="rounded-apple bg-white p-8 shadow-apple">
-          <p className="text-headline font-semibold text-apple-text-primary">Jak začít s PM Assistant</p>
-          <p className="mt-1 text-caption text-apple-text-secondary">Tři kroky a jste připraveni zpracovávat schůzky.</p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {[
-              {
-                step: "1",
-                icon: "📁",
-                title: "Vytvoř projekt",
-                desc: "Pojmenuj iniciativu, nastav framework (Univerzální nebo Produktový) a aktuální fázi."
-              },
-              {
-                step: "2",
-                icon: "📚",
-                title: "Nahraj dokumenty",
-                desc: "Přidej materiály do Znalostní báze – AI je použije jako kontext při generování."
-              },
-              {
-                step: "3",
-                icon: "✨",
-                title: "Zpracuj nebo veď schůzku",
-                desc: "Nahraj transkript k analýze, nebo spusť Průvodce pro strukturovaný rozhovor."
-              }
-            ].map(({ step, icon, title, desc }) => (
-              <div key={step} className="flex flex-col rounded-xl border border-apple-border-light bg-apple-bg-subtle p-5">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[12px] font-bold text-white">{step}</span>
-                  <span className="text-xl">{icon}</span>
+          <div className="space-y-0.5">
+            {projects.slice(0, 5).map((project) => (
+              <Link
+                key={project.id}
+                href={`/projects/${project.id}`}
+                className="flex items-center justify-between rounded-xl px-4 py-3 transition-colors hover:bg-apple-bg-card"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-medium text-apple-text-primary">{project.name}</p>
+                  <p className="mt-0.5 text-[12px] text-apple-text-tertiary">
+                    {project.framework} · {relativeDate(project.created_at)}
+                  </p>
                 </div>
-                <p className="text-caption font-semibold text-apple-text-primary">{title}</p>
-                <p className="mt-1 text-caption leading-relaxed text-apple-text-secondary">{desc}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <Link
-              href="/projects/new"
-              className="rounded-full bg-brand-600 px-6 py-2.5 text-caption font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"
-            >
-              + Vytvořit první projekt
-            </Link>
-            <Link
-              href="/projects/import"
-              className="rounded-full border border-apple-border-default px-5 py-2.5 text-caption font-medium text-apple-text-primary transition-colors duration-200 hover:bg-apple-bg-page active:scale-[0.98]"
-            >
-              Import z Asany
-            </Link>
-            <Link
-              href="/kb"
-              className="rounded-full border border-apple-border-default px-5 py-2.5 text-caption font-medium text-apple-text-primary transition-colors duration-200 hover:bg-apple-bg-page active:scale-[0.98]"
-            >
-              Znalostní báze →
-            </Link>
-          </div>
-        </div>
-      ) : (
-        /* Projekt grid */
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {filteredProjects.map((project) => (
-            <article
-              key={project.id}
-              className="group relative flex flex-col rounded-apple bg-white p-6 shadow-apple transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-apple-lg"
-            >
-              {/* Stretched link – celá karta */}
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={`/projects/${project.id}`}
-                  className="text-headline font-semibold text-apple-text-primary after:absolute after:inset-0 after:rounded-apple hover:text-brand-600"
-                >
-                  {project.name}
-                </Link>
-                <div className="mt-1.5 flex items-center gap-2 text-caption text-apple-text-tertiary">
-                  <span>{project.framework}</span>
-                  <span>·</span>
-                  <span title={new Date(project.created_at).toLocaleDateString("cs-CZ")}>{relativeDate(project.created_at)}</span>
-                </div>
-              </div>
-
-              {/* Dolní řádek – badge + smazat */}
-              <div className="relative z-10 mt-4 flex items-center justify-between">
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    PHASE_COLORS[project.phase] ?? "bg-apple-bg-subtle text-apple-text-secondary ring-1 ring-apple-border-light"
+                  className={`ml-3 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                    PHASE_COLORS[project.phase] ?? "bg-apple-bg-subtle text-apple-text-secondary"
                   }`}
                 >
                   {project.phase}
                 </span>
-
-                <button
-                  onClick={() => setConfirmId(project.id)}
-                  title="Smazat projekt"
-                  aria-label={`Smazat projekt ${project.name}`}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-apple-text-muted opacity-100 transition-all duration-200 hover:bg-red-50 hover:text-[#ff3b30] focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2 md:opacity-0 md:group-hover:opacity-100"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                    <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-            </article>
-          ))}
-          {filteredProjects.length === 0 && projects.length > 0 ? (
-            <p className="col-span-2 py-8 text-center text-caption text-apple-text-secondary">
-              Žádný projekt neodpovídá hledanému výrazu.
-            </p>
-          ) : null}
+              </Link>
+            ))}
+          </div>
         </div>
-      )}
-
-      <ConfirmDialog
-        open={confirmId !== null}
-        title="Smazat projekt?"
-        message={
-          confirmId
-            ? `Projekt „${projects.find((p) => p.id === confirmId)?.name ?? ""}" bude trvale smazán včetně všech transkriptů a kontextu.`
-            : ""
-        }
-        confirmLabel="Smazat"
-        onConfirm={() => confirmId && deleteProject(confirmId)}
-        onCancel={() => setConfirmId(null)}
-        loading={deletingId !== null}
-      />
+      ) : null}
     </main>
   );
 }

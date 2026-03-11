@@ -15,7 +15,7 @@ export default function Error({
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center px-6">
-      <div className="max-w-md rounded-apple bg-white p-8 text-center shadow-apple">
+      <div className="max-w-md rounded-apple bg-apple-bg-card p-8 text-center shadow-apple">
         <h2 className="text-headline font-semibold text-apple-text-primary">Něco se pokazilo</h2>
         <p className="mt-2 text-caption text-apple-text-secondary">
           Došlo k neočekávané chybě. Zkus stránku obnovit.

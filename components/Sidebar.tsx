@@ -20,10 +20,10 @@ const links: Array<{
 }> = [
   {
     href: "/dashboard",
-    label: "Projekty",
+    label: "Domů",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
       </svg>
     ),
   },
@@ -85,8 +85,8 @@ type UserInfo = { role: UserRole | null; name?: string | null; email?: string | 
 function UserAvatar({ name, email }: { name?: string | null; email?: string | null }) {
   const initial = ((name || email || "?")[0] ?? "?").toUpperCase();
   return (
-    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 shadow-sm">
-      <span className="text-[11px] font-semibold text-white">{initial}</span>
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gold-400/20">
+      <span className="text-[11px] font-semibold text-gold-300">{initial}</span>
     </div>
   );
 }
@@ -138,27 +138,41 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
       {/* Logo */}
       <div className="px-5 pb-4 pt-6">
         <Link href="/dashboard" onClick={onDrawerClose} className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 shadow-sm">
-            <span className="text-[13px] font-semibold text-white">PM</span>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-400">
+            <span className="text-[13px] font-semibold text-brand-900">PM</span>
           </div>
           <div className="leading-tight">
-            <div className="text-body font-semibold text-apple-text-primary">PM Assistant</div>
-            <div className="text-footnote text-apple-text-tertiary">JIC</div>
+            <div className="text-body font-semibold text-white/90">PM Assistant</div>
+            <div className="text-footnote text-white/40">JIC</div>
           </div>
         </Link>
       </div>
 
+      {/* + Nový chat */}
+      <div className="px-3 pb-3 pt-2">
+        <Link
+          href="/guide"
+          onClick={onDrawerClose}
+          className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[13px] font-medium text-white/70 transition-colors hover:bg-white/8 hover:text-white/90"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Nový chat
+        </Link>
+      </div>
+
       {/* Divider */}
-      <div className="mx-4 border-t border-apple-bg-subtle" />
+      <div className="mx-4 border-t border-white/10" />
 
       {/* Kontext projektu – na Process/Guide s projectId */}
       {currentProjectName && projectIdParam ? (
-        <div className="mx-3 mt-3 rounded-xl border border-brand-100 bg-brand-50 px-3 py-2 text-[12px]">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">Projekt</p>
+        <div className="mx-3 mt-3 rounded-lg bg-white/8 px-3 py-2 text-[12px]">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">Projekt</p>
           <Link
             href={`/projects/${projectIdParam}`}
             onClick={onDrawerClose}
-            className="mt-0.5 block truncate font-medium text-brand-700 hover:text-brand-800 hover:underline"
+            className="mt-0.5 block truncate font-medium text-white/80 hover:text-white hover:underline"
           >
             {currentProjectName}
           </Link>
@@ -177,7 +191,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
               onClick={onDrawerClose}
               className={`nav-item${active ? " active" : ""}`}
             >
-              <span className={active ? "text-brand-600" : "text-apple-text-muted"}>
+              <span className="opacity-70">
                 {link.icon}
               </span>
               {link.label}
@@ -188,16 +202,16 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
 
       {/* Uživatel + odhlášení */}
       <div className="mt-auto px-4 pb-6">
-        <div className="border-t border-apple-bg-subtle pt-4">
+        <div className="border-t border-white/10 pt-4">
           {(user.name || user.email) && (
             <div className="mb-3 flex items-center gap-2.5">
               <UserAvatar name={user.name} email={user.email} />
               <div className="min-w-0">
-                <p className="truncate text-caption font-medium text-apple-text-primary" title={user.name || user.email || undefined}>
+                <p className="truncate text-caption font-medium text-white/80" title={user.name || user.email || undefined}>
                   {user.name || user.email}
                 </p>
                 {user.email && user.name && (
-                  <p className="truncate text-footnote text-apple-text-tertiary" title={user.email}>{user.email}</p>
+                  <p className="truncate text-footnote text-white/40" title={user.email}>{user.email}</p>
                 )}
               </div>
             </div>
@@ -208,11 +222,11 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
               onDrawerClose?.();
               signOut({ callbackUrl: "/signin" });
             }}
-            className="w-full rounded-lg px-3 py-2 text-left text-caption font-medium text-apple-text-secondary transition-colors duration-150 hover:bg-apple-bg-subtle hover:text-apple-text-primary"
+            className="w-full rounded-lg px-3 py-2 text-left text-caption font-medium text-white/50 transition-colors duration-150 hover:bg-white/8 hover:text-white/80"
           >
             Odhlásit se
           </button>
-          <p className="mt-3 text-footnote text-apple-text-muted">PM Assistant v1.2</p>
+          <p className="mt-3 text-footnote text-white/25">PM Assistant v1.2</p>
         </div>
       </div>
     </>
@@ -220,8 +234,8 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-64 flex-col border-r border-apple-border-light bg-white/95 backdrop-blur-xl md:flex">
+      {/* Desktop sidebar – dark warm tone */}
+      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-64 flex-col bg-[#2A1657] md:flex">
         {navContent}
       </aside>
 
@@ -233,7 +247,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
           aria-hidden
         />
         <aside
-          className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-apple-border-light bg-white shadow-apple-lg transition-transform duration-200 ${
+          className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col bg-[#2A1657] shadow-apple-lg transition-transform duration-200 ${
             drawerOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >

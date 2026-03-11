@@ -45,10 +45,10 @@ export default function AuditLogPage() {
     <main className="mx-auto max-w-4xl px-8 py-10">
       <div className="mb-6">
         <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: "Audit log" }]} />
-        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-[#1d1d1f]">
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-apple-text-primary">
           Audit log
         </h1>
-        <p className="mt-1 text-[15px] text-[#6e6e73]">
+        <p className="mt-1 text-[15px] text-apple-text-secondary">
           Historie akcí v aplikaci (Admin).
         </p>
       </div>
@@ -62,35 +62,35 @@ export default function AuditLogPage() {
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-12 animate-pulse rounded-apple bg-white shadow-apple-sm" />
+            <div key={i} className="h-12 animate-pulse rounded-apple bg-apple-bg-card shadow-apple-sm" />
           ))}
         </div>
       ) : logs.length === 0 ? (
-        <div className="rounded-apple bg-white py-12 text-center shadow-apple">
-          <p className="text-[14px] text-[#6e6e73]">Zatím žádné záznamy.</p>
+        <div className="rounded-apple bg-apple-bg-card py-12 text-center shadow-apple">
+          <p className="text-[14px] text-apple-text-secondary">Zatím žádné záznamy.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-apple bg-white shadow-apple">
+        <div className="overflow-hidden rounded-apple bg-apple-bg-card shadow-apple">
           <table className="w-full text-left text-[14px]">
             <thead>
-              <tr className="border-b border-[#f2f2f7] bg-[#fafafa]">
-                <th className="px-4 py-3 font-semibold text-[#86868b]">Čas</th>
-                <th className="px-4 py-3 font-semibold text-[#86868b]">Akce</th>
-                <th className="px-4 py-3 font-semibold text-[#86868b]">Typ</th>
-                <th className="px-4 py-3 font-semibold text-[#86868b]">ID</th>
+              <tr className="border-b border-apple-bg-subtle bg-apple-bg-card">
+                <th className="px-4 py-3 font-semibold text-apple-text-tertiary">Čas</th>
+                <th className="px-4 py-3 font-semibold text-apple-text-tertiary">Akce</th>
+                <th className="px-4 py-3 font-semibold text-apple-text-tertiary">Typ</th>
+                <th className="px-4 py-3 font-semibold text-apple-text-tertiary">ID</th>
               </tr>
             </thead>
             <tbody>
               {logs.map((log) => (
-                <tr key={log.id} className="border-b border-[#f2f2f7]">
-                  <td className="px-4 py-3 text-[#6e6e73]">
+                <tr key={log.id} className="border-b border-apple-bg-subtle">
+                  <td className="px-4 py-3 text-apple-text-secondary">
                     {new Date(log.created_at).toLocaleString("cs-CZ")}
                   </td>
                   <td className="px-4 py-3">
                     {ACTION_LABELS[log.action] ?? log.action}
                   </td>
-                  <td className="px-4 py-3 text-[#6e6e73]">{log.resource_type}</td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-[#aeaeb2]">
+                  <td className="px-4 py-3 text-apple-text-secondary">{log.resource_type}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-apple-text-muted">
                     {log.resource_id ?? "–"}
                   </td>
                 </tr>

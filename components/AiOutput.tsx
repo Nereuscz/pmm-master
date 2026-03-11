@@ -224,7 +224,7 @@ export default function AiOutput({
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="rounded-apple bg-white shadow-apple">
+    <div className="rounded-apple bg-apple-bg-card shadow-apple-sm">
       {/* ── Top toolbar ──────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-apple-bg-subtle px-6 py-3.5">
         <span className="text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">

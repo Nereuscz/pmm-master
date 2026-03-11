@@ -94,7 +94,7 @@ export default function ConfirmDialog({
         if (e.target === e.currentTarget && !loading) onCancel();
       }}
     >
-      <div ref={dialogRef} className="w-full max-w-sm rounded-apple bg-white p-6 shadow-apple-lg" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className="w-full max-w-sm rounded-apple bg-apple-bg-card p-6 shadow-apple-lg" onClick={(e) => e.stopPropagation()}>
         <h2 id="confirm-dialog-title" className="text-headline font-semibold text-apple-text-primary">
           {title}
         </h2>

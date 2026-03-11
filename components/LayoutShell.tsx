@@ -23,12 +23,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       </a>
       {showSidebar && (
         <>
-          {/* Mobile header s hamburgerem – glassmorphism */}
-          <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-apple-border-light bg-white/80 px-4 backdrop-blur-xl md:hidden">
+          {/* Mobile header – solid warm dark */}
+          <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-white/10 bg-[#2A1657] px-4 md:hidden">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-apple-text-secondary transition-colors duration-200 hover:bg-apple-bg-page focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-white/60 transition-colors duration-200 hover:bg-white/8 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
               aria-label="Otevřít menu"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -36,10 +36,10 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
               </svg>
             </button>
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600">
-                <span className="text-[11px] font-bold text-white">PM</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gold-400">
+                <span className="text-[11px] font-bold text-brand-900">PM</span>
               </div>
-              <span className="text-body font-semibold text-apple-text-primary">PM Assistant</span>
+              <span className="text-body font-semibold text-white/90">PM Assistant</span>
             </Link>
           </header>
 

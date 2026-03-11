@@ -69,7 +69,7 @@ function SettingsContent() {
         </div>
       ) : null}
 
-      <section className="rounded-apple bg-white p-6 shadow-apple">
+      <section className="rounded-apple bg-apple-bg-card p-6 shadow-apple">
         <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
           Asana integrace
         </h2>

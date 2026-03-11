@@ -10,7 +10,7 @@ function SkeletonGrid({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-busy="true" aria-label="Načítání">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-apple bg-white shadow-apple-sm">
+        <div key={i} className="overflow-hidden rounded-apple bg-apple-bg-card shadow-apple-sm">
           <div className="p-5 space-y-3">
             <div className="skeleton-shimmer h-4 w-3/5 rounded-md" />
             <div className="skeleton-shimmer h-3 w-2/5 rounded-md" />
@@ -27,14 +27,14 @@ function SkeletonDetail() {
   return (
     <div className="space-y-4" aria-busy="true" aria-label="Načítání">
       <div className="skeleton-shimmer h-5 w-32 rounded-lg" />
-      <div className="overflow-hidden rounded-apple bg-white shadow-apple">
+      <div className="overflow-hidden rounded-apple bg-apple-bg-card shadow-apple">
         <div className="p-6 space-y-3">
           <div className="skeleton-shimmer h-5 w-1/3 rounded-md" />
           <div className="skeleton-shimmer h-3 w-2/3 rounded-md" />
           <div className="skeleton-shimmer h-3 w-1/2 rounded-md" />
         </div>
       </div>
-      <div className="overflow-hidden rounded-apple bg-white shadow-apple">
+      <div className="overflow-hidden rounded-apple bg-apple-bg-card shadow-apple">
         <div className="p-6 space-y-3">
           <div className="skeleton-shimmer h-4 w-1/4 rounded-md" />
           <div className="skeleton-shimmer h-3 w-full rounded-md" />
@@ -71,7 +71,7 @@ export default function LoadingState({
   }
   if (variant === "skeleton" && message) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-apple bg-white py-16 shadow-apple">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-apple bg-apple-bg-card py-16 shadow-apple">
         <Spinner message={message} />
       </div>
     );

@@ -26,7 +26,7 @@ export function GuideConfig({
   isDone
 }: Props) {
   return (
-    <div className="mb-4 shrink-0 space-y-4 rounded-apple bg-white p-5 shadow-apple">
+    <div className="mb-4 shrink-0 space-y-4 rounded-apple bg-apple-bg-card p-5 shadow-apple">
       <div className="rounded-xl border border-brand-100 bg-brand-50 p-4">
         <p className="text-[13px] font-semibold uppercase tracking-wider text-brand-700">
           Před zpracováním potřebuji potvrdit
@@ -45,7 +45,7 @@ export function GuideConfig({
             Projekt
           </label>
           <select
-            className="w-full rounded-xl border border-apple-border-default bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+            className="w-full rounded-xl border border-apple-border-default bg-apple-bg-card px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
             value={selectedProject?.id ?? ""}
             onChange={(e) => {
               const p = projects.find((p) => p.id === e.target.value) ?? null;
@@ -74,7 +74,7 @@ export function GuideConfig({
           <select
             value={phase}
             onChange={(e) => setPhase(e.target.value)}
-            className="w-full rounded-xl border border-apple-border-default bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+            className="w-full rounded-xl border border-apple-border-default bg-apple-bg-card px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
           >
             {PHASES.map((p) => (
               <option key={p}>{p}</option>
@@ -88,7 +88,7 @@ export function GuideConfig({
           <select
             value={framework}
             onChange={(e) => setFramework(e.target.value as "Univerzální" | "Produktový")}
-            className="w-full rounded-xl border border-apple-border-default bg-white px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+            className="w-full rounded-xl border border-apple-border-default bg-apple-bg-card px-3 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
           >
             <option>Univerzální</option>
             <option>Produktový</option>

@@ -10,11 +10,11 @@ function SignInContent() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-apple-bg-page px-6">
-      <div className="w-full max-w-sm rounded-apple bg-white p-10 shadow-apple-lg">
+      <div className="w-full max-w-sm rounded-apple bg-apple-bg-card p-10 shadow-apple">
         {/* Logo */}
         <div className="mb-8 flex justify-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 shadow-apple-sm">
-            <span className="text-[20px] font-bold text-white">PM</span>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-800 shadow-apple-sm">
+            <span className="text-[20px] font-bold text-gold-300">PM</span>
           </div>
         </div>
 
@@ -54,7 +54,7 @@ export default function SignInPage() {
   return (
     <Suspense fallback={
       <main className="flex min-h-screen items-center justify-center bg-apple-bg-page px-6">
-        <div className="h-8 w-48 animate-pulse rounded-lg bg-white" />
+        <div className="h-8 w-48 animate-pulse rounded-lg bg-apple-bg-card" />
       </main>
     }>
       <SignInContent />

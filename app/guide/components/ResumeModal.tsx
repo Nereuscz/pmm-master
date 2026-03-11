@@ -12,7 +12,7 @@ export function ResumeModal({ draft, onResume, onStartFresh }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-      <div className="w-full max-w-sm rounded-apple bg-white p-6 shadow-apple">
+      <div className="w-full max-w-sm rounded-apple bg-apple-bg-card p-6 shadow-apple">
         <h2 className="text-[17px] font-semibold text-apple-text-primary">Máš rozpracovaný chat</h2>
         <p className="mt-2 text-[14px] text-apple-text-secondary">
           Naposledy uloženo{" "}

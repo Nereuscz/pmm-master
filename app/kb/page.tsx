@@ -256,7 +256,7 @@ export default function KnowledgeBasePage() {
       ) : null}
 
       {/* Upload sekce */}
-      <section id="kb-upload-section" className="mb-6 rounded-apple bg-white p-6 shadow-apple">
+      <section id="kb-upload-section" className="mb-6 rounded-apple bg-apple-bg-card p-6 shadow-apple">
         <div className="mb-5 flex items-center justify-between">
           <p className="text-footnote font-semibold uppercase tracking-widest text-apple-text-tertiary">Nahrát dokument</p>
           {/* Tab přepínač */}
@@ -271,7 +271,7 @@ export default function KnowledgeBasePage() {
                 }}
                 className={`rounded-full px-4 py-1.5 font-medium transition-all ${
                   uploadMode === mode
-                    ? "bg-white text-apple-text-primary shadow-apple-sm"
+                    ? "bg-apple-bg-card text-apple-text-primary shadow-apple-sm"
                     : "text-apple-text-secondary hover:text-apple-text-primary"
                 }`}
               >
@@ -364,7 +364,7 @@ export default function KnowledgeBasePage() {
       {/* Dokumenty + Sync log */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Dokumenty */}
-        <section className="rounded-apple bg-white p-6 shadow-apple">
+        <section className="rounded-apple bg-apple-bg-card p-6 shadow-apple">
           {initialLoading ? (
             <div className="space-y-3 py-4">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -385,12 +385,12 @@ export default function KnowledgeBasePage() {
                   placeholder="Hledat…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full min-w-[120px] max-w-[180px] rounded-lg border border-apple-border-default bg-white px-3 py-1.5 text-caption placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2 sm:w-auto"
+                  className="w-full min-w-[120px] max-w-[180px] rounded-lg border border-apple-border-default bg-apple-bg-card px-3 py-1.5 text-caption placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2 sm:w-auto"
                 />
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="rounded-lg border border-apple-border-default bg-white px-3 py-1.5 text-caption focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
+                  className="rounded-lg border border-apple-border-default bg-apple-bg-card px-3 py-1.5 text-caption focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
                 >
                   <option value="">Všechny kategorie</option>
                   {categories.map((c) => (
@@ -466,7 +466,7 @@ export default function KnowledgeBasePage() {
                     { icon: "🔗", title: "URL", desc: "Stáhne a extrahuje text" },
                     { icon: "✏️", title: "Text", desc: "Vložte obsah přímo" },
                   ].map(({ icon, title, desc }) => (
-                    <div key={title} className="flex items-center gap-3 rounded-lg border border-apple-border-light bg-white p-3">
+                    <div key={title} className="flex items-center gap-3 rounded-lg border border-apple-border-light bg-apple-bg-card p-3">
                       <span className="text-xl">{icon}</span>
                       <div>
                         <p className="text-caption font-medium text-apple-text-primary">{title}</p>
@@ -494,7 +494,7 @@ export default function KnowledgeBasePage() {
         </section>
 
         {/* Sync log */}
-        <section className="rounded-apple bg-white p-6 shadow-apple">
+        <section className="rounded-apple bg-apple-bg-card p-6 shadow-apple">
           <p className="mb-4 text-footnote font-semibold uppercase tracking-widest text-apple-text-tertiary">Sync log</p>
           <div className="space-y-6">
             {/* SharePoint sync */}

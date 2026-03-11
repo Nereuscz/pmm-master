@@ -108,7 +108,7 @@ export function LiveCanvas({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-apple bg-white shadow-apple">
+    <div className="flex h-full flex-col overflow-hidden rounded-apple bg-apple-bg-card shadow-apple">
       {/* Sticky header */}
       <div className="shrink-0 border-b border-apple-bg-subtle px-5 py-3">
         <h2 className="text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">
@@ -134,7 +134,7 @@ export function LiveCanvas({
                 key={q.id}
                 className="rounded-xl border border-apple-border-light bg-apple-bg-subtle overflow-hidden"
               >
-                <div className="border-b border-apple-border-light bg-white px-4 py-2.5">
+                <div className="border-b border-apple-border-light bg-apple-bg-card px-4 py-2.5">
                   <h3 className="text-[13px] font-semibold text-apple-text-primary">🟨 {q.text}</h3>
                   <p className="mt-0.5 text-[12px] text-apple-text-secondary">{q.hint}</p>
                 </div>
@@ -148,7 +148,7 @@ export function LiveCanvas({
                         value={content}
                         onChange={(e) => onSectionChange(q.id, e.target.value)}
                         onSelect={(e) => handleSelect(q, e.currentTarget)}
-                        className="w-full min-h-[80px] resize-y rounded-lg border border-apple-border-light bg-white px-3 py-2.5 text-[13px] leading-relaxed text-apple-text-primary placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
+                        className="w-full min-h-[80px] resize-y rounded-lg border border-apple-border-light bg-apple-bg-card px-3 py-2.5 text-[13px] leading-relaxed text-apple-text-primary placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:ring-offset-2"
                         placeholder="Zatím prázdné – odpověz v chatu"
                         disabled={isElaborating}
                       />
@@ -190,7 +190,7 @@ export function LiveCanvas({
                                       setCustomPrompt((p) => ({ ...p, [q.id]: e.target.value }))
                                     }
                                     placeholder="Vlastní prompt"
-                                    className="flex-1 min-w-[140px] rounded-lg border border-apple-border-light bg-white px-2.5 py-1.5 text-[12px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none"
+                                    className="flex-1 min-w-[140px] rounded-lg border border-apple-border-light bg-apple-bg-card px-2.5 py-1.5 text-[12px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none"
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter")
                                         handleElaborate(q, customPrompt[q.id], sel);
@@ -252,7 +252,7 @@ export function LiveCanvas({
                                       setCustomPrompt((p) => ({ ...p, [q.id]: e.target.value }))
                                     }
                                     placeholder="Vlastní prompt (např. upřesni finanční část)"
-                                    className="flex-1 min-w-[180px] rounded-lg border border-apple-border-light bg-white px-2.5 py-1.5 text-[12px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none"
+                                    className="flex-1 min-w-[180px] rounded-lg border border-apple-border-light bg-apple-bg-card px-2.5 py-1.5 text-[12px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none"
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter") handleElaborate(q, customPrompt[q.id]);
                                       if (e.key === "Escape") setShowPromptFor(null);

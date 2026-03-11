@@ -176,7 +176,7 @@ function GuideChat() {
       )}
 
       {/* Lišta kontextu – config nebo progress bar */}
-      <div className="mb-3 shrink-0 flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 shadow-apple">
+      <div className="mb-3 shrink-0 flex items-center gap-2 rounded-xl bg-apple-bg-card px-4 py-2.5 shadow-apple">
         {showProgressBar ? (
           // Progress bar v průběhu průvodce
           <>
@@ -268,7 +268,7 @@ function GuideChat() {
           )}
           {/* Chat sidebar – overlay na mobilu, vedle na desktopu */}
           <aside
-            className={`flex shrink-0 flex-col border-r border-apple-border-light bg-white shadow-apple transition-all duration-300 ease-out ${
+            className={`flex shrink-0 flex-col border-r border-apple-border-light bg-apple-bg-card shadow-apple transition-all duration-300 ease-out ${
               chatOpen
                 ? "fixed inset-y-0 left-0 z-30 w-[85vw] max-w-[380px] md:relative md:inset-auto md:z-auto md:w-[340px] lg:w-[380px]"
                 : "w-0 overflow-hidden"
@@ -352,7 +352,7 @@ function GuideChat() {
               <button
                 type="button"
                 onClick={() => setChatOpen(true)}
-                className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-xl border border-apple-border-light bg-white px-4 py-2.5 text-[13px] font-medium text-apple-text-primary shadow-apple transition-shadow hover:shadow-apple-lg"
+                className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-xl border border-apple-border-light bg-apple-bg-card px-4 py-2.5 text-[13px] font-medium text-apple-text-primary shadow-apple transition-shadow hover:shadow-apple-lg"
                 aria-label="Otevřít chat"
               >
                 <span>💬</span>
@@ -373,7 +373,7 @@ function GuideChat() {
           </div>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-white shadow-apple overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col rounded-apple bg-apple-bg-card shadow-apple overflow-hidden">
           {uploadedContext.trim().length > 0 && (
             <div className="shrink-0 border-b border-apple-border-light px-5 py-3">
               <UploadedContextBar
@@ -399,7 +399,7 @@ function GuideChat() {
             ))}
             <div ref={bottomRef} />
           </div>
-          <div className="shrink-0 border-t border-apple-border-light bg-white px-6 py-4">
+          <div className="shrink-0 border-t border-apple-border-light bg-apple-bg-card px-6 py-4">
             <ChatInput
               inputRef={inputRef}
               inputValue={inputValue}

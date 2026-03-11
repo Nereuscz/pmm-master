@@ -20,39 +20,39 @@ function CanvasBlock({ questions, phase, framework }: { questions: CanvasQuestio
     <div className="mt-2 space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-[13px] font-semibold text-[#1d1d1f]">📋 {framework} · {phase}</p>
-          <p className="text-[12px] text-[#aeaeb2]">{questions.length} otázek · klikni pro rozbalení</p>
+          <p className="text-[13px] font-semibold text-apple-text-primary">📋 {framework} · {phase}</p>
+          <p className="text-[12px] text-apple-text-muted">{questions.length} otázek · klikni pro rozbalení</p>
         </div>
         <button
           onClick={() => window.print()}
-          className="rounded-full border border-[#d2d2d7] px-3 py-1 text-[12px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7] print:hidden"
+          className="rounded-full border border-apple-border-default px-3 py-1 text-[12px] font-medium text-apple-text-primary transition-colors hover:bg-apple-bg-page print:hidden"
         >
           Tisknout / PDF
         </button>
       </div>
       <div className="space-y-1.5">
         {questions.map((q, i) => (
-          <div key={i} className="overflow-hidden rounded-xl border border-[#e8e8ed] bg-[#fafafa]">
+          <div key={i} className="overflow-hidden rounded-xl border border-apple-border-light bg-apple-bg-card">
             <button
               type="button"
               onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
-              className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-[#f2f2f7]"
+              className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-apple-bg-subtle"
             >
-              <span className="text-[13px] font-medium text-[#1d1d1f]">🟨 {q.name}</span>
-              <span className="ml-2 shrink-0 text-[11px] text-[#aeaeb2]">{expandedIndex === i ? "▲" : "▼"}</span>
+              <span className="text-[13px] font-medium text-apple-text-primary">🟨 {q.name}</span>
+              <span className="ml-2 shrink-0 text-[11px] text-apple-text-muted">{expandedIndex === i ? "▲" : "▼"}</span>
             </button>
             {expandedIndex === i && (
-              <div className="border-t border-[#e8e8ed] bg-white px-3 py-3">
-                <p className="mb-1.5 text-[12px] text-[#6e6e73]">{q.hint}</p>
+              <div className="border-t border-apple-border-light bg-apple-bg-card px-3 py-3">
+                <p className="mb-1.5 text-[12px] text-apple-text-secondary">{q.hint}</p>
                 {q.context && (
                   <div className="mb-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-800">
                     💡 {q.context}
                   </div>
                 )}
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Doplňující</p>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Doplňující</p>
                 <ol className="space-y-1">
                   {q.followUps.map((fu, j) => (
-                    <li key={j} className="flex gap-2 text-[12px] text-[#1d1d1f]">
+                    <li key={j} className="flex gap-2 text-[12px] text-apple-text-primary">
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-700">
                         {j + 1}
                       </span>
@@ -107,7 +107,7 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
                     setEditingMsgId(null);
                     setEditValue("");
                   }}
-                  className="rounded-lg bg-white px-3 py-1.5 text-[12px] font-medium text-brand-600"
+                  className="rounded-lg bg-apple-bg-card px-3 py-1.5 text-[12px] font-medium text-brand-600"
                 >
                   Uložit
                 </button>
@@ -150,18 +150,18 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
     return (
       <div className="flex items-start gap-3">
         <AiAvatar />
-        <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-3 shadow-apple-sm">
+        <div className="rounded-2xl rounded-tl-sm bg-apple-bg-card px-4 py-3 shadow-apple-sm">
           <div className="flex items-center gap-2">
             <span className="flex gap-1">
               {[0, 150, 300].map((delay) => (
                 <span
                   key={delay}
-                  className="inline-block h-2 w-2 animate-bounce rounded-full bg-[#d2d2d7]"
+                  className="inline-block h-2 w-2 animate-bounce rounded-full bg-apple-border-default"
                   style={{ animationDelay: `${delay}ms` }}
                 />
               ))}
             </span>
-            <span className="text-[12px] text-[#aeaeb2]">{msg.text}</span>
+            <span className="text-[12px] text-apple-text-muted">{msg.text}</span>
           </div>
         </div>
       </div>
@@ -172,9 +172,9 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
     return (
       <div className="flex items-start gap-3">
         <AiAvatar />
-        <div className="max-w-[78%] space-y-1.5 rounded-2xl rounded-tl-sm bg-white px-4 py-3.5 shadow-apple-sm">
-          <p className="text-[13px] font-semibold text-[#1d1d1f]">🟨 {msg.q.text}</p>
-          <p className="text-[13px] text-[#6e6e73]">{msg.q.hint}</p>
+        <div className="max-w-[78%] space-y-1.5 rounded-2xl rounded-tl-sm bg-apple-bg-card px-4 py-3.5 shadow-apple-sm">
+          <p className="text-[13px] font-semibold text-apple-text-primary">🟨 {msg.q.text}</p>
+          <p className="text-[13px] text-apple-text-secondary">{msg.q.hint}</p>
           {msg.q.context && (
             <div className="mt-1.5 rounded-lg bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-800">
               💡 {msg.q.context}
@@ -189,12 +189,12 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
     return (
       <div className="flex items-start gap-3">
         <AiAvatar />
-        <div className="max-w-[78%] space-y-2 rounded-2xl rounded-tl-sm bg-[#f5f0ff] px-4 py-3.5 shadow-apple-sm">
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-[#7c3aed]">
+        <div className="max-w-[78%] space-y-2 rounded-2xl rounded-tl-sm bg-[#F0ECF7] px-4 py-3.5 shadow-apple-sm">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-brand-700">
             💡 Vysvětlení
           </p>
-          <p className="text-[14px] leading-relaxed text-[#3b0764]">{msg.text}</p>
-          <p className="text-[12px] text-[#7c3aed]">↩ Zkus teď odpovědět znovu.</p>
+          <p className="text-[14px] leading-relaxed text-apple-text-primary">{msg.text}</p>
+          <p className="text-[12px] text-brand-700">↩ Zkus teď odpovědět znovu.</p>
         </div>
       </div>
     );
@@ -227,7 +227,7 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
                   rows={2}
                   value={msg.answers[i] ?? ""}
                   onChange={(e) => onFollowUpAnswerChange(msg.id, i, e.target.value)}
-                  className="ml-7 w-[calc(100%-1.75rem)] resize-none rounded-xl border border-brand-100 bg-white px-3 py-2 text-[13px] focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-600/10"
+                  className="ml-7 w-[calc(100%-1.75rem)] resize-none rounded-xl border border-brand-100 bg-apple-bg-card px-3 py-2 text-[13px] focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-600/10"
                   placeholder="Volitelná odpověď..."
                 />
               )}
@@ -312,22 +312,22 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
     return (
       <div className="flex items-start gap-3">
         <AiAvatar />
-        <div className="max-w-[78%] space-y-2 rounded-2xl rounded-tl-sm bg-white px-4 py-4 shadow-apple-sm">
-          <p className="text-[14px] font-semibold text-[#1d1d1f]">Ahoj! Jsem tvůj PM asistent. 👋</p>
-          <p className="text-[13px] leading-relaxed text-[#6e6e73]">
+        <div className="max-w-[78%] space-y-2 rounded-2xl rounded-tl-sm bg-apple-bg-card px-4 py-4 shadow-apple-sm">
+          <p className="text-[14px] font-semibold text-apple-text-primary">Ahoj! Jsem tvůj PM asistent. 👋</p>
+          <p className="text-[13px] leading-relaxed text-apple-text-secondary">
             Mohu ti pomoci dvěma způsoby:
           </p>
-          <ul className="space-y-1.5 text-[13px] text-[#6e6e73]">
+          <ul className="space-y-1.5 text-[13px] text-apple-text-secondary">
             <li className="flex gap-2">
               <span>💬</span>
-              <span><strong className="text-[#1d1d1f]">Průvodce</strong> – AI klade PM otázky jednu po druhé a na konci vygeneruje dokumentaci.</span>
+              <span><strong className="text-apple-text-primary">Průvodce</strong> – AI klade PM otázky jednu po druhé a na konci vygeneruje dokumentaci.</span>
             </li>
             <li className="flex gap-2">
               <span>📋</span>
-              <span><strong className="text-[#1d1d1f]">Canvas</strong> – celá sada otázek najednou, ideální příprava před živým rozhovorem.</span>
+              <span><strong className="text-apple-text-primary">Canvas</strong> – celá sada otázek najednou, ideální příprava před živým rozhovorem.</span>
             </li>
           </ul>
-          <p className="text-[12px] text-[#aeaeb2]">
+          <p className="text-[12px] text-apple-text-muted">
             Vyber projekt nahoře a napiš co potřebuješ – nebo rovnou: &ldquo;spusť průvodce&rdquo; nebo &ldquo;udělej canvas&rdquo;.
           </p>
         </div>
@@ -339,7 +339,7 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
     return (
       <div className="flex items-start gap-3">
         <AiAvatar />
-        <div className="flex-1 min-w-0 rounded-2xl rounded-tl-sm bg-white px-4 py-4 shadow-apple-sm">
+        <div className="flex-1 min-w-0 rounded-2xl rounded-tl-sm bg-apple-bg-card px-4 py-4 shadow-apple-sm">
           <CanvasBlock questions={msg.questions} phase={msg.phase} framework={msg.framework} />
           {onStartGuide && (
             <button

@@ -11,12 +11,10 @@ export default function Toaster() {
       toastOptions={{
         duration: 5000,
         style: {
-          background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid #e8e8ed",
+          background: "#FFFCF7",
+          border: "1px solid #E8E2D9",
           borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         },
       }}
     />

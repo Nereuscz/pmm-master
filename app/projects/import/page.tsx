@@ -82,11 +82,11 @@ export default function ImportFromAsanaPage() {
       </div>
 
       {hasToken === null ? (
-        <div className="rounded-apple bg-white p-6 shadow-apple">
+        <div className="rounded-apple bg-apple-bg-card p-6 shadow-apple">
           <p className="text-body text-apple-text-secondary animate-pulse">Ověřuji připojení k Asaně...</p>
         </div>
       ) : hasToken === false ? (
-        <div className="rounded-apple bg-white p-6 shadow-apple">
+        <div className="rounded-apple bg-apple-bg-card p-6 shadow-apple">
           <p className="text-body text-apple-text-secondary">
             Pro import potřebuješ propojený Asana účet. Přihlas se přes Asana nebo propoj token v
             nastavení.
@@ -101,7 +101,7 @@ export default function ImportFromAsanaPage() {
       ) : (
         <form
           onSubmit={onSubmit}
-          className="space-y-6 rounded-apple bg-white p-8 shadow-apple"
+          className="space-y-6 rounded-apple bg-apple-bg-card p-8 shadow-apple"
         >
           <div>
             <label
@@ -150,7 +150,7 @@ export default function ImportFromAsanaPage() {
       )}
 
       {result ? (
-        <div className="mt-6 rounded-apple bg-white p-6 shadow-apple">
+        <div className="mt-6 rounded-apple bg-apple-bg-card p-6 shadow-apple">
           <h2 className="text-headline font-semibold text-apple-text-primary">Výsledek importu</h2>
           <p className="mt-2 text-body text-apple-text-secondary">
             Importováno: <strong>{result.imported}</strong>

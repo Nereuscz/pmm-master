@@ -261,15 +261,15 @@ function ProcessForm() {
       {/* ── Levý panel ── */}
       <div className="space-y-4">
         {/* Step indikátor */}
-        <div className="flex items-center gap-2 rounded-apple bg-white px-4 py-3 shadow-apple-sm">
+        <div className="flex items-center gap-2 rounded-apple bg-apple-bg-card px-4 py-3 shadow-apple-sm">
           {steps.map((s, i) => (
             <div key={s.key} className="flex items-center gap-2">
               <span
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
                   i < stepIndex
-                    ? "bg-brand-600 text-white"
+                    ? "bg-gold-400 text-gold-900"
                     : i === stepIndex
-                      ? "bg-brand-100 text-brand-700 ring-2 ring-brand-600/30"
+                      ? "bg-gold-100 text-gold-700 ring-2 ring-gold-400/40"
                       : "bg-apple-bg-subtle text-apple-text-muted"
                 }`}
               >
@@ -291,7 +291,7 @@ function ProcessForm() {
 
         {/* Krok 1: Formulář */}
         {step === "idle" ? (
-          <form onSubmit={onAnalyze} className="space-y-5 rounded-apple bg-white p-6 shadow-apple">
+          <form onSubmit={onAnalyze} className="space-y-5 rounded-apple bg-apple-bg-card p-6 shadow-apple">
             {projects.length === 0 ? (
               <div className="rounded-xl bg-semantic-warning-bg px-4 py-3 text-[13px] text-semantic-warning-text">
                 Nejdřív vytvoř projekt v sekci Projekty.
@@ -301,7 +301,7 @@ function ProcessForm() {
             <div>
               <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-apple-text-tertiary">Projekt</label>
               <select
-                className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+                className="w-full rounded-xl border border-apple-border-default bg-apple-bg-card px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                 value={selectedProject?.id ?? ""}
                 onChange={(e) => {
                   const p = projects.find((p) => p.id === e.target.value) ?? null;
@@ -321,7 +321,7 @@ function ProcessForm() {
                 <select
                   value={selectedPhase}
                   onChange={(e) => setSelectedPhase(e.target.value)}
-                  className="w-full rounded-xl border border-apple-border-default bg-white px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+                  className="w-full rounded-xl border border-apple-border-default bg-apple-bg-card px-4 py-2.5 text-[14px] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                 >
                   {PHASES.map((p) => <option key={p}>{p}</option>)}
                 </select>
@@ -392,14 +392,14 @@ function ProcessForm() {
 
         {/* Krok: Načítám doplňující otázky */}
         {step === "clarifying" ? (
-          <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
+          <div className="flex h-48 items-center justify-center rounded-apple bg-apple-bg-card shadow-apple">
             <Spinner message="AI analyzuje transkript…" />
           </div>
         ) : null}
 
         {/* Krok: Doplňující otázky */}
         {step === "answering" ? (
-          <div className="space-y-5 rounded-apple bg-white p-6 shadow-apple">
+          <div className="space-y-5 rounded-apple bg-apple-bg-card p-6 shadow-apple">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">Doplňující otázky</p>
               <p className="mt-1 text-[14px] text-apple-text-secondary">
@@ -442,7 +442,7 @@ function ProcessForm() {
                 <button
                   type="button"
                   onClick={() => onProcess(false)}
-                  className="rounded-full border border-semantic-danger bg-white px-4 py-2 text-[13px] font-medium text-semantic-danger-text hover:bg-semantic-danger-bg"
+                  className="rounded-full border border-semantic-danger bg-apple-bg-card px-4 py-2 text-[13px] font-medium text-semantic-danger-text hover:bg-semantic-danger-bg"
                 >
                   Zkus znovu
                 </button>
@@ -472,7 +472,7 @@ function ProcessForm() {
 
         {/* Krok: Generuji */}
         {step === "processing" ? (
-          <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
+          <div className="flex h-48 items-center justify-center rounded-apple bg-apple-bg-card shadow-apple">
             <Spinner message="AI generuje PM dokumentaci… Může trvat 15–30 sekund" />
           </div>
         ) : null}
@@ -485,7 +485,7 @@ function ProcessForm() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={resetForm}
-                  className="rounded-full border border-green-300 bg-white px-5 py-2 text-[14px] font-medium text-semantic-success-text hover:bg-semantic-success-bg"
+                  className="rounded-full border border-green-300 bg-apple-bg-card px-5 py-2 text-[14px] font-medium text-semantic-success-text hover:bg-semantic-success-bg"
                 >
                   Zpracovat další transkript
                 </button>
@@ -500,7 +500,7 @@ function ProcessForm() {
                 ) : hasAsanaToken && selectedProject ? (
                   <Link
                     href={`/projects/${selectedProject.id}`}
-                    className="rounded-full border border-green-300 bg-white px-5 py-2 text-[14px] font-medium text-semantic-success-text hover:bg-semantic-success-bg"
+                    className="rounded-full border border-green-300 bg-apple-bg-card px-5 py-2 text-[14px] font-medium text-semantic-success-text hover:bg-semantic-success-bg"
                   >
                     Propojit projekt s Asanou →
                   </Link>
@@ -509,7 +509,7 @@ function ProcessForm() {
             </div>
 
             {/* Iterativní doladění */}
-            <div className="rounded-apple bg-white shadow-apple-sm">
+            <div className="rounded-apple bg-apple-bg-card shadow-apple-sm">
               <button
                 type="button"
                 onClick={() => setShowRefinement((v) => !v)}
@@ -553,7 +553,7 @@ function ProcessForm() {
       {/* ── Pravý panel – výstup (na mobilu skrytý dokud není výsledek nebo processing) ── */}
       <div className={!result && step !== "processing" ? "hidden md:block" : ""}>
         {step === "processing" ? (
-          <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
+          <div className="flex h-48 items-center justify-center rounded-apple bg-apple-bg-card shadow-apple">
             <Spinner message="Připravuji výstup…" />
           </div>
         ) : result ? (
@@ -589,7 +589,7 @@ function ProcessForm() {
             />
           </div>
         ) : (
-          <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
+          <div className="flex h-48 items-center justify-center rounded-apple bg-apple-bg-card shadow-apple">
             <p className="text-[14px] text-apple-text-muted">Výstup se zobrazí zde po zpracování</p>
           </div>
         )}

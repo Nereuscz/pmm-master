@@ -110,7 +110,7 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={!isActive}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-apple-text-tertiary transition-colors hover:bg-white hover:text-brand-600 disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-apple-text-tertiary transition-colors hover:bg-apple-bg-card hover:text-brand-600 disabled:opacity-40"
             title="Přidat soubor (PDF, audio, dokument)"
             aria-label="Přidat přílohu"
           >
@@ -127,7 +127,7 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 ${
             voiceMode
               ? "bg-brand-100 text-brand-700"
-              : "text-apple-text-tertiary hover:bg-white hover:text-brand-600"
+              : "text-apple-text-tertiary hover:bg-apple-bg-card hover:text-brand-600"
           }`}
           title={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
           aria-label={voiceMode ? "Vypnout hlasový režim" : "Zapnout hlasový režim"}
@@ -148,7 +148,7 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
             isRecording
               ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
               : isTranscribing
-                ? "bg-[#e8e8ed] text-[#6e6e73] cursor-wait"
+                ? "bg-apple-bg-subtle text-apple-text-secondary cursor-wait"
                 : "bg-brand-600 text-white hover:bg-brand-700"
           }`}
           title={isRecording ? "Ukončit nahrávání" : isTranscribing ? "Přepisuji…" : "Nahrát odpověď hlasem"}
