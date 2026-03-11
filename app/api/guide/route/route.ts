@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     const resp = await withRetry(() =>
       client.messages.create({
-        model: "claude-3-haiku-20240307",
+        model: "claude-sonnet-4-6",
         max_tokens: 200,
         system: SYSTEM,
         messages: [{ role: "user", content: userContent }],
