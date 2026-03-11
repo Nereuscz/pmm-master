@@ -10,6 +10,20 @@ export const dynamic = "force-dynamic";
 const MAX_CONTENT_LENGTH = 500_000;
 const FETCH_TIMEOUT_MS = 15_000;
 
+function isSafeUrl(str: string): boolean {
+  try {
+    const url = new URL(str);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    const host = url.hostname.toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) return false;
+    if (/^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^192\.168\.|^0\.|^169\.254\./.test(host)) return false;
+    if (host === "[::1]" || host === "0.0.0.0") return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 type Params = { params: { id: string } };
 
 export async function POST(_: Request, { params }: Params) {
@@ -32,6 +46,13 @@ export async function POST(_: Request, { params }: Params) {
   if (doc.source !== "url" || !doc.source_url) {
     return NextResponse.json(
       { error: "Obnovení je možné jen u dokumentů přidaných z URL." },
+      { status: 400 }
+    );
+  }
+
+  if (!isSafeUrl(doc.source_url)) {
+    return NextResponse.json(
+      { error: "Uložená URL není bezpečná pro obnovení." },
       { status: 400 }
     );
   }

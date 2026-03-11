@@ -22,10 +22,14 @@ export async function logAudit(input: {
   const db = tryGetDb();
   if (!db) return;
 
-  await db.from("audit_log").insert({
+  const { error } = await db.from("audit_log").insert({
     user_id: input.userId,
     action: input.action,
     resource_type: input.resourceType,
     resource_id: input.resourceId ?? null,
   });
+
+  if (error) {
+    console.error("[audit] Failed to write audit log:", error.message);
+  }
 }

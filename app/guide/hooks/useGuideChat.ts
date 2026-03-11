@@ -40,6 +40,16 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
   // Nahraný kontext (transkripty, přílohy) – pro předvyplnění a AI kontext
   const [uploadedContext, setUploadedContext] = useState("");
 
+  // Refs for accessing latest values in callbacks without stale closures
+  const selectedProjectRef = useRef(selectedProject);
+  selectedProjectRef.current = selectedProject;
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const frameworkRef = useRef(framework);
+  frameworkRef.current = framework;
+  const uploadedContextRef = useRef(uploadedContext);
+  uploadedContextRef.current = uploadedContext;
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const autoStartedRef = useRef(false);
@@ -117,17 +127,18 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     currentMessages: ChatMsg[],
     currentUploadedContext?: string
   ) {
-    if (!selectedProject) return;
+    const proj = selectedProjectRef.current;
+    if (!proj) return;
     fetch("/api/guide/draft", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        projectId: selectedProject.id,
-        phase,
-        framework,
+        projectId: proj.id,
+        phase: phaseRef.current,
+        framework: frameworkRef.current,
         answers: currentAnswers,
         messages: currentMessages,
-        uploadedContext: currentUploadedContext ?? uploadedContext
+        uploadedContext: currentUploadedContext ?? uploadedContextRef.current
       })
     }).catch(() => undefined);
   }
@@ -213,6 +224,7 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
         saveDraft(next, messages, uploadedContext);
         return next;
       });
+      setStatus("idle");
     } catch (e) {
       removeThinking();
       push({
@@ -221,6 +233,7 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
         kind: "error",
         text: e instanceof Error ? e.message : "Nepodařilo se předvyplnit canvas."
       });
+      setStatus("idle");
     }
   }
 

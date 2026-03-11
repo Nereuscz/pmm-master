@@ -65,6 +65,13 @@ export default function AiOutput({
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Sync localContent when parent passes new content prop (e.g. after refinement)
+  useEffect(() => {
+    if (!isEditing) {
+      setLocalContent(content);
+    }
+  }, [content, isEditing]);
+
   // Načti feedback při mountu
   useEffect(() => {
     if (!sessionId) return;

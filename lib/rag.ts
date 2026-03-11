@@ -47,26 +47,22 @@ export async function retrieveTopChunks(input: {
   }
 
   // Lexical fallback: used when OPENAI_API_KEY is absent or embeddings not yet populated
-  // Include global/team docs + project-specific docs for this project
+  // Push visibility filter into DB query to avoid fetching irrelevant rows
   const { data, error } = await supabaseAdmin
     .from("kb_chunks")
     .select("id,content,document_id,kb_documents!inner(deleted_at,visibility,project_id)")
     .is("kb_documents.deleted_at", null)
+    .or(
+      `visibility.in.(global,team),and(visibility.eq.project,project_id.eq.${input.projectId})`,
+      { foreignTable: "kb_documents" }
+    )
     .limit(200);
 
   if (error || !data) {
     return [];
   }
 
-  const filtered = data.filter((row) => {
-    const doc = row.kb_documents as unknown as { deleted_at: string | null; visibility: string; project_id: string | null } | null;
-    if (!doc) return false;
-    if (doc.visibility === "global" || doc.visibility === "team") return true;
-    if (doc.visibility === "project" && doc.project_id === input.projectId) return true;
-    return false;
-  });
-
-  return filtered
+  return data
     .map((row) => {
       const content = String(row.content);
       return {

@@ -15,7 +15,8 @@ function isValidUrl(str: string): boolean {
     if (url.protocol !== "http:" && url.protocol !== "https:") return false;
     const host = url.hostname.toLowerCase();
     if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) return false;
-    if (/^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^192\.168\./.test(host)) return false;
+    if (host === "[::1]" || host === "0.0.0.0") return false;
+    if (/^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^192\.168\.|^0\.|^169\.254\./.test(host)) return false;
     return true;
   } catch {
     return false;

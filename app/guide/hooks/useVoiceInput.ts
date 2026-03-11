@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export type VoiceInputState = "idle" | "recording" | "transcribing";
 
@@ -9,9 +9,25 @@ export function useVoiceInput(onTranscribed: (text: string) => void) {
   const [error, setError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const cancelledRef = useRef(false);
+
+  // Cleanup on unmount – stop any active recording and release microphone
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current) {
+        const recorder = mediaRecorderRef.current;
+        if (recorder.state === "recording") {
+          recorder.stream?.getTracks().forEach((t) => t.stop());
+          recorder.stop();
+        }
+        mediaRecorderRef.current = null;
+      }
+    };
+  }, []);
 
   const startRecording = useCallback(async () => {
     setError(null);
+    cancelledRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -24,6 +40,7 @@ export function useVoiceInput(onTranscribed: (text: string) => void) {
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        if (cancelledRef.current) return;
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         const file = new File([blob], "recording.webm", { type: "audio/webm" });
 
@@ -61,6 +78,8 @@ export function useVoiceInput(onTranscribed: (text: string) => void) {
 
   const cancelRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {
+      cancelledRef.current = true;
+      chunksRef.current = [];
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
       setState("idle");

@@ -168,7 +168,7 @@ function GuideChat() {
               <div className="h-1.5 min-w-[60px] flex-1 overflow-hidden rounded-full bg-apple-bg-subtle">
                 <div
                   className="h-full rounded-full bg-brand-600 transition-all duration-500"
-                  style={{ width: `${Math.min(100, (answers.length / totalCount!) * 100)}%` }}
+                  style={{ width: `${Math.min(100, totalCount ? (answers.length / totalCount) * 100 : 0)}%` }}
                 />
               </div>
               <span className="shrink-0 tabular-nums text-[12px] font-medium text-apple-text-secondary">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { Answer, GuideQ } from "../types";
 
 export type RealtimeState = "disconnected" | "connecting" | "connected" | "error";
@@ -102,6 +102,20 @@ export function useRealtimeVoice(callbacks: UseRealtimeVoiceCallbacks) {
     dcRef.current = null;
     (window as unknown as { __realtimeCtx?: object }).__realtimeCtx = undefined;
     setState((s) => (s === "error" ? s : "disconnected"));
+  }, []);
+
+  // Cleanup on unmount – release all WebRTC resources
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      audioElRef.current?.remove();
+      audioElRef.current = null;
+      pcRef.current?.close();
+      pcRef.current = null;
+      dcRef.current = null;
+      (window as unknown as { __realtimeCtx?: object }).__realtimeCtx = undefined;
+    };
   }, []);
 
   const connect = useCallback(

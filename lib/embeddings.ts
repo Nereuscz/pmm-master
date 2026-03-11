@@ -26,7 +26,8 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
       dimensions: 1536
     });
     return response.data[0].embedding;
-  } catch {
+  } catch (err) {
+    console.error("[embeddings] OpenAI embedding failed:", err instanceof Error ? err.message : err);
     return null;
   }
 }

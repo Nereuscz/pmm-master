@@ -49,27 +49,30 @@ export async function requireProjectOwnership(
     return { ok: false, status: 404, message: "Projekt nebyl nalezen." };
   }
   if (!isAdmin && data.owner_id !== userId) {
-    return { ok: false, status: 403 };
+    // Return 404 instead of 403 to prevent project ID enumeration
+    return { ok: false, status: 404, message: "Projekt nebyl nalezen." };
   }
   return { ok: true, project: data };
 }
 
 export async function ensureUser(userId: string) {
   const db = ensureDb();
-  const { data: existing } = await db.from("users").select("id").eq("id", userId).maybeSingle();
-  if (existing) {
-    return existing.id;
-  }
   const { data, error } = await db
     .from("users")
-    .insert({
-      id: userId,
-      email: `local-${userId}@pm-assistant.local`,
-      role: "PM"
-    })
+    .upsert(
+      {
+        id: userId,
+        email: `local-${userId}@pm-assistant.local`,
+        role: "PM"
+      },
+      { onConflict: "id", ignoreDuplicates: true }
+    )
     .select("id")
     .single();
   if (error || !data) {
+    // Fallback: try select if upsert fails (e.g. unique constraint race)
+    const { data: existing } = await db.from("users").select("id").eq("id", userId).maybeSingle();
+    if (existing) return existing.id;
     throw new Error(`Nepodařilo se vytvořit fallback uživatele. ${error?.message ?? ""}`.trim());
   }
   return data.id;
@@ -86,24 +89,26 @@ export async function upsertUserFromAzure(input: {
 }): Promise<{ id: string; role: "Admin" | "PM" | "Viewer" }> {
   const db = ensureDb();
 
-  const { data: existing } = await db
-    .from("users")
-    .select("id,role")
-    .eq("ms_id", input.msId)
-    .maybeSingle();
-
-  if (existing) {
-    await db.from("users").update({ email: input.email }).eq("id", existing.id);
-    return { id: existing.id, role: existing.role as "Admin" | "PM" | "Viewer" };
-  }
-
+  // Try upsert; on conflict update email but keep existing role
   const { data, error } = await db
     .from("users")
-    .insert({ ms_id: input.msId, email: input.email, role: "PM" })
+    .upsert(
+      { ms_id: input.msId, email: input.email, role: "PM" },
+      { onConflict: "ms_id" }
+    )
     .select("id,role")
     .single();
 
   if (error || !data) {
+    // Fallback: select if upsert fails
+    const { data: existing } = await db
+      .from("users")
+      .select("id,role")
+      .eq("ms_id", input.msId)
+      .maybeSingle();
+    if (existing) {
+      return { id: existing.id, role: existing.role as "Admin" | "PM" | "Viewer" };
+    }
     throw new Error(`Nepodařilo se vytvořit uživatele z Azure AD. ${error?.message ?? ""}`.trim());
   }
   return { id: data.id, role: data.role as "Admin" | "PM" | "Viewer" };
@@ -123,28 +128,26 @@ export async function upsertUserFromAsana(input: {
   const email =
     input.email?.trim() || `${input.asanaGid}@asana.pm-assistant.local`;
 
-  const { data: existing } = await db
-    .from("users")
-    .select("id,role")
-    .eq("asana_user_id", input.asanaGid)
-    .maybeSingle();
-
-  if (existing) {
-    await db.from("users").update({ email }).eq("id", existing.id);
-    return { id: existing.id, role: existing.role as "Admin" | "PM" | "Viewer" };
-  }
-
+  // Try upsert; on conflict update email but keep existing role
   const { data, error } = await db
     .from("users")
-    .insert({
-      asana_user_id: input.asanaGid,
-      email,
-      role: "PM",
-    })
+    .upsert(
+      { asana_user_id: input.asanaGid, email, role: "PM" },
+      { onConflict: "asana_user_id" }
+    )
     .select("id,role")
     .single();
 
   if (error || !data) {
+    // Fallback: select if upsert fails
+    const { data: existing } = await db
+      .from("users")
+      .select("id,role")
+      .eq("asana_user_id", input.asanaGid)
+      .maybeSingle();
+    if (existing) {
+      return { id: existing.id, role: existing.role as "Admin" | "PM" | "Viewer" };
+    }
     throw new Error(
       `Nepodařilo se vytvořit uživatele z Asany. ${error?.message ?? ""}`.trim()
     );

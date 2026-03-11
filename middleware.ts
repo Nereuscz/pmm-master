@@ -7,10 +7,15 @@ const hasAuthConfig =
   !!process.env.ASANA_CLIENT_SECRET &&
   !!process.env.NEXTAUTH_SECRET;
 
-// Stránky, které vyžadují přihlášení
+// Stránky a API routes, které vyžadují přihlášení
 const PROTECTED_PATHS = ["/dashboard", "/projects", "/process", "/guide", "/kb", "/settings", "/admin"];
+const PUBLIC_API_PATHS = ["/api/auth", "/api/health"];
 
 function isProtected(pathname: string) {
+  // API routes are protected by default, except public ones
+  if (pathname.startsWith("/api/")) {
+    return !PUBLIC_API_PATHS.some((p) => pathname.startsWith(p));
+  }
   return PROTECTED_PATHS.some((p) => pathname.startsWith(p));
 }
 
@@ -54,6 +59,7 @@ export const config = {
     "/guide/:path*",
     "/kb/:path*",
     "/settings/:path*",
-    "/admin/:path*"
+    "/admin/:path*",
+    "/api/:path*"
   ]
 };

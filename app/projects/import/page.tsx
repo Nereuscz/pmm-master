@@ -81,7 +81,11 @@ export default function ImportFromAsanaPage() {
         </p>
       </div>
 
-      {hasToken === false ? (
+      {hasToken === null ? (
+        <div className="rounded-apple bg-white p-6 shadow-apple">
+          <p className="text-body text-apple-text-secondary animate-pulse">Ověřuji připojení k Asaně...</p>
+        </div>
+      ) : hasToken === false ? (
         <div className="rounded-apple bg-white p-6 shadow-apple">
           <p className="text-body text-apple-text-secondary">
             Pro import potřebuješ propojený Asana účet. Přihlas se přes Asana nebo propoj token v

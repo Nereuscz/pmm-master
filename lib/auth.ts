@@ -38,8 +38,8 @@ export const authOptions: NextAuthOptions = {
               expiresIn
             );
           }
-        } catch {
-          // DB not available – proceed without persisted role/tokens
+        } catch (err) {
+          console.error("[auth] JWT callback DB error – user will have no role/id:", err instanceof Error ? err.message : err);
         }
       }
       return token;

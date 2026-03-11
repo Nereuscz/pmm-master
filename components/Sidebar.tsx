@@ -130,7 +130,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
   }, [pathname, projectIdParam]);
 
   const visibleLinks = links.filter(
-    (link) => !link.roles || !user.role || link.roles.includes(user.role)
+    (link) => !link.roles || (user.role && link.roles.includes(user.role))
   );
 
   const navContent = (

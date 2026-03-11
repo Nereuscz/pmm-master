@@ -14,6 +14,9 @@ export function chunkText(input: string, maxChars = 1200, overlap = 160): string
     return [];
   }
 
+  // Guard against infinite loop when overlap >= maxChars
+  const safeOverlap = overlap >= maxChars ? Math.floor(maxChars / 4) : overlap;
+
   const chunks: string[] = [];
   let start = 0;
   while (start < text.length) {
@@ -22,7 +25,7 @@ export function chunkText(input: string, maxChars = 1200, overlap = 160): string
     if (end === text.length) {
       break;
     }
-    start = Math.max(0, end - overlap);
+    start = end - safeOverlap;
   }
   return chunks;
 }

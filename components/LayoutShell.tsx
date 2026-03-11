@@ -51,14 +51,15 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           </Suspense>
         </>
       )}
-      <main
+      <div
         id="main-content"
         tabIndex={-1}
         className={`flex-1 min-h-screen ${showSidebar ? "md:ml-64" : ""} ${showSidebar ? "pt-14 md:pt-0" : ""}`}
+        role="main"
         aria-label="Hlavní obsah"
       >
         {children}
-      </main>
+      </div>
     </div>
   );
 }
