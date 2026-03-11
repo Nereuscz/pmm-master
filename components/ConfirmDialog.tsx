@@ -28,11 +28,19 @@ export default function ConfirmDialog({
   loading = false,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus trap + Escape key
+  // Focus trap + Escape key + inert background
   useEffect(() => {
     if (!open) return;
+
+    // Set inert on sibling elements to prevent tabbing outside
+    const overlay = overlayRef.current;
+    const siblings = overlay
+      ? Array.from(document.body.children).filter((el) => el !== overlay)
+      : [];
+    siblings.forEach((el) => el.setAttribute("inert", ""));
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -46,7 +54,7 @@ export default function ConfirmDialog({
       if (!dialog) return;
 
       const focusable = dialog.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]:not([disabled])'
       );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -66,13 +74,17 @@ export default function ConfirmDialog({
 
     cancelButtonRef.current?.focus();
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      siblings.forEach((el) => el.removeAttribute("inert"));
+    };
   }, [open, loading, onCancel]);
 
   if (!open) return null;
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       role="dialog"
       aria-modal="true"
@@ -105,7 +117,7 @@ export default function ConfirmDialog({
             disabled={loading}
             className={`rounded-full px-4 py-2 text-body font-medium text-white transition-colors duration-200 active:scale-[0.98] disabled:opacity-50 ${
               variant === "danger"
-                ? "bg-[#ff3b30] hover:bg-[#e03029]"
+                ? "bg-semantic-danger hover:bg-semantic-danger-hover"
                 : "bg-brand-600 hover:bg-brand-700"
             }`}
           >

@@ -257,7 +257,7 @@ function ProcessForm() {
     : 3;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+    <div className="grid gap-6 md:grid-cols-[1fr_1.4fr]">
       {/* ── Levý panel ── */}
       <div className="space-y-4">
         {/* Step indikátor */}
@@ -293,7 +293,7 @@ function ProcessForm() {
         {step === "idle" ? (
           <form onSubmit={onAnalyze} className="space-y-5 rounded-apple bg-white p-6 shadow-apple">
             {projects.length === 0 ? (
-              <div className="rounded-xl bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+              <div className="rounded-xl bg-semantic-warning-bg px-4 py-3 text-[13px] text-semantic-warning-text">
                 Nejdřív vytvoř projekt v sekci Projekty.
               </div>
             ) : null}
@@ -352,10 +352,10 @@ function ProcessForm() {
                     <span className="text-red-600">{fileUploadError}</span>
                   )}
                 </span>
-                <span className="text-[12px] text-apple-text-muted">
-                {transcript.length} znaků
+                <span className={`text-[12px] ${transcript.length > 0 && (transcript.length < 300 || transcript.length > 50000) ? "font-medium text-semantic-danger" : "text-apple-text-muted"}`}>
+                {transcript.length.toLocaleString("cs-CZ")} znaků
                 {transcript.length > 0 && (transcript.length < 300 || transcript.length > 50000) ? (
-                  <span className="ml-2 text-amber-600">
+                  <span className="ml-1">
                     (min. 300, max. 50 000)
                   </span>
                 ) : null}
@@ -432,17 +432,17 @@ function ProcessForm() {
                 onChange={(e) => setClarifyingAnswers(e.target.value)}
                 className="w-full resize-none rounded-xl border border-apple-border-default px-4 py-3 text-[14px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
                 placeholder="Např. 1. Jan Novák je PM projektu. 2. Cílový termín je Q3 2025…"
-                onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) onProcess(); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) onProcess(); }}
               />
             </div>
 
             {error ? (
-              <div className="space-y-2 rounded-xl bg-[#fff2f2] px-4 py-3">
-                <p className="text-[14px] text-[#c0392b]">{error}</p>
+              <div className="space-y-2 rounded-xl bg-semantic-danger-bg px-4 py-3" role="alert">
+                <p className="text-[14px] text-semantic-danger-text">{error}</p>
                 <button
                   type="button"
                   onClick={() => onProcess(false)}
-                  className="rounded-full border border-[#c0392b] bg-white px-4 py-2 text-[13px] font-medium text-[#c0392b] hover:bg-[#fff2f2]"
+                  className="rounded-full border border-semantic-danger bg-white px-4 py-2 text-[13px] font-medium text-semantic-danger-text hover:bg-semantic-danger-bg"
                 >
                   Zkus znovu
                 </button>
@@ -480,12 +480,12 @@ function ProcessForm() {
         {/* Krok: Hotovo */}
         {step === "done" ? (
           <div className="space-y-3">
-            <div className="rounded-apple bg-[#f0fdf4] p-5 shadow-apple-sm">
-              <p className="mb-3 text-[14px] font-medium text-[#1a7f37]">✅ Dokumentace vygenerována a uložena do projektu.</p>
+            <div className="rounded-apple bg-semantic-success-bg p-5 shadow-apple-sm">
+              <p className="mb-3 text-[14px] font-medium text-semantic-success-text">✅ Dokumentace vygenerována a uložena do projektu.</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={resetForm}
-                  className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
+                  className="rounded-full border border-green-300 bg-white px-5 py-2 text-[14px] font-medium text-semantic-success-text hover:bg-semantic-success-bg"
                 >
                   Zpracovat další transkript
                 </button>
@@ -493,14 +493,14 @@ function ProcessForm() {
                   <button
                     onClick={handleExportToAsana}
                     disabled={exporting}
-                    className="rounded-full bg-[#1a7f37] px-5 py-2 text-[14px] font-medium text-white hover:bg-[#15803d] disabled:opacity-50"
+                    className="rounded-full bg-semantic-success-text px-5 py-2 text-[14px] font-medium text-white hover:bg-green-700 disabled:opacity-50"
                   >
                     {exporting ? "Exportuji…" : "Exportovat do Asany"}
                   </button>
                 ) : hasAsanaToken && selectedProject ? (
                   <Link
                     href={`/projects/${selectedProject.id}`}
-                    className="rounded-full border border-[#86efac] bg-white px-5 py-2 text-[14px] font-medium text-[#1a7f37] hover:bg-[#f0fdf4]"
+                    className="rounded-full border border-green-300 bg-white px-5 py-2 text-[14px] font-medium text-semantic-success-text hover:bg-semantic-success-bg"
                   >
                     Propojit projekt s Asanou →
                   </Link>
@@ -551,7 +551,7 @@ function ProcessForm() {
       </div>
 
       {/* ── Pravý panel – výstup (na mobilu skrytý dokud není výsledek nebo processing) ── */}
-      <div className={!result && step !== "processing" ? "hidden lg:block" : ""}>
+      <div className={!result && step !== "processing" ? "hidden md:block" : ""}>
         {step === "processing" ? (
           <div className="flex h-48 items-center justify-center rounded-apple bg-white shadow-apple">
             <Spinner message="Připravuji výstup…" />

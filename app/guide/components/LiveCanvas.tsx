@@ -201,7 +201,7 @@ export function LiveCanvas({
                                     type="button"
                                     onClick={() => handleElaborate(q, customPrompt[q.id], sel)}
                                     disabled={isElaborating}
-                                    className="rounded-lg bg-brand-600 px-2.5 py-1.5 text-[12px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                                    className="rounded-lg bg-brand-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
                                   >
                                     Generovat
                                   </button>
@@ -262,7 +262,7 @@ export function LiveCanvas({
                                     type="button"
                                     onClick={() => handleElaborate(q, customPrompt[q.id])}
                                     disabled={isElaborating}
-                                    className="rounded-lg bg-brand-600 px-2.5 py-1.5 text-[12px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                                    className="rounded-lg bg-brand-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
                                   >
                                     Generovat
                                   </button>

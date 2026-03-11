@@ -51,7 +51,18 @@ export function ChatInput({ inputRef, inputValue, setInputValue, onSend, status,
     status === "loading_clarify";
 
   if (isLoading) {
-    return <p className="py-3 text-center text-sm text-slate-400">AI přemýšlí…</p>;
+    const loadingText =
+      status === "loading_q" ? "AI připravuje další otázku…" :
+      status === "loading_fu" ? "AI generuje doplňující otázky…" :
+      status === "loading_clarify" ? "AI vysvětluje otázku…" :
+      chatMode === "routing" ? "Zpracovávám požadavek…" :
+      "AI přemýšlí…";
+    return (
+      <div className="flex items-center justify-center gap-2 py-3">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+        <p className="text-sm text-apple-text-secondary">{loadingText}</p>
+      </div>
+    );
   }
 
   if (chatMode === "guide" && status === "awaiting_fu") {

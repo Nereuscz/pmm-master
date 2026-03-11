@@ -193,11 +193,11 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
             <div className="mb-3 flex items-center gap-2.5">
               <UserAvatar name={user.name} email={user.email} />
               <div className="min-w-0">
-                <p className="truncate text-caption font-medium text-apple-text-primary">
+                <p className="truncate text-caption font-medium text-apple-text-primary" title={user.name || user.email || undefined}>
                   {user.name || user.email}
                 </p>
                 {user.email && user.name && (
-                  <p className="truncate text-footnote text-apple-text-tertiary">{user.email}</p>
+                  <p className="truncate text-footnote text-apple-text-tertiary" title={user.email}>{user.email}</p>
                 )}
               </div>
             </div>

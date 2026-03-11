@@ -6,8 +6,21 @@
   color-scheme: light;
 }
 
+/* Force light mode – dark mode override prevents white-on-white on dark OS */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: light;
+  }
+}
+
 body {
   @apply bg-apple-bg-page text-apple-text-primary antialiased;
+}
+
+/* ─── Stronger focus rings for keyboard navigation ─────────────────────── */
+*:focus-visible {
+  outline: 2px solid #0071e3;
+  outline-offset: 2px;
 }
 
 /* ─── Apple-style thin scrollbar ─────────────────────────────────────────── */

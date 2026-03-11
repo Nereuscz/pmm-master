@@ -77,7 +77,7 @@ export default function DashboardPage() {
   return (
     <main className="animate-page-in mx-auto max-w-5xl px-8 py-12">
       {/* Hlavička */}
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-title font-semibold tracking-tight text-apple-text-primary">Projekty</h1>
           <p className="mt-1 text-body text-apple-text-secondary">Přehled všech PM projektů</p>
@@ -172,7 +172,7 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Link
               href="/projects/new"
               className="rounded-full bg-brand-600 px-6 py-2.5 text-caption font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"

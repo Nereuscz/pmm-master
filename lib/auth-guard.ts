@@ -11,17 +11,33 @@ export type AuthUser = {
   name?: string | null;
 };
 
-/** Vrátí přihlášeného uživatele nebo null. */
+/** Vrátí přihlášeného uživatele nebo null. V dev módu (bez Asana provideru) vrací fallback Admin. */
 export async function getAuthUser(): Promise<AuthUser | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
+  if (session?.user?.id) {
+    return {
+      id: session.user.id,
+      role: (session.user.role as UserRole) ?? "PM",
+      email: session.user.email ?? "",
+      name: session.user.name ?? null
+    };
+  }
 
-  return {
-    id: session.user.id,
-    role: (session.user.role as UserRole) ?? "PM",
-    email: session.user.email ?? "",
-    name: session.user.name ?? null
-  };
+  // Dev fallback – pokud chybí plná auth konfigurace a jsme v dev, vrať Admin
+  const hasFullAuth =
+    !!process.env.ASANA_CLIENT_ID &&
+    !!process.env.ASANA_CLIENT_SECRET &&
+    !!process.env.NEXTAUTH_SECRET;
+  if (!hasFullAuth && process.env.NODE_ENV !== "production") {
+    return {
+      id: "dev-user",
+      role: "Admin",
+      email: "dev@localhost",
+      name: "Dev User"
+    };
+  }
+
+  return null;
 }
 
 export function unauthorized(): NextResponse {

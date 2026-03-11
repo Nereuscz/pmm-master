@@ -31,6 +31,18 @@ const config: Config = {
           "border-default": "#d2d2d7",
           "border-light": "#e8e8ed",
         },
+        semantic: {
+          "danger":       "#ff3b30",
+          "danger-hover":  "#e03029",
+          "danger-bg":    "#fff2f2",
+          "danger-text":   "#c0392b",
+          "warning":      "#ff9500",
+          "warning-bg":   "#fffbeb",
+          "warning-text":  "#92400e",
+          "success":      "#34c759",
+          "success-bg":   "#f0fdf4",
+          "success-text":  "#1a7f37",
+        },
       },
       fontFamily: {
         sans: ["-apple-system", "BlinkMacSystemFont", "SF Pro Display", "SF Pro Text", "Helvetica Neue", "var(--font-inter)", "Arial", "sans-serif"],

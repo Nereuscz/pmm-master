@@ -133,7 +133,7 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
                     setEditingMsgId(msg.id);
                     setEditValue(msg.text);
                   }}
-                  className="absolute right-2 top-2 rounded-lg border border-white/40 bg-white/20 px-2 py-1 text-[11px] font-medium text-white/90 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/30"
+                  className="absolute right-2 top-2 rounded-lg border border-white/40 bg-white/20 px-2 py-1 text-[11px] font-medium text-white/90 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 hover:bg-white/30"
                   title="Upravit odpověď"
                 >
                   ✏️ Upravit
@@ -301,7 +301,7 @@ export function ChatMessage({ msg, selectedProject, onFollowUpAnswerChange, onFo
     return (
       <div className="flex items-start gap-3">
         <AiAvatar />
-        <div className="rounded-2xl rounded-tl-sm bg-[#fff2f2] px-4 py-3 text-[14px] text-[#c0392b] shadow-apple-sm">
+        <div className="rounded-2xl rounded-tl-sm bg-semantic-danger-bg px-4 py-3 text-[14px] text-semantic-danger-text shadow-apple-sm" role="alert">
           {msg.text}
         </div>
       </div>

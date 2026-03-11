@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, Suspense, useState, useEffect, useRef } from "react";
+import { useMemo, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
@@ -88,6 +88,32 @@ function GuideChat() {
 
   const showProgressBar = chatMode === "guide" && started && totalCount != null;
   const [chatOpen, setChatOpen] = useState(true);
+  const [liveAnnouncement, setLiveAnnouncement] = useState("");
+
+  // Announce new AI messages for screen readers
+  const prevMsgCountRef = useRef(messages.length);
+  const announceNewMessage = useCallback(() => {
+    if (messages.length <= prevMsgCountRef.current) {
+      prevMsgCountRef.current = messages.length;
+      return;
+    }
+    prevMsgCountRef.current = messages.length;
+    const last = messages[messages.length - 1];
+    if (last.role !== "ai") return;
+    if (last.kind === "question") {
+      setLiveAnnouncement(`Nová otázka: ${last.q.text}`);
+    } else if (last.kind === "followup") {
+      setLiveAnnouncement("Doplňující otázky připraveny");
+    } else if (last.kind === "output") {
+      setLiveAnnouncement("PM výstup vygenerován");
+    } else if (last.kind === "error") {
+      setLiveAnnouncement(`Chyba: ${last.text}`);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    announceNewMessage();
+  }, [announceNewMessage]);
 
   const { speakText } = useTTS(voiceMode);
 
@@ -232,13 +258,23 @@ function GuideChat() {
       {/* Integrovaný layout: canvas hlavní, chat jako skládací sidebar */}
       {showLiveCanvas ? (
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          {/* Chat sidebar – skládací panel vlevo */}
+          {/* Mobile overlay when chat open */}
+          {chatOpen && (
+            <div
+              className="fixed inset-0 z-20 bg-black/40 md:hidden"
+              onClick={() => setChatOpen(false)}
+              aria-hidden
+            />
+          )}
+          {/* Chat sidebar – overlay na mobilu, vedle na desktopu */}
           <aside
             className={`flex shrink-0 flex-col border-r border-apple-border-light bg-white shadow-apple transition-all duration-300 ease-out ${
-              chatOpen ? "w-[340px] lg:w-[380px]" : "w-0 overflow-hidden"
+              chatOpen
+                ? "fixed inset-y-0 left-0 z-30 w-[85vw] max-w-[380px] md:relative md:inset-auto md:z-auto md:w-[340px] lg:w-[380px]"
+                : "w-0 overflow-hidden"
             }`}
           >
-            <div className="flex h-full min-w-[340px] flex-col lg:min-w-[380px]">
+            <div className="flex h-full min-w-[280px] flex-col md:min-w-[340px] lg:min-w-[380px]">
               <div className="flex shrink-0 flex-col gap-2 border-b border-apple-bg-subtle px-4 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[13px] font-semibold text-apple-text-primary">Chat</span>
@@ -382,13 +418,17 @@ function GuideChat() {
           </div>
         </div>
       )}
+      {/* Visually hidden live region for screen reader announcements */}
+      <div aria-live="assertive" aria-atomic="true" className="sr-only">
+        {liveAnnouncement}
+      </div>
     </main>
   );
 }
 
 export default function GuidePage() {
   return (
-    <Suspense fallback={<p className="px-6 py-10 text-slate-500">Načítám průvodce...</p>}>
+    <Suspense fallback={<div className="flex items-center justify-center px-6 py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" /><span className="ml-3 text-body text-apple-text-secondary">Načítám průvodce…</span></div>}>
       <GuideChat />
     </Suspense>
   );
