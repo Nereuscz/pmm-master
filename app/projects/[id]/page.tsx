@@ -150,7 +150,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   return (
     <main className="mx-auto max-w-6xl px-8 py-10">
-      <Breadcrumbs items={[{ label: "Projekty", href: "/dashboard" }, { label: project.name }]} />
+      <Breadcrumbs items={[{ label: "Projekty", href: "/projects" }, { label: project.name }]} />
 
       {/* ── Project header ─────────────────────────────────────────── */}
       <div className="mb-8">
@@ -186,13 +186,314 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         </div>
       </div>
 
-      {/* ── Two-column layout (Claude-like) ────────────────────────── */}
-      <div className="flex flex-col gap-8 lg:flex-row">
+      {/* ── Side panels row ─────────────────────────────────────────── */}
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
-        {/* LEFT: Historie zpracování (main content) */}
-        <div className="min-w-0 flex-1">
+      {/* Metadata z Asany – compact side panel */}
+      <section className="rounded-apple border border-apple-border-light bg-apple-bg-card p-5 sm:col-span-2 lg:col-span-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
+            Metadata
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              if (!metadataEditing) {
+                const base: Record<string, string> = { ...(project.asana_metadata ?? {}) };
+                for (const f of JIC_CUSTOM_FIELDS) {
+                  if (!(f.name in base)) base[f.name] = "";
+                }
+                setMetadataEditValues(base);
+              }
+              setMetadataEditing(!metadataEditing);
+            }}
+            className="text-[11px] font-medium text-apple-text-tertiary hover:text-apple-text-primary"
+          >
+            {metadataEditing ? "Zrušit" : "✏️"}
+          </button>
+        </div>
+        {metadataEditing ? (
+          <div className="mt-4 space-y-4">
+            {JIC_CUSTOM_FIELDS.map((field) => (
+              <div key={field.id}>
+                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
+                  {field.name}
+                </label>
+                {field.type === "single" ? (
+                  <select
+                    value={metadataEditValues[field.name] ?? ""}
+                    onChange={(e) =>
+                      setMetadataEditValues((prev) => ({
+                        ...prev,
+                        [field.name]: e.target.value,
+                      }))
+                    }
+                    className="w-full max-w-md rounded-xl border border-apple-border-default bg-apple-bg-card px-4 py-2 text-body text-apple-text-primary focus:border-brand-600 focus:outline-none"
+                  >
+                    <option value="">— nevybráno —</option>
+                    {field.options.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex max-w-md flex-wrap gap-2">
+                    {field.options.map((opt) => {
+                      const current = (metadataEditValues[field.name] ?? "").split(", ").filter(Boolean);
+                      const checked = current.includes(opt);
+                      return (
+                        <label
+                          key={opt}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-apple-border-default bg-apple-bg-card px-3 py-2 text-caption has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              const next = e.target.checked
+                                ? [...current, opt]
+                                : current.filter((v) => v !== opt);
+                              setMetadataEditValues((prev) => ({
+                                ...prev,
+                                [field.name]: next.join(", "),
+                              }));
+                            }}
+                            className="h-4 w-4 rounded border-apple-border-default text-brand-600"
+                          />
+                          <span className="text-apple-text-primary">{opt}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              disabled={metadataSaving}
+              onClick={async () => {
+                setMetadataSaving(true);
+                try {
+                  const r = await fetch(`/api/projects/${params.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      asana_metadata: (() => {
+                        const merged = { ...project.asana_metadata, ...metadataEditValues };
+                        return Object.fromEntries(
+                          Object.entries(merged).filter(([, v]) => v != null && v !== "")
+                        );
+                      })(),
+                    }),
+                  });
+                  if (!r.ok) {
+                    const json = await r.json();
+                    throw new Error(json.error || "Uložení selhalo");
+                  }
+                  const json = await r.json();
+                  setProject((p) => (p ? { ...p, asana_metadata: json.project?.asana_metadata ?? metadataEditValues } : null));
+                  setMetadataEditing(false);
+                  toast.success("Metadata uložena.");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Chyba");
+                } finally {
+                  setMetadataSaving(false);
+                }
+              }}
+              className="rounded-full bg-brand-600 px-5 py-2 text-body font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+            >
+              {metadataSaving ? "Ukládám…" : "Uložit"}
+            </button>
+            {project.description ? (
+              <div className="mt-6">
+                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
+                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
+                  {project.description}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : project.asana_metadata && Object.keys(project.asana_metadata).length > 0 ? (
+          <div className="mt-4 space-y-6">
+            <div>
+              <h3 className="text-caption font-semibold text-apple-text-secondary">Custom fieldy</h3>
+              <dl className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {(() => {
+                  const entries = Object.entries(project.asana_metadata);
+                  const jicOrder = JIC_CUSTOM_FIELDS.map((f) => f.name);
+                  const sorted = [...entries].sort(([a], [b]) => {
+                    const ai = jicOrder.indexOf(a);
+                    const bi = jicOrder.indexOf(b);
+                    if (ai >= 0 && bi >= 0) return ai - bi;
+                    if (ai >= 0) return -1;
+                    if (bi >= 0) return 1;
+                    return a.localeCompare(b);
+                  });
+                  return sorted;
+                })().map(([key, value]) => (
+                  <div key={key} className="flex flex-col gap-0.5">
+                    <dt className="text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
+                      {key}
+                    </dt>
+                    <dd className="text-body text-apple-text-primary">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+            {project.description ? (
+              <div>
+                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
+                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
+                  {project.description}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="mt-4 space-y-6">
+            <p className="text-caption text-apple-text-tertiary">
+              Žádná metadata. Klikni &bdquo;Upravit přiřazení&ldquo; pro přiřazení hodnot.
+            </p>
+            {project.description ? (
+              <div>
+                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
+                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
+                  {project.description}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </section>
 
-      {/* Anotace projektu – inline in main area */}
+      {/* Right sub-column: Asana + Soubory stacked */}
+      <div className="space-y-4">
+      {/* Asana – compact panel */}
+      <section className="rounded-apple border border-apple-border-light bg-apple-bg-card p-5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
+          Asana
+        </h2>
+        <div className="mt-3">
+          {project.asana_project_id ? (
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-medium text-semantic-success">
+                Propojeno
+              </span>
+              <button
+                type="button"
+                disabled={asanaLinkSaving}
+                onClick={async () => {
+                  setAsanaLinkSaving(true);
+                  try {
+                    const r = await fetch(`/api/projects/${params.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ asana_project_id: null }),
+                    });
+                    const json = await r.json();
+                    if (!r.ok) throw new Error(json.error || "Odpojení selhalo.");
+                    setProject((p) => p ? { ...p, asana_project_id: null } : null);
+                    toast.success("Projekt odpojen od Asany.");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Chyba");
+                  } finally {
+                    setAsanaLinkSaving(false);
+                  }
+                }}
+                className="text-[12px] font-medium text-apple-text-tertiary hover:text-apple-text-primary disabled:opacity-50"
+              >
+                Odpojit
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={asanaProjectIdInput}
+                onChange={(e) => setAsanaProjectIdInput(e.target.value)}
+                placeholder="Asana project GID"
+                className="min-w-0 flex-1 rounded-lg border border-apple-border-default px-3 py-1.5 text-[13px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none"
+              />
+              <button
+                type="button"
+                disabled={asanaLinkSaving || !asanaProjectIdInput.trim()}
+                onClick={async () => {
+                  const gid = asanaProjectIdInput.trim();
+                  if (!gid) return;
+                  setAsanaLinkSaving(true);
+                  try {
+                    const r = await fetch(`/api/projects/${params.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ asana_project_id: gid }),
+                    });
+                    const json = await r.json();
+                    if (!r.ok) throw new Error(json.error || "Propojení selhalo.");
+                    setProject((p) => p ? { ...p, asana_project_id: gid } : null);
+                    setAsanaProjectIdInput("");
+                    toast.success("Projekt propojen s Asanou.");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Chyba");
+                  } finally {
+                    setAsanaLinkSaving(false);
+                  }
+                }}
+                className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+              >
+                {asanaLinkSaving ? "…" : "Propojit"}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Soubory – compact panel */}
+      <section className="rounded-apple border border-apple-border-light bg-apple-bg-card p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
+            Soubory
+          </h2>
+          <label className={`cursor-pointer text-[11px] font-medium text-apple-text-tertiary hover:text-apple-text-primary ${kbUploading ? "opacity-50 pointer-events-none" : ""}`}>
+            +
+            <input
+              type="file"
+              accept=".pdf,.docx,.doc,.txt,.md"
+              onChange={uploadKbFile}
+              className="sr-only"
+            />
+          </label>
+        </div>
+        {projectKbDocs.length === 0 ? (
+          <p className="mt-3 text-[12px] text-apple-text-muted">Žádné soubory.</p>
+        ) : (
+          <ul className="mt-3 space-y-1.5">
+            {projectKbDocs.map((doc) => (
+              <li key={doc.id} className="group flex items-center justify-between rounded-lg bg-apple-bg-subtle px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-[12px] font-medium text-apple-text-primary">{doc.title}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteKbDoc(doc.id)}
+                  disabled={kbDeletingId === doc.id}
+                  aria-label={`Smazat ${doc.title}`}
+                  className="ml-2 shrink-0 text-[10px] text-apple-text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 disabled:opacity-40"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      </div>{/* end right sub-column */}
+
+      </div>{/* end side panels row */}
+
+      {/* ── Main content area ────────────────────────────────────────── */}
+
+      {/* Anotace projektu */}
       {context?.accumulated_context && context?.annotations ? (
         <section className="mb-6 rounded-apple border border-apple-border-light bg-apple-bg-card p-5">
           <button
@@ -387,310 +688,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         )}
       </section>
 
-        </div>{/* end left column */}
-
-        {/* RIGHT: Side panels (Claude-like) */}
-        <div className="w-full shrink-0 space-y-4 lg:w-[320px]">
-
-      {/* Metadata z Asany – compact side panel */}
-      <section className="rounded-apple border border-apple-border-light bg-apple-bg-card p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
-            Metadata
-          </h2>
-          <button
-            type="button"
-            onClick={() => {
-              if (!metadataEditing) {
-                const base: Record<string, string> = { ...(project.asana_metadata ?? {}) };
-                for (const f of JIC_CUSTOM_FIELDS) {
-                  if (!(f.name in base)) base[f.name] = "";
-                }
-                setMetadataEditValues(base);
-              }
-              setMetadataEditing(!metadataEditing);
-            }}
-            className="text-[11px] font-medium text-apple-text-tertiary hover:text-apple-text-primary"
-          >
-            {metadataEditing ? "Zrušit" : "✏️"}
-          </button>
-        </div>
-        {metadataEditing ? (
-          <div className="mt-4 space-y-4">
-            {JIC_CUSTOM_FIELDS.map((field) => (
-              <div key={field.id}>
-                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
-                  {field.name}
-                </label>
-                {field.type === "single" ? (
-                  <select
-                    value={metadataEditValues[field.name] ?? ""}
-                    onChange={(e) =>
-                      setMetadataEditValues((prev) => ({
-                        ...prev,
-                        [field.name]: e.target.value,
-                      }))
-                    }
-                    className="w-full max-w-md rounded-xl border border-apple-border-default bg-apple-bg-card px-4 py-2 text-body text-apple-text-primary focus:border-brand-600 focus:outline-none"
-                  >
-                    <option value="">— nevybráno —</option>
-                    {field.options.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="flex max-w-md flex-wrap gap-2">
-                    {field.options.map((opt) => {
-                      const current = (metadataEditValues[field.name] ?? "").split(", ").filter(Boolean);
-                      const checked = current.includes(opt);
-                      return (
-                        <label
-                          key={opt}
-                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-apple-border-default bg-apple-bg-card px-3 py-2 text-caption has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              const next = e.target.checked
-                                ? [...current, opt]
-                                : current.filter((v) => v !== opt);
-                              setMetadataEditValues((prev) => ({
-                                ...prev,
-                                [field.name]: next.join(", "),
-                              }));
-                            }}
-                            className="h-4 w-4 rounded border-apple-border-default text-brand-600"
-                          />
-                          <span className="text-apple-text-primary">{opt}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              disabled={metadataSaving}
-              onClick={async () => {
-                setMetadataSaving(true);
-                try {
-                  const r = await fetch(`/api/projects/${params.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      asana_metadata: (() => {
-                        const merged = { ...project.asana_metadata, ...metadataEditValues };
-                        return Object.fromEntries(
-                          Object.entries(merged).filter(([, v]) => v != null && v !== "")
-                        );
-                      })(),
-                    }),
-                  });
-                  if (!r.ok) {
-                    const json = await r.json();
-                    throw new Error(json.error || "Uložení selhalo");
-                  }
-                  const json = await r.json();
-                  setProject((p) => (p ? { ...p, asana_metadata: json.project?.asana_metadata ?? metadataEditValues } : null));
-                  setMetadataEditing(false);
-                  toast.success("Metadata uložena.");
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "Chyba");
-                } finally {
-                  setMetadataSaving(false);
-                }
-              }}
-              className="rounded-full bg-brand-600 px-5 py-2 text-body font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-            >
-              {metadataSaving ? "Ukládám…" : "Uložit"}
-            </button>
-            {project.description ? (
-              <div className="mt-6">
-                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
-                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
-                  {project.description}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        ) : project.asana_metadata && Object.keys(project.asana_metadata).length > 0 ? (
-          <div className="mt-4 space-y-6">
-            <div>
-              <h3 className="text-caption font-semibold text-apple-text-secondary">Custom fieldy</h3>
-              <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-                {(() => {
-                  const entries = Object.entries(project.asana_metadata);
-                  const jicOrder = JIC_CUSTOM_FIELDS.map((f) => f.name);
-                  const sorted = [...entries].sort(([a], [b]) => {
-                    const ai = jicOrder.indexOf(a);
-                    const bi = jicOrder.indexOf(b);
-                    if (ai >= 0 && bi >= 0) return ai - bi;
-                    if (ai >= 0) return -1;
-                    if (bi >= 0) return 1;
-                    return a.localeCompare(b);
-                  });
-                  return sorted;
-                })().map(([key, value]) => (
-                  <div key={key} className="flex flex-col gap-0.5">
-                    <dt className="text-[11px] font-medium uppercase tracking-wider text-apple-text-tertiary">
-                      {key}
-                    </dt>
-                    <dd className="text-body text-apple-text-primary">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-            {project.description ? (
-              <div>
-                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
-                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
-                  {project.description}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="mt-4 space-y-6">
-            <p className="text-caption text-apple-text-tertiary">
-              Žádná metadata. Klikni „Upravit přiřazení“ pro přiřazení hodnot.
-            </p>
-            {project.description ? (
-              <div>
-                <h3 className="text-caption font-semibold text-apple-text-secondary">Popis</h3>
-                <p className="mt-1 whitespace-pre-wrap text-body text-apple-text-primary">
-                  {project.description}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </section>
-
-      {/* Asana – compact side panel */}
-      <section className="rounded-apple border border-apple-border-light bg-apple-bg-card p-5">
-        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
-          Asana
-        </h2>
-        <div className="mt-3">
-          {project.asana_project_id ? (
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-medium text-semantic-success">
-                Propojeno
-              </span>
-              <button
-                type="button"
-                disabled={asanaLinkSaving}
-                onClick={async () => {
-                  setAsanaLinkSaving(true);
-                  try {
-                    const r = await fetch(`/api/projects/${params.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ asana_project_id: null }),
-                    });
-                    const json = await r.json();
-                    if (!r.ok) throw new Error(json.error || "Odpojení selhalo.");
-                    setProject((p) => p ? { ...p, asana_project_id: null } : null);
-                    toast.success("Projekt odpojen od Asany.");
-                  } catch (e) {
-                    toast.error(e instanceof Error ? e.message : "Chyba");
-                  } finally {
-                    setAsanaLinkSaving(false);
-                  }
-                }}
-                className="text-[12px] font-medium text-apple-text-tertiary hover:text-apple-text-primary disabled:opacity-50"
-              >
-                Odpojit
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={asanaProjectIdInput}
-                onChange={(e) => setAsanaProjectIdInput(e.target.value)}
-                placeholder="Asana project GID"
-                className="min-w-0 flex-1 rounded-lg border border-apple-border-default px-3 py-1.5 text-[13px] placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none"
-              />
-              <button
-                type="button"
-                disabled={asanaLinkSaving || !asanaProjectIdInput.trim()}
-                onClick={async () => {
-                  const gid = asanaProjectIdInput.trim();
-                  if (!gid) return;
-                  setAsanaLinkSaving(true);
-                  try {
-                    const r = await fetch(`/api/projects/${params.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ asana_project_id: gid }),
-                    });
-                    const json = await r.json();
-                    if (!r.ok) throw new Error(json.error || "Propojení selhalo.");
-                    setProject((p) => p ? { ...p, asana_project_id: gid } : null);
-                    setAsanaProjectIdInput("");
-                    toast.success("Projekt propojen s Asanou.");
-                  } catch (e) {
-                    toast.error(e instanceof Error ? e.message : "Chyba");
-                  } finally {
-                    setAsanaLinkSaving(false);
-                  }
-                }}
-                className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-              >
-                {asanaLinkSaving ? "…" : "Propojit"}
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Soubory – compact side panel (Claude "Files" style) */}
-      <section className="rounded-apple border border-apple-border-light bg-apple-bg-card p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
-            Soubory
-          </h2>
-          <label className={`cursor-pointer text-[11px] font-medium text-apple-text-tertiary hover:text-apple-text-primary ${kbUploading ? "opacity-50 pointer-events-none" : ""}`}>
-            +
-            <input
-              type="file"
-              accept=".pdf,.docx,.doc,.txt,.md"
-              onChange={uploadKbFile}
-              className="sr-only"
-            />
-          </label>
-        </div>
-        {projectKbDocs.length === 0 ? (
-          <p className="mt-3 text-[12px] text-apple-text-muted">Žádné soubory.</p>
-        ) : (
-          <ul className="mt-3 space-y-1.5">
-            {projectKbDocs.map((doc) => (
-              <li key={doc.id} className="group flex items-center justify-between rounded-lg bg-apple-bg-subtle px-3 py-2">
-                <div className="min-w-0">
-                  <p className="truncate text-[12px] font-medium text-apple-text-primary">{doc.title}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => deleteKbDoc(doc.id)}
-                  disabled={kbDeletingId === doc.id}
-                  aria-label={`Smazat ${doc.title}`}
-                  className="ml-2 shrink-0 text-[10px] text-apple-text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 disabled:opacity-40"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-        </div>{/* end right column */}
-      </div>{/* end two-column layout */}
     </main>
   );
 }
