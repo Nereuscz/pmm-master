@@ -39,17 +39,22 @@ export const authOptions: NextAuthOptions = {
             );
           }
         } catch (err) {
-          console.error("[auth] JWT callback DB error – user will have no role/id:", err instanceof Error ? err.message : err);
+          // V produkci logujeme jen obecnou zprávu, abychom nevystavili DB detail
+          if (process.env.NODE_ENV === "development") {
+            console.error("[auth] JWT callback DB error – user will have no role/id:", err instanceof Error ? err.message : err);
+          } else {
+            console.error("[auth] JWT callback DB error – user will have no role/id");
+          }
         }
       }
       return token;
     },
 
     async session({ session, token }) {
-      if (token.userId) {
-        session.user.id = token.userId;
-        session.user.role = (token.userRole as "Admin" | "PM" | "Viewer") ?? "PM";
-      }
+      // token.userId může být undefined, pokud JWT callback selhal (DB error) –
+      // nastavíme bezpečný fallback, aby session.user.id nikdy nebyl undefined
+      session.user.id = token.userId ?? token.sub ?? "";
+      session.user.role = (token.userRole as "Admin" | "PM" | "Viewer") ?? "Viewer";
       return session;
     },
   },

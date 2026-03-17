@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { fetchDedup } from "@/lib/fetch-dedup";
 import ErrorMessage from "@/components/ErrorMessage";
 import { PHASE_COLORS } from "@/lib/constants";
 
@@ -45,11 +46,12 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/projects")
+    setError(null);
+    fetchDedup("/api/projects")
       .then(async (r) => {
         const json = await r.json();
         if (!r.ok) throw new Error(json.error || "Nepodařilo se načíst projekty.");
-        if (!json.error) setProjects(json.projects ?? []);
+        setProjects(json.projects ?? []);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Nepodařilo se načíst projekty.");
@@ -135,9 +137,16 @@ export default function DashboardPage() {
             <p className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
               Nedávné projekty
             </p>
-            <Link href="/projects/new" className="text-[12px] font-medium text-brand-600 hover:text-brand-700">
-              + Nový projekt
-            </Link>
+            <div className="flex items-center gap-3">
+              {projects.length > 5 ? (
+                <Link href="/projects" className="text-[12px] font-medium text-apple-text-muted hover:text-apple-text-secondary">
+                  Zobrazit vše ({projects.length}) →
+                </Link>
+              ) : null}
+              <Link href="/projects/new" className="text-[12px] font-medium text-brand-600 hover:text-brand-700">
+                + Nový projekt
+              </Link>
+            </div>
           </div>
           <div className="space-y-0.5">
             {projects.slice(0, 5).map((project) => (

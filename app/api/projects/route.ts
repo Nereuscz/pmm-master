@@ -42,46 +42,51 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const db = ensureDb();
-  const ownerId = user.id;
-  await ensureUser(ownerId);
+  try {
+    const db = ensureDb();
+    const ownerId = user.id;
+    await ensureUser(ownerId);
 
-  const { data, error } = await db
-    .from("projects")
-    .insert({
-      name: parsed.data.name,
-      framework: parsed.data.framework,
-      phase: parsed.data.phase,
-      owner_id: ownerId
-    })
-    .select("id,name,framework,phase,owner_id,created_at,updated_at")
-    .single();
+    const { data, error } = await db
+      .from("projects")
+      .insert({
+        name: parsed.data.name,
+        framework: parsed.data.framework,
+        phase: parsed.data.phase,
+        owner_id: ownerId
+      })
+      .select("id,name,framework,phase,owner_id,created_at,updated_at")
+      .single();
 
-  if (error || !data) {
-    return NextResponse.json(
-      { error: "Nepodařilo se vytvořit projekt.", details: error?.message },
-      { status: 500 }
-    );
+    if (error || !data) {
+      return NextResponse.json(
+        { error: "Nepodařilo se vytvořit projekt.", details: error?.message },
+        { status: 500 }
+      );
+    }
+
+    const { error: contextError } = await db.from("project_context").upsert({
+      project_id: data.id,
+      accumulated_context: "",
+      last_updated: new Date().toISOString()
+    });
+    if (contextError) {
+      return NextResponse.json(
+        { error: "Nepodařilo se inicializovat projektový kontext.", details: contextError.message },
+        { status: 500 }
+      );
+    }
+
+    await logAudit({
+      userId: user.id,
+      action: "project_create",
+      resourceType: "project",
+      resourceId: data.id,
+    });
+
+    return NextResponse.json({ project: data }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Neznámá chyba";
+    return NextResponse.json({ error: "Nepodařilo se vytvořit projekt.", details: message }, { status: 500 });
   }
-
-  const { error: contextError } = await db.from("project_context").upsert({
-    project_id: data.id,
-    accumulated_context: "",
-    last_updated: new Date().toISOString()
-  });
-  if (contextError) {
-    return NextResponse.json(
-      { error: "Nepodařilo se inicializovat projektový kontext.", details: contextError.message },
-      { status: 500 }
-    );
-  }
-
-  await logAudit({
-    userId: user.id,
-    action: "project_create",
-    resourceType: "project",
-    resourceId: data.id,
-  });
-
-  return NextResponse.json({ project: data }, { status: 201 });
 }

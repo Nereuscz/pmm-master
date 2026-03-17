@@ -9,6 +9,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { Spinner } from "@/components/LoadingState";
 import { parsePmOutputIntoSections } from "@/lib/pm-output-parser";
 import { sanitizeFilename } from "@/lib/filename";
+import { fetchDedup } from "@/lib/fetch-dedup";
 
 type ProcessResponse = {
   sessionId: string;
@@ -56,16 +57,19 @@ function ProcessForm() {
   } | null>(null);
 
   useEffect(() => {
-    fetch("/api/projects")
-      .then((r) => r.json())
-      .then((json) => {
+    fetchDedup("/api/projects")
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error || "Nepodařilo se načíst projekty.");
         const list: Project[] = json.projects ?? [];
         setProjects(list);
         const preselected = list.find((p) => p.id === projectIdParam) ?? list[0] ?? null;
         setSelectedProject(preselected);
         if (preselected) setSelectedPhase(preselected.phase ?? PHASES[0]);
       })
-      .catch(() => undefined);
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Nepodařilo se načíst projekty. Zkus obnovit stránku.");
+      });
   }, [projectIdParam]);
 
   useEffect(() => {
@@ -171,6 +175,7 @@ function ProcessForm() {
       setFileUploadState("idle");
       setFileUploadError(null);
       file.text().then(setTranscript).catch(() => {
+        setFileUploadState("error");
         setFileUploadError("Nepodařilo se načíst soubor.");
       });
     }
@@ -292,7 +297,11 @@ function ProcessForm() {
         {/* Krok 1: Formulář */}
         {step === "idle" ? (
           <form onSubmit={onAnalyze} className="space-y-5 rounded-apple bg-apple-bg-card p-6 shadow-apple">
-            {projects.length === 0 ? (
+            {error ? (
+              <div className="rounded-xl bg-semantic-danger-bg px-4 py-3 text-[13px] text-semantic-danger-text" role="alert">
+                {error}
+              </div>
+            ) : projects.length === 0 ? (
               <div className="rounded-xl bg-semantic-warning-bg px-4 py-3 text-[13px] text-semantic-warning-text">
                 Nejdřív vytvoř projekt v sekci Projekty.
               </div>
@@ -352,7 +361,7 @@ function ProcessForm() {
                     <span className="text-red-600">{fileUploadError}</span>
                   )}
                 </span>
-                <span className={`text-[12px] ${transcript.length > 0 && (transcript.length < 300 || transcript.length > 50000) ? "font-medium text-semantic-danger" : "text-apple-text-muted"}`}>
+                <span id="transcript-validation" className={`text-[12px] ${transcript.length > 0 && (transcript.length < 300 || transcript.length > 50000) ? "font-medium text-semantic-danger" : "text-apple-text-muted"}`}>
                 {transcript.length.toLocaleString("cs-CZ")} znaků
                 {transcript.length > 0 && (transcript.length < 300 || transcript.length > 50000) ? (
                   <span className="ml-1">
@@ -383,6 +392,7 @@ function ProcessForm() {
             <button
               type="submit"
               disabled={projects.length === 0 || transcript.length < 300 || transcript.length > 50000}
+              aria-describedby="transcript-validation"
               className="w-full rounded-full bg-brand-600 py-3 text-[15px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
             >
               Analyzovat transkript →

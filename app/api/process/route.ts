@@ -173,8 +173,9 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString()
           })
           .eq("id", jobId);
-      } catch {
-        // intentionally ignored: primary error already captured
+      } catch (jobUpdateErr) {
+        // Job zůstane ve stavu "running" – logujeme pro případné manuální čištění
+        logApiError("/api/process [job status update failed]", jobUpdateErr);
       }
     }
 

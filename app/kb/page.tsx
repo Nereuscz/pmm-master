@@ -83,8 +83,8 @@ export default function KnowledgeBasePage() {
       fetch("/api/asana/sync/logs"),
     ]);
     const [logsJson, asanaLogsJson] = await Promise.all([
-      logsRes.json(),
-      asanaLogsRes.json(),
+      logsRes.json().catch(() => ({ logs: [] })),
+      asanaLogsRes.json().catch(() => ({ logs: [] })),
     ]);
     setLogs(logsRes.ok ? (logsJson.logs ?? []) : []);
     setAsanaLogs(asanaLogsRes.ok ? (asanaLogsJson.logs ?? []) : []);

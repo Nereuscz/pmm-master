@@ -74,16 +74,28 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [canManageKb, setCanManageKb] = useState(false);
 
   useEffect(() => {
+    if (!params.id) {
+      setError("Neplatné ID projektu.");
+      setLoading(false);
+      return;
+    }
+
+    async function fetchJson(url: string) {
+      const r = await fetch(url);
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || `Chyba ${r.status} při načítání ${url}`);
+      return json;
+    }
+
     Promise.all([
-      fetch("/api/auth/me").then((r) => r.json()),
-      fetch(`/api/projects/${params.id}`).then((r) => r.json()),
-      fetch(`/api/projects/${params.id}/sessions`).then((r) => r.json()),
-      fetch(`/api/projects/${params.id}/context`).then((r) => r.json()),
-      fetch(`/api/kb/documents?projectId=${params.id}`).then((r) => r.json())
+      fetchJson("/api/auth/me"),
+      fetchJson(`/api/projects/${params.id}`),
+      fetchJson(`/api/projects/${params.id}/sessions`),
+      fetchJson(`/api/projects/${params.id}/context`),
+      fetchJson(`/api/kb/documents?projectId=${params.id}`)
     ])
       .then(([authJson, projectJson, sessionsJson, contextJson, kbJson]) => {
         setCanManageKb((authJson as AuthMeResponse).permissions?.canManageKb === true);
-        if (projectJson.error) throw new Error(projectJson.error);
         setProject(projectJson.project);
         setSessions(sessionsJson.sessions ?? []);
         setContext(contextJson.context ?? null);

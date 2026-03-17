@@ -54,7 +54,7 @@ export default function ConfirmDialog({
       if (!dialog) return;
 
       const focusable = dialog.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]:not([disabled])'
+        'button:not([disabled]):not([aria-disabled="true"]), [href], input:not([disabled]):not([aria-disabled="true"]), select:not([disabled]):not([aria-disabled="true"]), textarea:not([disabled]):not([aria-disabled="true"]), [tabindex]:not([tabindex="-1"]), [role="button"]:not([disabled]):not([aria-disabled="true"])'
       );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];

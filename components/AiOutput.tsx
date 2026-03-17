@@ -80,7 +80,10 @@ export default function AiOutput({
       .then((json) => {
         if (json.rating === 1 || json.rating === -1) setFeedbackRating(json.rating);
       })
-      .catch(() => undefined);
+      .catch((err) => {
+        // Non-fatal: tlačítka se zobrazí bez předvybraného hodnocení
+        console.warn("[AiOutput] Nepodařilo se načíst feedback:", err instanceof Error ? err.message : err);
+      });
   }, [sessionId]);
 
   // ── TipTap editor (lazy-initialised, only mounted in edit mode) ─────────────

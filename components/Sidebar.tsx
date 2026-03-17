@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
+import { fetchDedup } from "@/lib/fetch-dedup";
 
 type UserRole = "Admin" | "PM" | "Viewer" | null;
 
@@ -92,7 +93,7 @@ const links: Array<{
 type UserInfo = { role: UserRole | null; name?: string | null; email?: string | null };
 
 function UserAvatar({ name, email }: { name?: string | null; email?: string | null }) {
-  const initial = ((name || email || "?")[0] ?? "?").toUpperCase();
+  const initial = (name?.charAt(0) ?? email?.charAt(0) ?? "?").toUpperCase();
   return (
     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gold-400/20">
       <span className="text-[11px] font-semibold text-gold-300">{initial}</span>
@@ -105,19 +106,24 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("projectId");
   const [user, setUser] = useState<UserInfo>({ role: null });
+  const [userLoaded, setUserLoaded] = useState(false);
   const [currentProjectName, setCurrentProjectName] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((json) =>
+      .then((json) => {
         setUser({
           role: json.role ?? null,
           name: json.name ?? null,
           email: json.email ?? null
-        })
-      )
-      .catch(() => setUser({ role: null }));
+        });
+        setUserLoaded(true);
+      })
+      .catch(() => {
+        setUser({ role: null });
+        setUserLoaded(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -125,7 +131,7 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
       projectIdParam &&
       (pathname === "/process" || pathname === "/guide")
     ) {
-      fetch("/api/projects")
+      fetchDedup("/api/projects")
         .then((r) => r.json())
         .then((json) => {
           const projects = json.projects ?? [];
@@ -138,8 +144,9 @@ export default function Sidebar({ drawerOpen = false, onDrawerClose }: SidebarPr
     }
   }, [pathname, projectIdParam]);
 
+  // Před načtením uživatele zobrazíme jen neomezené položky, aby nedošlo k "bliknutí" chybějících odkazů
   const visibleLinks = links.filter(
-    (link) => !link.roles || (user.role && link.roles.includes(user.role))
+    (link) => !link.roles || (userLoaded && user.role && link.roles.includes(user.role))
   );
 
   const navContent = (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorMessage from "@/components/ErrorMessage";
@@ -58,6 +58,12 @@ export default function NewProjectPage() {
   const [fieldError, setFieldError] = useState<{ name?: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [framework, setFramework] = useState<Framework>("Univerzální");
+
+  // Reset chyb při mountu – brání zobrazení starých chyb po browser back navigaci
+  useEffect(() => {
+    setError(null);
+    setFieldError(null);
+  }, []);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
