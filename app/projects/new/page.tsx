@@ -4,19 +4,60 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorMessage from "@/components/ErrorMessage";
-import { createProjectSchema } from "@/lib/schemas";
 
-const FRAMEWORK_INFO = {
+const FRAMEWORKS = ["Univerzální", "Produktový"] as const;
+const PROJECT_PHASES = ["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"] as const;
+
+type Framework = (typeof FRAMEWORKS)[number];
+type ProjectPhase = (typeof PROJECT_PHASES)[number];
+type CreateProjectPayload = {
+  name: string;
+  framework: Framework;
+  phase: ProjectPhase;
+};
+
+const FRAMEWORK_INFO: Record<Framework, string> = {
   Produktový: "Tvorba nebo redesign konkrétní služby / produktu JIC pro klienty.",
   Univerzální: "Interní projekty, procesní změny nebo infrastruktura."
 };
+
+function validateProjectPayload(payload: {
+  name: string;
+  framework: string;
+  phase: string;
+}): { success: true; data: CreateProjectPayload } | { success: false; error: string; fieldError?: { name?: string } } {
+  if (payload.name.length < 3) {
+    return { success: false, fieldError: { name: "Název musí mít 3–140 znaků." }, error: "Neplatný název projektu." };
+  }
+
+  if (payload.name.length > 140) {
+    return { success: false, fieldError: { name: "Název může mít maximálně 140 znaků." }, error: "Neplatný název projektu." };
+  }
+
+  if (!FRAMEWORKS.includes(payload.framework as Framework)) {
+    return { success: false, error: "Vyber platný typ frameworku." };
+  }
+
+  if (!PROJECT_PHASES.includes(payload.phase as ProjectPhase)) {
+    return { success: false, error: "Vyber platnou počáteční fázi." };
+  }
+
+  return {
+    success: true,
+    data: {
+      name: payload.name,
+      framework: payload.framework as Framework,
+      phase: payload.phase as ProjectPhase
+    }
+  };
+}
 
 export default function NewProjectPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<{ name?: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [framework, setFramework] = useState<"Univerzální" | "Produktový">("Univerzální");
+  const [framework, setFramework] = useState<Framework>("Univerzální");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,20 +70,12 @@ export default function NewProjectPage() {
       phase: String(data.get("phase") || "")
     };
 
-    const parsed = createProjectSchema.safeParse(payload);
-    if (!parsed.success) {
-      const issues = parsed.error.flatten().fieldErrors;
-      if (issues.name?.[0]) {
-        const msg = issues.name[0];
-        const friendly =
-          msg.includes("at least 3") || msg.includes("3 character")
-            ? "Název musí mít 3–140 znaků."
-            : msg.includes("at most 140") || msg.includes("140 character")
-              ? "Název může mít maximálně 140 znaků."
-              : msg;
-        setFieldError({ name: friendly });
+    const validation = validateProjectPayload(payload);
+    if (!validation.success) {
+      if (validation.fieldError) {
+        setFieldError(validation.fieldError);
       } else {
-        setError(parsed.error.errors[0]?.message ?? "Neplatná data.");
+        setError(validation.error);
       }
       return;
     }
@@ -52,7 +85,7 @@ export default function NewProjectPage() {
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data)
+        body: JSON.stringify(validation.data)
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Uložení projektu selhalo.");
@@ -105,7 +138,7 @@ export default function NewProjectPage() {
             Typ frameworku
           </label>
           <div className="grid grid-cols-2 gap-3">
-            {(["Univerzální", "Produktový"] as const).map((fw) => (
+            {FRAMEWORKS.map((fw) => (
               <label
                 key={fw}
                 className={`relative cursor-pointer rounded-2xl border-2 p-4 transition-all ${
@@ -145,7 +178,7 @@ export default function NewProjectPage() {
             name="phase"
             className="w-full rounded-xl border border-apple-border-default bg-apple-bg-card px-4 py-2.5 text-body text-apple-text-primary focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
           >
-            {["Iniciace", "Plánování", "Realizace", "Closing", "Gate 1", "Gate 2", "Gate 3"].map((p) => (
+            {PROJECT_PHASES.map((p) => (
               <option key={p}>{p}</option>
             ))}
           </select>
