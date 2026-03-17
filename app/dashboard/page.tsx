@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import ErrorMessage from "@/components/ErrorMessage";
 import { PHASE_COLORS } from "@/lib/constants";
 
 type Project = {
@@ -41,14 +42,18 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/projects")
-      .then((r) => r.json())
-      .then((json) => {
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error || "Nepodařilo se načíst projekty.");
         if (!json.error) setProjects(json.projects ?? []);
       })
-      .catch(() => {})
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Nepodařilo se načíst projekty.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -66,6 +71,11 @@ export default function DashboardPage() {
     <main className="animate-page-in flex min-h-[calc(100vh-56px)] flex-col md:min-h-screen">
       {/* ── Hero: centered greeting + input ──────────────────────────── */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 pb-8">
+        {error ? (
+          <div className="mb-6 w-full max-w-[640px]">
+            <ErrorMessage message={error} />
+          </div>
+        ) : null}
         <h1 className="mb-8 text-center text-[28px] font-semibold tracking-tight text-apple-text-primary md:text-[32px]">
           <span className="mr-2 inline-block text-gold-400">✺</span>
           {getGreeting()}

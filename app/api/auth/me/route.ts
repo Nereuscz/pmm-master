@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth-guard";
+import { canManageKb, canProcess, canReadKb, getAuthUser, isAdmin } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,12 @@ export async function GET() {
   return NextResponse.json({
     role: user.role,
     name: user.name,
-    email: user.email
+    email: user.email,
+    permissions: {
+      isAdmin: isAdmin(user),
+      canReadKb: canReadKb(user),
+      canManageKb: canManageKb(user),
+      canProcess: canProcess(user),
+    }
   });
 }

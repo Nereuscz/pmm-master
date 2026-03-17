@@ -711,6 +711,7 @@ export function useGuideChat(projectIdParam: string | null, modeParam: string | 
     bottomRef,
     inputRef,
     startFresh,
+    startFromMessage: handleInitialMessage,
     resumeDraft,
     handleSend,
     handleFollowUpContinue,

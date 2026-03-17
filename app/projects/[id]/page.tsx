@@ -30,6 +30,12 @@ type ContextData = {
   annotations: string | null;
   annotations_updated: string | null;
 };
+type AuthMeResponse = {
+  role: "Admin" | "PM" | "Viewer" | null;
+  permissions?: {
+    canManageKb?: boolean;
+  };
+};
 
 /** Odstraní markdown symboly a vrátí max ~180 znaků čistého textu jako preview. */
 function getPreview(text: string): string {
@@ -65,15 +71,18 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [projectKbDocs, setProjectKbDocs] = useState<KbDoc[]>([]);
   const [kbUploading, setKbUploading] = useState(false);
   const [kbDeletingId, setKbDeletingId] = useState<string | null>(null);
+  const [canManageKb, setCanManageKb] = useState(false);
 
   useEffect(() => {
     Promise.all([
+      fetch("/api/auth/me").then((r) => r.json()),
       fetch(`/api/projects/${params.id}`).then((r) => r.json()),
       fetch(`/api/projects/${params.id}/sessions`).then((r) => r.json()),
       fetch(`/api/projects/${params.id}/context`).then((r) => r.json()),
       fetch(`/api/kb/documents?projectId=${params.id}`).then((r) => r.json())
     ])
-      .then(([projectJson, sessionsJson, contextJson, kbJson]) => {
+      .then(([authJson, projectJson, sessionsJson, contextJson, kbJson]) => {
+        setCanManageKb((authJson as AuthMeResponse).permissions?.canManageKb === true);
         if (projectJson.error) throw new Error(projectJson.error);
         setProject(projectJson.project);
         setSessions(sessionsJson.sessions ?? []);
@@ -454,15 +463,17 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <h2 className="text-[11px] font-semibold uppercase tracking-widest text-apple-text-tertiary">
             Soubory
           </h2>
-          <label className={`cursor-pointer text-[11px] font-medium text-apple-text-tertiary hover:text-apple-text-primary ${kbUploading ? "opacity-50 pointer-events-none" : ""}`}>
-            +
-            <input
-              type="file"
-              accept=".pdf,.docx,.doc,.txt,.md"
-              onChange={uploadKbFile}
-              className="sr-only"
-            />
-          </label>
+          {canManageKb ? (
+            <label className={`cursor-pointer text-[11px] font-medium text-apple-text-tertiary hover:text-apple-text-primary ${kbUploading ? "opacity-50 pointer-events-none" : ""}`}>
+              +
+              <input
+                type="file"
+                accept=".pdf,.docx,.doc,.txt,.md"
+                onChange={uploadKbFile}
+                className="sr-only"
+              />
+            </label>
+          ) : null}
         </div>
         {projectKbDocs.length === 0 ? (
           <p className="mt-3 text-[12px] text-apple-text-muted">Žádné soubory.</p>
@@ -473,19 +484,26 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 <div className="min-w-0">
                   <p className="truncate text-[12px] font-medium text-apple-text-primary">{doc.title}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => deleteKbDoc(doc.id)}
-                  disabled={kbDeletingId === doc.id}
-                  aria-label={`Smazat ${doc.title}`}
-                  className="ml-2 shrink-0 text-[10px] text-apple-text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 disabled:opacity-40"
-                >
-                  ×
-                </button>
+                {canManageKb ? (
+                  <button
+                    type="button"
+                    onClick={() => deleteKbDoc(doc.id)}
+                    disabled={kbDeletingId === doc.id}
+                    aria-label={`Smazat ${doc.title}`}
+                    className="ml-2 shrink-0 text-[10px] text-apple-text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 disabled:opacity-40"
+                  >
+                    ×
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>
         )}
+        {!canManageKb ? (
+          <p className="mt-3 text-[12px] text-apple-text-muted">
+            Správu projektových souborů má k dispozici pouze admin.
+          </p>
+        ) : null}
       </section>
       </div>{/* end right sub-column */}
 

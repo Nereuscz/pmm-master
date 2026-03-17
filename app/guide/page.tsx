@@ -24,7 +24,9 @@ function GuideChat() {
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("projectId");
   const modeParam = searchParams.get("mode"); // "guide" | "canvas" | null
+  const initialMessageParam = searchParams.get("message");
   const modeResolvedRef = useRef(false);
+  const initialMessageHandledRef = useRef(false);
 
   const {
     projects,
@@ -46,6 +48,7 @@ function GuideChat() {
     bottomRef,
     inputRef,
     startFresh,
+    startFromMessage,
     resumeDraft,
     handleSend,
     handleFollowUpContinue,
@@ -66,14 +69,27 @@ function GuideChat() {
 
   // Auto-resolve mode when missing: vždy Guide (bez automatického Canvas)
   useEffect(() => {
-    if (modeParam !== null || modeResolvedRef.current || !selectedProject) return;
+    if (initialMessageParam || modeParam !== null || modeResolvedRef.current || !selectedProject) return;
     modeResolvedRef.current = true;
     const projectId = selectedProject.id;
     const params = new URLSearchParams(searchParams.toString());
     params.set("mode", "guide");
     if (!params.has("projectId")) params.set("projectId", projectId);
     router.replace(`/guide?${params.toString()}`, { scroll: false });
-  }, [modeParam, selectedProject, router, searchParams]);
+  }, [initialMessageParam, modeParam, selectedProject, router, searchParams]);
+
+  useEffect(() => {
+    const message = initialMessageParam?.trim();
+    if (!message || initialMessageHandledRef.current || !selectedProject || pendingDraft) return;
+
+    initialMessageHandledRef.current = true;
+    void startFromMessage(message);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("message");
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `/guide?${nextQuery}` : "/guide", { scroll: false });
+  }, [initialMessageParam, pendingDraft, router, searchParams, selectedProject, startFromMessage]);
 
   // Persistovat voice mode preference pro auto-resolve při příštím otevření
   useEffect(() => {

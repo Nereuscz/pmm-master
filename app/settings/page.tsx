@@ -14,9 +14,15 @@ function SettingsContent() {
 
   useEffect(() => {
     fetch("/api/settings/asana-token")
-      .then((r) => r.json())
-      .then((json) => setHasToken(json.hasToken === true))
-      .catch(() => setHasToken(false));
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error || "Nepodařilo se načíst stav Asana integrace.");
+        setHasToken(json.hasToken === true);
+      })
+      .catch((err) => {
+        setHasToken(null);
+        setError(err instanceof Error ? err.message : "Nepodařilo se načíst stav Asana integrace.");
+      });
   }, []);
 
   useEffect(() => {
@@ -77,7 +83,9 @@ function SettingsContent() {
           Jste přihlášeni přes Asana. Tokeny pro export úkolů se ukládají automaticky při přihlášení.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          {hasToken ? (
+          {hasToken === null ? (
+            <p className="text-caption text-apple-text-secondary">Načítám stav propojení…</p>
+          ) : hasToken ? (
             <>
               <span className="text-[14px] font-medium text-[#34c759]">Připojeno přes přihlášení</span>
               <button

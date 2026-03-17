@@ -34,6 +34,12 @@ type AsanaSyncLog = {
 };
 
 type UploadMode = "text" | "file" | "url";
+type AuthMeResponse = {
+  role: "Admin" | "PM" | "Viewer" | null;
+  permissions?: {
+    canManageKb?: boolean;
+  };
+};
 
 export default function KnowledgeBasePage() {
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
@@ -50,6 +56,7 @@ export default function KnowledgeBasePage() {
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [refreshingDocId, setRefreshingDocId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [canManageKb, setCanManageKb] = useState(false);
 
   const categories = [...new Set(documents.map((d) => d.category).filter(Boolean))].sort();
   const filteredDocuments = documents.filter((d) => {
@@ -59,27 +66,46 @@ export default function KnowledgeBasePage() {
     return matchesSearch && matchesCategory;
   });
 
-  async function reload() {
-    const [docsRes, logsRes, asanaLogsRes] = await Promise.all([
-      fetch("/api/kb/documents"),
+  async function reload(includeAdminData: boolean) {
+    const docsRes = await fetch("/api/kb/documents");
+    const docsJson = await docsRes.json();
+    if (!docsRes.ok) throw new Error(docsJson.error || "Nepodařilo se načíst dokumenty.");
+    setDocuments(docsJson.documents ?? []);
+
+    if (!includeAdminData) {
+      setLogs([]);
+      setAsanaLogs([]);
+      return;
+    }
+
+    const [logsRes, asanaLogsRes] = await Promise.all([
       fetch("/api/kb/sync/logs"),
       fetch("/api/asana/sync/logs"),
     ]);
-    const [docsJson, logsJson, asanaLogsJson] = await Promise.all([
-      docsRes.json(),
+    const [logsJson, asanaLogsJson] = await Promise.all([
       logsRes.json(),
       asanaLogsRes.json(),
     ]);
-    if (!docsRes.ok) throw new Error(docsJson.error || "Nepodařilo se načíst dokumenty.");
-    setDocuments(docsJson.documents ?? []);
-    setLogs(logsJson.logs ?? []);
+    setLogs(logsRes.ok ? (logsJson.logs ?? []) : []);
     setAsanaLogs(asanaLogsRes.ok ? (asanaLogsJson.logs ?? []) : []);
   }
 
   useEffect(() => {
-    reload()
-      .catch((e) => setError(e instanceof Error ? e.message : "Unknown error"))
-      .finally(() => setInitialLoading(false));
+    async function init() {
+      try {
+        const authRes = await fetch("/api/auth/me");
+        const authJson = (await authRes.json()) as AuthMeResponse;
+        const canManage = authRes.ok && authJson.permissions?.canManageKb === true;
+        setCanManageKb(canManage);
+        await reload(canManage);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unknown error");
+      } finally {
+        setInitialLoading(false);
+      }
+    }
+
+    void init();
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -167,7 +193,7 @@ export default function KnowledgeBasePage() {
       setUploadError(null);
       form.reset();
       if (fileInputRef.current) fileInputRef.current.value = "";
-      await reload();
+      await reload(canManageKb);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Nepodařilo se uložit.";
       setUploadError(msg);
@@ -184,7 +210,7 @@ export default function KnowledgeBasePage() {
       const json = await r.json();
       if (!r.ok) throw new Error(json.error || "Obnovení selhalo");
       toast.success(`Dokument obnoven (${json.chunksCount} chunků).`);
-      await reload();
+      await reload(canManageKb);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Obnovení selhalo");
     } finally {
@@ -231,7 +257,7 @@ export default function KnowledgeBasePage() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Sync selhal.");
       toast.success("SharePoint sync dokončen.");
-      await reload();
+      await reload(canManageKb);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -256,110 +282,119 @@ export default function KnowledgeBasePage() {
       ) : null}
 
       {/* Upload sekce */}
-      <section id="kb-upload-section" className="mb-6 rounded-apple bg-apple-bg-card p-6 shadow-apple">
-        <div className="mb-5 flex items-center justify-between">
-          <p className="text-footnote font-semibold uppercase tracking-widest text-apple-text-tertiary">Nahrát dokument</p>
-          {/* Tab přepínač */}
-          <div className="flex rounded-full border border-apple-border-light bg-apple-bg-page p-1 text-caption">
-            {(["file", "url", "text"] as const).map((mode) => (
+      {canManageKb ? (
+        <section id="kb-upload-section" className="mb-6 rounded-apple bg-apple-bg-card p-6 shadow-apple">
+          <div className="mb-5 flex items-center justify-between">
+            <p className="text-footnote font-semibold uppercase tracking-widest text-apple-text-tertiary">Nahrát dokument</p>
+            {/* Tab přepínač */}
+            <div className="flex rounded-full border border-apple-border-light bg-apple-bg-page p-1 text-caption">
+              {(["file", "url", "text"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => {
+                    setUploadMode(mode);
+                    setUploadError(null);
+                  }}
+                  className={`rounded-full px-4 py-1.5 font-medium transition-all ${
+                    uploadMode === mode
+                      ? "bg-apple-bg-card text-apple-text-primary shadow-apple-sm"
+                      : "text-apple-text-secondary hover:text-apple-text-primary"
+                  }`}
+                >
+                  {mode === "file" ? "Soubor" : mode === "url" ? "URL" : "Text"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">Název</label>
+                <input
+                  name="title"
+                  placeholder={uploadMode === "file" ? "Volitelné – bere se z názvu souboru" : "Název dokumentu"}
+                  className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-body placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">Kategorie</label>
+                <input
+                  name="category"
+                  placeholder="Např. Strategie"
+                  className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-body placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+                />
+              </div>
+            </div>
+
+            {uploadMode === "file" ? (
+              <div className="rounded-2xl border-2 border-dashed border-apple-border-default px-6 py-8 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-2 h-8 w-8 text-apple-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+                <p className="text-caption text-apple-text-secondary">PDF, DOCX, DOC, TXT, MD — max 20 MB</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  name="file"
+                  accept=".pdf,.docx,.doc,.txt,.md"
+                  className="mt-3 text-caption text-apple-text-secondary"
+                />
+              </div>
+            ) : uploadMode === "url" ? (
+              <div>
+                <label className="mb-1.5 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">URL adresa</label>
+                <input
+                  name="url"
+                  type="url"
+                  placeholder="https://example.com/clanek"
+                  className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-body placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+                />
+                <p className="mt-1.5 text-caption text-apple-text-tertiary">
+                  Systém stáhne obsah stránky, extrahuje text a přidá ho do znalostní báze.
+                </p>
+              </div>
+            ) : (
+              <textarea
+                name="content"
+                rows={6}
+                placeholder="Obsah dokumentu..."
+                className="w-full resize-none rounded-xl border border-apple-border-default px-4 py-3 text-body placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+              />
+            )}
+
+            {uploadError ? (
+              <ErrorMessage id="kb-upload-error" message={uploadError} />
+            ) : null}
+            <div className="flex gap-3">
               <button
-                key={mode}
-                type="button"
-                onClick={() => {
-                  setUploadMode(mode);
-                  setUploadError(null);
-                }}
-                className={`rounded-full px-4 py-1.5 font-medium transition-all ${
-                  uploadMode === mode
-                    ? "bg-apple-bg-card text-apple-text-primary shadow-apple-sm"
-                    : "text-apple-text-secondary hover:text-apple-text-primary"
-                }`}
+                type="submit"
+                disabled={loading}
+                aria-describedby={uploadError ? "kb-upload-error" : undefined}
+                className="rounded-full bg-brand-600 px-6 py-2.5 text-body font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50"
               >
-                {mode === "file" ? "Soubor" : mode === "url" ? "URL" : "Text"}
+                {loading ? "Ukládám…" : "Uložit dokument"}
               </button>
-            ))}
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1.5 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">Název</label>
-              <input
-                name="title"
-                placeholder={uploadMode === "file" ? "Volitelné – bere se z názvu souboru" : "Název dokumentu"}
-                className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-body placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-              />
+              <button
+                type="button"
+                disabled={loading}
+                onClick={runSimulatedSharepointSync}
+                className="rounded-full border border-apple-border-default px-5 py-2.5 text-body font-medium text-apple-text-primary hover:bg-apple-bg-page disabled:opacity-50"
+              >
+                SharePoint sync
+              </button>
             </div>
-            <div>
-              <label className="mb-1.5 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">Kategorie</label>
-              <input
-                name="category"
-                placeholder="Např. Strategie"
-                className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-body placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-              />
-            </div>
-          </div>
-
-          {uploadMode === "file" ? (
-            <div className="rounded-2xl border-2 border-dashed border-apple-border-default px-6 py-8 text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-2 h-8 w-8 text-apple-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-              </svg>
-              <p className="text-caption text-apple-text-secondary">PDF, DOCX, DOC, TXT, MD — max 20 MB</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                name="file"
-                accept=".pdf,.docx,.doc,.txt,.md"
-                className="mt-3 text-caption text-apple-text-secondary"
-              />
-            </div>
-          ) : uploadMode === "url" ? (
-            <div>
-              <label className="mb-1.5 block text-caption font-semibold uppercase tracking-wider text-apple-text-tertiary">URL adresa</label>
-              <input
-                name="url"
-                type="url"
-                placeholder="https://example.com/clanek"
-                className="w-full rounded-xl border border-apple-border-default px-4 py-2.5 text-body placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-              />
-              <p className="mt-1.5 text-caption text-apple-text-tertiary">
-                Systém stáhne obsah stránky, extrahuje text a přidá ho do znalostní báze.
-              </p>
-            </div>
-          ) : (
-            <textarea
-              name="content"
-              rows={6}
-              placeholder="Obsah dokumentu..."
-              className="w-full resize-none rounded-xl border border-apple-border-default px-4 py-3 text-body placeholder:text-apple-text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-            />
-          )}
-
-          {uploadError ? (
-            <ErrorMessage id="kb-upload-error" message={uploadError} />
-          ) : null}
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={loading}
-              aria-describedby={uploadError ? "kb-upload-error" : undefined}
-              className="rounded-full bg-brand-600 px-6 py-2.5 text-body font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50"
-            >
-              {loading ? "Ukládám…" : "Uložit dokument"}
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={runSimulatedSharepointSync}
-              className="rounded-full border border-apple-border-default px-5 py-2.5 text-body font-medium text-apple-text-primary hover:bg-apple-bg-page disabled:opacity-50"
-            >
-              SharePoint sync
-            </button>
-          </div>
-        </form>
-      </section>
+          </form>
+        </section>
+      ) : (
+        <section className="mb-6 rounded-apple border border-apple-border-light bg-apple-bg-card p-6 shadow-apple">
+          <p className="text-footnote font-semibold uppercase tracking-widest text-apple-text-tertiary">Znalostní báze</p>
+          <p className="mt-2 text-body text-apple-text-secondary">
+            Můžete procházet a vyhledávat dokumenty. Správu dokumentů a synchronizací má k dispozici pouze admin.
+          </p>
+        </section>
+      )}
 
       {/* Dokumenty + Sync log */}
       <div className="grid gap-6 md:grid-cols-2">
@@ -424,7 +459,7 @@ export default function KnowledgeBasePage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  {doc.source === "url" && doc.source_url ? (
+                  {canManageKb && doc.source === "url" && doc.source_url ? (
                     <button
                       onClick={() => refreshDocument(doc.id)}
                       disabled={refreshingDocId === doc.id}
@@ -441,16 +476,18 @@ export default function KnowledgeBasePage() {
                       )}
                     </button>
                   ) : null}
-                  <button
-                    onClick={() => setConfirmDocId(doc.id)}
-                    title="Smazat dokument"
-                    aria-label={`Smazat dokument ${doc.title}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-apple-border-default transition-colors hover:bg-red-50 hover:text-[#ff3b30] focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                      <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
-                    </svg>
-                  </button>
+                  {canManageKb ? (
+                    <button
+                      onClick={() => setConfirmDocId(doc.id)}
+                      title="Smazat dokument"
+                      aria-label={`Smazat dokument ${doc.title}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-apple-border-default transition-colors hover:bg-red-50 hover:text-[#ff3b30] focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                        <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -475,13 +512,15 @@ export default function KnowledgeBasePage() {
                     </div>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => document.getElementById("kb-upload-section")?.scrollIntoView({ behavior: "smooth" })}
-                  className="mt-4 rounded-full bg-brand-600 px-5 py-2 text-caption font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"
-                >
-                  Nahrajte dokument výše ↑
-                </button>
+                {canManageKb ? (
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("kb-upload-section")?.scrollIntoView({ behavior: "smooth" })}
+                    className="mt-4 rounded-full bg-brand-600 px-5 py-2 text-caption font-medium text-white transition-colors duration-200 hover:bg-brand-700 active:scale-[0.98]"
+                  >
+                    Nahrajte dokument výše ↑
+                  </button>
+                ) : null}
               </div>
             ) : filteredDocuments.length === 0 ? (
               <div className="py-8 text-center">
@@ -494,52 +533,54 @@ export default function KnowledgeBasePage() {
         </section>
 
         {/* Sync log */}
-        <section className="rounded-apple bg-apple-bg-card p-6 shadow-apple">
-          <p className="mb-4 text-footnote font-semibold uppercase tracking-widest text-apple-text-tertiary">Sync log</p>
-          <div className="space-y-6">
-            {/* SharePoint sync */}
-            <div>
-              <p className="mb-2 text-caption font-medium text-apple-text-secondary">SharePoint</p>
-              <div className="divide-y divide-apple-bg-subtle">
-                {logs.map((log) => (
-                  <div key={log.id} className="py-3">
-                    <p className="text-body font-medium text-apple-text-primary">{log.status}</p>
-                    <p className="mt-0.5 font-mono text-caption text-apple-text-secondary">
-                      {log.source_path} · změny: {log.changes_detected}
-                    </p>
-                  </div>
-                ))}
-                {logs.length === 0 ? (
-                  <p className="py-3 text-caption text-apple-text-muted">Žádné synchronizace.</p>
-                ) : null}
+        {canManageKb ? (
+          <section className="rounded-apple bg-apple-bg-card p-6 shadow-apple">
+            <p className="mb-4 text-footnote font-semibold uppercase tracking-widest text-apple-text-tertiary">Sync log</p>
+            <div className="space-y-6">
+              {/* SharePoint sync */}
+              <div>
+                <p className="mb-2 text-caption font-medium text-apple-text-secondary">SharePoint</p>
+                <div className="divide-y divide-apple-bg-subtle">
+                  {logs.map((log) => (
+                    <div key={log.id} className="py-3">
+                      <p className="text-body font-medium text-apple-text-primary">{log.status}</p>
+                      <p className="mt-0.5 font-mono text-caption text-apple-text-secondary">
+                        {log.source_path} · změny: {log.changes_detected}
+                      </p>
+                    </div>
+                  ))}
+                  {logs.length === 0 ? (
+                    <p className="py-3 text-caption text-apple-text-muted">Žádné synchronizace.</p>
+                  ) : null}
+                </div>
+              </div>
+              {/* Asana import (cron) */}
+              <div>
+                <p className="mb-2 text-caption font-medium text-apple-text-secondary">Asana import</p>
+                <p className="mb-2 text-footnote text-apple-text-tertiary">
+                  Týdenní snapshot tasků z propojených projektů (cron job).
+                </p>
+                <div className="divide-y divide-apple-bg-subtle">
+                  {asanaLogs.map((log) => (
+                    <div key={log.id} className="py-3">
+                      <p className="text-body font-medium text-apple-text-primary">
+                        {log.project_name ?? log.project_id} · {log.status === "success" ? "OK" : "Chyba"}
+                      </p>
+                      <p className="mt-0.5 font-mono text-caption text-apple-text-secondary">
+                        {new Date(log.synced_at).toLocaleString("cs-CZ")}
+                        {log.duration_ms != null ? ` · ${log.duration_ms} ms` : ""}
+                        {log.error_message ? ` · ${log.error_message}` : ""}
+                      </p>
+                    </div>
+                  ))}
+                  {asanaLogs.length === 0 ? (
+                    <p className="py-3 text-caption text-apple-text-muted">Žádné Asana importy.</p>
+                  ) : null}
+                </div>
               </div>
             </div>
-            {/* Asana import (cron) */}
-            <div>
-              <p className="mb-2 text-caption font-medium text-apple-text-secondary">Asana import</p>
-              <p className="mb-2 text-footnote text-apple-text-tertiary">
-                Týdenní snapshot tasků z propojených projektů (cron job).
-              </p>
-              <div className="divide-y divide-apple-bg-subtle">
-                {asanaLogs.map((log) => (
-                  <div key={log.id} className="py-3">
-                    <p className="text-body font-medium text-apple-text-primary">
-                      {log.project_name ?? log.project_id} · {log.status === "success" ? "OK" : "Chyba"}
-                    </p>
-                    <p className="mt-0.5 font-mono text-caption text-apple-text-secondary">
-                      {new Date(log.synced_at).toLocaleString("cs-CZ")}
-                      {log.duration_ms != null ? ` · ${log.duration_ms} ms` : ""}
-                      {log.error_message ? ` · ${log.error_message}` : ""}
-                    </p>
-                  </div>
-                ))}
-                {asanaLogs.length === 0 ? (
-                  <p className="py-3 text-caption text-apple-text-muted">Žádné Asana importy.</p>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
       </div>
 
       <ConfirmDialog

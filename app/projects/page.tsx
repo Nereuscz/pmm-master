@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import ErrorMessage from "@/components/ErrorMessage";
 import { PHASE_COLORS } from "@/lib/constants";
 
 type Project = {
@@ -25,14 +26,18 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/projects")
-      .then((r) => r.json())
-      .then((json) => {
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error || "Nepodařilo se načíst projekty.");
         if (!json.error) setProjects(json.projects ?? []);
       })
-      .catch(() => {})
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Nepodařilo se načíst projekty.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -70,11 +75,17 @@ export default function ProjectsPage() {
         />
       </div>
 
+      {error ? (
+        <div className="mb-5">
+          <ErrorMessage message={error} />
+        </div>
+      ) : null}
+
       {/* Project list */}
       {loading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="shimmer h-[72px] rounded-apple" />
+            <div key={i} className="skeleton-shimmer h-[72px] rounded-apple" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
