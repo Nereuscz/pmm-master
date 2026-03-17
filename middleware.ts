@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
-
-const isProduction = process.env.NODE_ENV === "production";
-const hasAuthConfig =
-  !!process.env.ASANA_CLIENT_ID &&
-  !!process.env.ASANA_CLIENT_SECRET &&
-  !!process.env.NEXTAUTH_SECRET;
+import { hasAuthConfig, isDevAuthBypassEnabled } from "./lib/auth-config";
 
 // Stránky a API routes, které vyžadují přihlášení
 const PROTECTED_PATHS = ["/dashboard", "/projects", "/process", "/guide", "/kb", "/settings", "/admin"];
@@ -24,6 +19,20 @@ function bypassMiddleware(_req: NextRequest) {
   return NextResponse.next();
 }
 
+function authUnavailableResponse(req: NextRequest) {
+  const message =
+    "Auth není správně nakonfigurovaná. Doplň OAuth env, nebo explicitně zapni DEV_AUTH_BYPASS=true jen pro lokální vývoj.";
+
+  if (req.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: message }, { status: 503 });
+  }
+
+  return new NextResponse(message, {
+    status: 503,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}
+
 // NextAuth middleware pro produkci
 const authMiddleware = withAuth({
   pages: { signIn: "/signin" }
@@ -35,16 +44,18 @@ export function middleware(req: NextRequest) {
   }
 
   // Dev: explicitní bypass pro lokální vývoj bez OAuth konfigurace.
-  if (!hasAuthConfig && !isProduction) {
-    return bypassMiddleware(req);
+  if (!hasAuthConfig()) {
+    if (isDevAuthBypassEnabled()) {
+      return bypassMiddleware(req);
+    }
+
+    // Fail closed i v devu, pokud bypass není explicitně povolen.
+    return authUnavailableResponse(req);
   }
 
-  // Prod: fail closed, aby chybějící env nevypnuly ochranu privátních stránek.
-  if (!hasAuthConfig && isProduction) {
-    return NextResponse.json(
-      { error: "Auth není správně nakonfigurovaná (missing env)." },
-      { status: 503 }
-    );
+  // Explicitní bypass pro lokální vývoj.
+  if (isDevAuthBypassEnabled()) {
+    return bypassMiddleware(req);
   }
 
   // @ts-expect-error withAuth signature

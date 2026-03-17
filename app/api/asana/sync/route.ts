@@ -19,10 +19,17 @@ export async function POST(request: NextRequest) {
   }
 
   const db = ensureDb();
-  const { data: projects } = await db
+  const { data: projects, error: projectsError } = await db
     .from("projects")
     .select("id")
     .not("asana_project_id", "is", null);
+
+  if (projectsError) {
+    return NextResponse.json(
+      { error: "Nepodařilo se načíst projekty pro Asana sync.", details: projectsError.message },
+      { status: 500 }
+    );
+  }
 
   if (!projects?.length) {
     return NextResponse.json({

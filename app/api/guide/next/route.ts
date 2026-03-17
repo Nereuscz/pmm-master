@@ -11,6 +11,7 @@ import { logAudit } from "@/lib/audit";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { searchMarket, buildQueryFromAnswers } from "@/lib/tavily";
 import { getAsanaSnapshotForProject } from "@/lib/asana-sync";
+import { throwIfDbError } from "@/lib/db-errors";
 
 const schema = z.object({
   projectId: z.string().uuid(),
@@ -138,16 +139,18 @@ export async function POST(request: NextRequest) {
       input.phase
     );
 
-    await db
+    const { error: contextUpdateError } = await db
       .from("project_context")
       .update({ accumulated_context: newContext, last_updated: new Date().toISOString() })
       .eq("project_id", input.projectId);
+    throwIfDbError(contextUpdateError, "Nepodařilo se aktualizovat projektový kontext.");
 
     // Aktualizuj fázi projektu
-    await db
+    const { error: projectUpdateError } = await db
       .from("projects")
       .update({ phase: input.phase, updated_at: new Date().toISOString() })
       .eq("id", input.projectId);
+    throwIfDbError(projectUpdateError, "Nepodařilo se aktualizovat fázi projektu.");
 
     await logAudit({
       userId: user.id,

@@ -10,6 +10,7 @@ import { logAudit } from "@/lib/audit";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { searchMarket, buildQueryFromTranscript } from "@/lib/tavily";
 import { getAsanaSnapshotForProject } from "@/lib/asana-sync";
+import { throwIfDbError } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -112,23 +113,25 @@ export async function POST(request: NextRequest) {
       input.phase
     );
 
-    await db
+    const { error: contextUpdateError } = await db
       .from("project_context")
       .update({
         accumulated_context: newContext,
         last_updated: new Date().toISOString()
       })
       .eq("project_id", input.projectId);
+    throwIfDbError(contextUpdateError, "Nepodařilo se aktualizovat projektový kontext.");
 
-    await db
+    const { error: projectUpdateError } = await db
       .from("projects")
       .update({
         phase: input.phase,
         updated_at: new Date().toISOString()
       })
       .eq("id", input.projectId);
+    throwIfDbError(projectUpdateError, "Nepodařilo se aktualizovat fázi projektu.");
 
-    await db
+    const { error: jobUpdateError } = await db
       .from("processing_jobs")
       .update({
         status: "succeeded",
@@ -136,6 +139,7 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq("id", job.id);
+    throwIfDbError(jobUpdateError, "Nepodařilo se dokončit processing job.");
 
     await logAudit({
       userId: user.id,

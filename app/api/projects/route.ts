@@ -64,11 +64,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await db.from("project_context").upsert({
+  const { error: contextError } = await db.from("project_context").upsert({
     project_id: data.id,
     accumulated_context: "",
     last_updated: new Date().toISOString()
   });
+  if (contextError) {
+    return NextResponse.json(
+      { error: "Nepodařilo se inicializovat projektový kontext.", details: contextError.message },
+      { status: 500 }
+    );
+  }
 
   await logAudit({
     userId: user.id,

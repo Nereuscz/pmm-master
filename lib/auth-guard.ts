@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "./auth";
+import { isDevAuthBypassEnabled } from "./auth-config";
 
 export type UserRole = "Admin" | "PM" | "Viewer";
 
@@ -11,7 +12,7 @@ export type AuthUser = {
   name?: string | null;
 };
 
-/** Vrátí přihlášeného uživatele nebo null. V dev módu (bez Asana provideru) vrací fallback Admin. */
+/** Vrátí přihlášeného uživatele nebo null. Dev fallback funguje jen při explicitním bypassu. */
 export async function getAuthUser(): Promise<AuthUser | null> {
   const session = await getServerSession(authOptions);
   if (session?.user?.id) {
@@ -23,12 +24,8 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     };
   }
 
-  // Dev fallback – pokud chybí plná auth konfigurace a jsme v dev, vrať Admin
-  const hasFullAuth =
-    !!process.env.ASANA_CLIENT_ID &&
-    !!process.env.ASANA_CLIENT_SECRET &&
-    !!process.env.NEXTAUTH_SECRET;
-  if (!hasFullAuth && process.env.NODE_ENV !== "production") {
+  // Dev fallback je explicitní opt-in, aby nechybějící env nevypnuly autentizaci.
+  if (isDevAuthBypassEnabled()) {
     return {
       id: "dev-user",
       role: "Admin",

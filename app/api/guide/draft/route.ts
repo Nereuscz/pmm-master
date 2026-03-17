@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { ensureDb } from "@/lib/db";
-import { getAuthUser, unauthorized } from "@/lib/auth-guard";
+import { ensureDb, requireProjectOwnership } from "@/lib/db";
+import { getAuthUser, unauthorized, forbidden, isAdmin } from "@/lib/auth-guard";
 import { logApiError } from "@/lib/api-logger";
+import { throwIfDbError } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,18 @@ const deleteSchema = z.object({
   framework: z.enum(["Univerzální", "Produktový"]),
 });
 
+async function assertProjectAccess(projectId: string, userId: string, admin: boolean) {
+  const ownership = await requireProjectOwnership(projectId, userId, admin);
+  if (!ownership.ok) {
+    if (ownership.status === 403) {
+      return forbidden();
+    }
+    return NextResponse.json({ error: ownership.message }, { status: 404 });
+  }
+
+  return null;
+}
+
 // ── GET ?projectId=&phase=&framework= ─────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
@@ -83,16 +96,28 @@ export async function GET(request: NextRequest) {
   if (!projectId || !phase || !framework) {
     return NextResponse.json({ error: "Chybí parametry." }, { status: 400 });
   }
+  const parsedProjectId = z.string().uuid().safeParse(projectId);
+  if (!parsedProjectId.success) {
+    return NextResponse.json({ error: "Neplatný projectId." }, { status: 400 });
+  }
+
+  const ownershipResponse = await assertProjectAccess(parsedProjectId.data, user.id, isAdmin(user));
+  if (ownershipResponse) return ownershipResponse;
 
   const db = ensureDb();
-  const { data } = await db
+  const { data, error } = await db
     .from("guide_drafts")
     .select("id, answers, messages, uploaded_context, updated_at")
-    .eq("project_id", projectId)
+    .eq("project_id", parsedProjectId.data)
     .eq("phase", phase)
     .eq("framework", framework)
     .eq("owner_id", user.id)
-    .single();
+    .maybeSingle();
+
+  if (error) {
+    logApiError("/api/guide/draft GET", error);
+    return NextResponse.json({ error: "Načtení draftu selhalo." }, { status: 500 });
+  }
 
   return NextResponse.json({ draft: data ?? null });
 }
@@ -109,10 +134,13 @@ export async function PUT(request: NextRequest) {
   }
 
   const { projectId, phase, framework, answers, messages, uploadedContext } = parsed.data;
+  const ownershipResponse = await assertProjectAccess(projectId, user.id, isAdmin(user));
+  if (ownershipResponse) return ownershipResponse;
+
   const db = ensureDb();
 
   try {
-    await db.from("guide_drafts").upsert(
+    const { error } = await db.from("guide_drafts").upsert(
       {
         project_id: projectId,
         phase,
@@ -125,6 +153,7 @@ export async function PUT(request: NextRequest) {
       },
       { onConflict: "project_id,phase,framework,owner_id" }
     );
+    throwIfDbError(error, "Uložení draftu selhalo.");
     return NextResponse.json({ ok: true });
   } catch (e) {
     logApiError("/api/guide/draft PUT", e);
@@ -144,16 +173,20 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { projectId, phase, framework } = parsed.data;
+  const ownershipResponse = await assertProjectAccess(projectId, user.id, isAdmin(user));
+  if (ownershipResponse) return ownershipResponse;
+
   const db = ensureDb();
 
   try {
-    await db
+    const { error } = await db
       .from("guide_drafts")
       .delete()
       .eq("project_id", projectId)
       .eq("phase", phase)
       .eq("framework", framework)
       .eq("owner_id", user.id);
+    throwIfDbError(error, "Smazání draftu selhalo.");
 
     return NextResponse.json({ ok: true });
   } catch (e) {

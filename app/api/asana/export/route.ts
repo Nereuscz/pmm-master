@@ -6,6 +6,7 @@ import { logAudit } from "@/lib/audit";
 import { getValidAsanaToken } from "@/lib/asana-auth";
 import { createTask, createSubtask } from "@/lib/asana-api";
 import { markdownToPlainText } from "@/lib/markdown-to-plain";
+import { throwIfDbError } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -45,11 +46,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: ownership.message }, { status: 404 });
     }
 
-    const { data: existingJob } = await db
+    const { data: existingJob, error: existingJobError } = await db
       .from("export_jobs")
       .select("id,session_id,idempotency_key,status,created_objects_json")
       .eq("idempotency_key", input.idempotencyKey)
       .maybeSingle();
+    throwIfDbError(existingJobError, "Nepodařilo se ověřit idempotency key.");
 
     if (existingJob) {
       if (existingJob.session_id !== input.sessionId) {
@@ -68,50 +70,47 @@ export async function POST(request: NextRequest) {
     }
 
     const accessToken = await getValidAsanaToken(user.id);
-    let createdObjects: { mainTaskId: string; subtaskIds: string[]; simulated?: boolean };
-
-    if (accessToken) {
-      const mainNotes = input.sections
-        .map((s) => {
-          const q = markdownToPlainText(s.question);
-          const a = markdownToPlainText(s.answer);
-          return `${q}\n\n${a}`;
-        })
-        .join("\n\n");
-      const mainTask = await createTask(
-        accessToken,
-        input.asanaProjectId,
-        input.title,
-        mainNotes
+    if (!accessToken) {
+      return NextResponse.json(
+        { error: "Asana není připojená nebo uživatel nemá platný token." },
+        { status: 409 }
       );
-      const subtaskIds: string[] = [];
-      for (const section of input.sections) {
-        const sub = await createSubtask(
-          accessToken,
-          mainTask.gid,
-          markdownToPlainText(section.question),
-          markdownToPlainText(section.answer)
-        );
-        subtaskIds.push(sub.gid);
-      }
-      createdObjects = {
-        mainTaskId: mainTask.gid,
-        subtaskIds,
-      };
-    } else {
-      createdObjects = {
-        simulated: true,
-        mainTaskId: `task_${Date.now()}`,
-        subtaskIds: input.sections.map((_, i) => `sub_${i}`),
-      };
     }
+
+    const mainNotes = input.sections
+      .map((s) => {
+        const q = markdownToPlainText(s.question);
+        const a = markdownToPlainText(s.answer);
+        return `${q}\n\n${a}`;
+      })
+      .join("\n\n");
+    const mainTask = await createTask(
+      accessToken,
+      input.asanaProjectId,
+      input.title,
+      mainNotes
+    );
+    const subtaskIds: string[] = [];
+    for (const section of input.sections) {
+      const sub = await createSubtask(
+        accessToken,
+        mainTask.gid,
+        markdownToPlainText(section.question),
+        markdownToPlainText(section.answer)
+      );
+      subtaskIds.push(sub.gid);
+    }
+    const createdObjects = {
+      mainTaskId: mainTask.gid,
+      subtaskIds,
+    };
 
     const { data: created, error } = await db
       .from("export_jobs")
       .insert({
         session_id: input.sessionId,
         asana_project_id: input.asanaProjectId,
-        status: accessToken ? "exported" : "simulated",
+        status: "exported",
         idempotency_key: input.idempotencyKey,
         created_objects_json: createdObjects
       })

@@ -3,6 +3,7 @@ import { getValidAsanaToken } from "./asana-auth";
 import { getProjectSections, getTasksForProject, type AsanaTaskFull } from "./asana-api";
 import { summarizeForContext } from "./text";
 import { mapAsanaPhaseToProjectPhase, buildAsanaMetadata } from "./asana-import";
+import { throwIfDbError } from "./db-errors";
 
 /** Vrátí snapshot text pro projekt, nebo null pokud není k dispozici. */
 export async function getAsanaSnapshotForProject(projectId: string): Promise<string | null> {
@@ -66,11 +67,12 @@ export async function syncProjectAsanaSnapshot(projectId: string): Promise<SyncR
           asana_metadata: newMetadata,
           updated_at: new Date().toISOString(),
         };
-        await db.from("projects").update(updates).eq("id", projectId);
+        const { error: projectUpdateError } = await db.from("projects").update(updates).eq("id", projectId);
+        throwIfDbError(projectUpdateError, "Nepodařilo se aktualizovat metadata projektu z Asany.");
       }
     }
 
-    await db
+    const { error: snapshotError } = await db
       .from("asana_sync_snapshot")
       .upsert(
         {
@@ -82,22 +84,27 @@ export async function syncProjectAsanaSnapshot(projectId: string): Promise<SyncR
         },
         { onConflict: "project_id" }
       );
+    throwIfDbError(snapshotError, "Nepodařilo se uložit Asana snapshot.");
 
-    await db.from("asana_sync_log").insert({
+    const { error: successLogError } = await db.from("asana_sync_log").insert({
       project_id: projectId,
       status: "success",
       duration_ms: Date.now() - started,
     });
+    throwIfDbError(successLogError, "Nepodařilo se uložit success log Asana syncu.");
 
     return { ok: true, taskCount: tasks.length, sectionCount: sections.length };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Neznámá chyba";
-    await db.from("asana_sync_log").insert({
+    const { error: errorLogError } = await db.from("asana_sync_log").insert({
       project_id: projectId,
       status: "error",
       error_message: message,
       duration_ms: Date.now() - started,
     });
+    if (errorLogError) {
+      console.error("[asana-sync] Failed to write error log:", errorLogError.message);
+    }
     return { ok: false, error: message };
   }
 }
